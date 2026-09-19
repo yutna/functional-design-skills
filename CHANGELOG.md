@@ -126,7 +126,7 @@ rather than as prose.
 - **Reading two sequences of effects against each other**, with the
   questions to ask and the repairs in order.
 - **Stateful property testing** in full, where it had six lines.
-- A contents list on all seventy-one references over a hundred lines.
+- A contents list on all seventy-three references that need one.
 - Twelve routing cases for the new material; coverage is 100 of 100.
 - `CLAUDE.md`, which this repository never had. Its house rules lived in
   `CONTRIBUTING.md`, which no agent working here reads.
