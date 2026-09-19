@@ -97,6 +97,15 @@ rather than as prose.
   `CONTRIBUTING.md`, which no agent working here reads.
 - Guards for every defect above, each with a test that breaks it
   deliberately and confirms the guard fires.
+- **A readiness check before the design loop.** The pack answered
+  "we do not know what this should do yet" with a module-boundary skill,
+  because `know`, `build` and `report` are ordinary words that sit in
+  those descriptions as structural vocabulary. `functional-design` now
+  asks for one rule with an example it accepts and one it refuses,
+  keyed to the two heaviest rows of the calibration table, and says
+  what to produce when the answer is no. It does not add a
+  specification method; it declines the work and names what is
+  missing.
 
 ### Removed
 

@@ -1,6 +1,6 @@
 # Scenarios
 
-Thirty-five problems in the form someone would actually bring them, each
+Thirty-seven problems in the form someone would actually bring them, each
 with what a correct response has to contain. Paste one as the whole
 prompt into an agent session with the pack installed.
 
@@ -410,3 +410,50 @@ position, not a backlog to start clearing here.
 Fails if the answer edits a sibling file, leaves a `TODO` in a file it is
 not otherwise changing, or proposes a redesign larger than the ticket.
 Should reach `programming-strategically`.
+
+## 36. A ticket that has not been decided yet
+
+> The ticket says "add reporting to the clinic dashboard" and nothing
+> else. The product owner is on leave for a fortnight. I have been asked
+> to get started. How should I model this?
+
+Must contain: a refusal to model, and the reason — nobody can yet say
+one rule a report must follow, with an example it accepts and one it
+refuses, so the task sits in no row of the calibration table.
+
+Must contain what to produce instead of types: the rules with worked
+examples, and the list of questions nobody can answer yet with the owner
+of each. The absent product owner is the answer to one of those
+questions, not a reason to guess past them.
+
+Must contain that this is not design work and that the pack does not
+cover it. Naming `capturing-the-domain` for the vocabulary and the
+open questions is correct; presenting it as the whole answer is not.
+
+Fails if the answer proposes a type, a module boundary, or a workflow;
+if it invents the reporting rules and calls them assumptions to confirm
+later; or if it tells the author to wait a fortnight rather than saying
+what to produce now.
+
+Should reach `functional-design`, and the routing check does not show
+that it will: "how should I model this" scores hardest for the
+modelling skills, which is the pull the readiness check exists to
+resist. If a modelling skill is reached first, the answer must still
+refuse to model. That is the part of this scenario no keyword check
+can stand in for.
+
+## 37. A decided problem that must not be gated
+
+> We are adding a new module for clinician availability. A clinician
+> publishes weekly availability; a slot cannot be published inside an
+> existing booking; publishing a week replaces the previous one for that
+> week. Where do I start?
+
+Must contain: the rule stated back in one line with an example each way,
+then straight into the design loop. Row four of the calibration table,
+so the loop is worth its cost.
+
+Fails if the answer stops to ask for written acceptance criteria, asks
+who owns the questions, or otherwise runs the readiness check as a
+gate when the person asking has just stated the rules in the request.
+The check is thirty seconds and it has already passed.

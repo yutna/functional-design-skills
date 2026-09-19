@@ -1,6 +1,6 @@
 ---
 name: functional-design
-description: Use when starting design or review, when deciding how much design a task warrants, from a throwaway script to a new subsystem, or when unsure which skill fits.
+description: Use when starting design or review, deciding how much design a task warrants, from a throwaway script to a subsystem, unsure which skill fits, or the requirement is undecided.
 license: MIT
 metadata:
   version: 2.0.0
@@ -27,7 +27,8 @@ and hide everything else behind deep interfaces.
 - Reviewing a design or a diff and needing a concrete checklist
 - Unsure which skill in this pack applies to the problem in front of you
 
-Not for: language syntax lookups, or build and tooling problems.
+Not for: language syntax lookups, build and tooling problems, or
+deciding what the software should do in the first place.
 
 ## How much design does this need?
 
@@ -65,6 +66,37 @@ problem did not ask for, which is the definition of complexity these
 skills exist to remove. See
 [calibration.md](references/calibration.md) for the failure modes in
 both directions.
+
+## Is the problem decided?
+
+The last two rows assume the problem is settled and the open question is
+what shape the code takes. Check that before entering the loop, in one
+move:
+
+**State one rule the software must follow, with an example it accepts
+and an example it refuses.**
+
+If that comes out in a sentence, write the sentence down and start. The
+check costs thirty seconds, and what it asks for is a spoken rule, not a
+document. Demanding a written specification from someone who can simply
+say the rule is applying a heavier row than the task calls for.
+
+If it does not come out, the task is in no row on this table, and what
+is missing is not design:
+
+- the rules, each with an example it accepts and one it refuses
+- the questions nobody can answer yet, each with the person who owns it
+
+Producing those is a different activity, usually with different people
+in the room, and no amount of modelling substitutes for it. Types
+written over an undecided problem still compile; they encode the guess
+and make it expensive to revisit.
+
+[capturing-the-domain](../capturing-the-domain/SKILL.md) covers part of
+this. Its discovery procedure produces the events, the vocabulary, and
+the places where the experts disagree, which is most of the way there.
+It stops short of rules with worked examples, and that last piece is
+not design work.
 
 ## The design loop
 
