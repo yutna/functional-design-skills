@@ -35,7 +35,11 @@ fi
 mkdir -p "$CLAUDE_DIR"
 
 count=0
-for src in "$SKILLS_SRC"/*/; do
+# No trailing slash on the glob: with one, the shell sorts
+# "functional-typescript-effect/" before "functional-typescript/",
+# because "-" sorts before "/". The PowerShell pair and both Node
+# scripts sort by name, and this is the only place that did not.
+for src in "$SKILLS_SRC"/*; do
   [ -d "$src" ] || continue
   name="$(basename "$src")"
 
