@@ -90,6 +90,10 @@ we had an incident and the logs could not tell us why -> designing-what-to-obser
 what should we measure and what should we alert on -> designing-what-to-observe
 which of these skills applies to my problem -> functional-design
 how much design does a one-off throwaway script need -> functional-design
+the requirement is too vague to start designing -> functional-design
+how do i start designing when the rules are not agreed yet -> functional-design
+how much design can i do before the rules are decided -> functional-design
+we were asked to design this but nobody agrees what it does -> functional-design
 we have no type checker, plain javascript, how do tagged unions work -> functional-javascript
 how do i make a nominal type in typescript -> functional-typescript
 we use the effect library, how do i declare a service and a layer -> functional-typescript-effect
