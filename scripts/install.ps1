@@ -57,7 +57,17 @@ foreach ($src in Get-ChildItem -LiteralPath $skillsSrc -Directory) {
 
   if (Test-Path -LiteralPath $dest) {
     $owner = Get-PackName $dest
-    if ($owner -and $owner -ne $packName) {
+    # A directory that names no pack is not this pack's to delete. Most
+    # skills in the world carry no marker -- metadata.pack is this pack's
+    # own convention -- so treating "unmarked" as "mine" meant -Force
+    # removed a stranger's work without saying so. Being told to remove it
+    # by hand is the cost of never doing that.
+    if (-not $owner) {
+      Write-Host "unmarked $($src.Name) claims no pack; remove it first if this pack should own it"
+      $conflicts++
+      continue
+    }
+    if ($owner -ne $packName) {
       Write-Host "conflict $($src.Name) belongs to $owner; remove it first"
       $conflicts++
       continue
@@ -86,8 +96,9 @@ Write-Host ''
 Write-Host "$installed skill(s) installed, $skipped skipped, $conflicts in conflict"
 
 if ($conflicts -gt 0) {
-  Write-Host 'A conflict means another pack already owns that skill name.'
-  Write-Host 'Remove the directory yourself if you want this pack to own it.'
+  Write-Host 'A conflict means that skill name is already taken, by another'
+  Write-Host 'pack or by something that does not say. Neither is replaced, even'
+  Write-Host 'with -Force. Remove the directory yourself to hand it over.'
 }
 
 if ($installed -gt 0 -and -not $DryRun) {
