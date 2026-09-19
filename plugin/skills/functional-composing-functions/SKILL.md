@@ -4,7 +4,7 @@ description: Use when two steps do not fit together, when deciding parameter ord
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 2.0.1
+  version: 3.0.0
 ---
 
 # Composing Functions

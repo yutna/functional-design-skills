@@ -4,7 +4,7 @@ description: Use when a function takes a whole service to use one part, when add
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 2.0.1
+  version: 3.0.0
 ---
 
 # Applying SOLID Functionally

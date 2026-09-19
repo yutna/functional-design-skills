@@ -64,7 +64,7 @@ Two things came out of building it anyway, both worth knowing:
   whichever zero-scoring skill sorts earliest. The first measurement of
   noise reproduced alphabetical order almost exactly before it was
   restricted to skills that actually matched a word.
-- **Coverage is not inflated by that.** Checked directly: zero of the 142
+- **Coverage is not inflated by that.** Checked directly: zero of the 145
   cases place their expected skill in the top three with a score of zero.
   Every pass is earned on shared vocabulary. The gate is sound.
 
@@ -75,7 +75,7 @@ no gate, because it reads as coverage that is not there.
 
 ## 2. Scenarios — manual, against a real agent
 
-[scenarios.md](scenarios.md) holds thirty-nine fuller problems, each a
+[scenarios.md](scenarios.md) holds forty-two fuller problems, each a
 paragraph of realistic context with the response a correct answer must
 contain. Run them by hand in an agent session with the pack installed:
 
@@ -105,6 +105,7 @@ a trigger word or the expected skill was the wrong answer -- fix whichever
 it is, and leave the wording alone.
 
 Scenarios come in pairs where a rule has a direction. Scenario 30 must
-take the generic route and scenario 31 must refuse it; testing only the
+take the generic route and scenario 31 must refuse it; scenario 41 must
+adopt a statechart and scenario 42 must refuse one. Testing only the
 permissive direction would not notice a rule that had become an escape
 hatch.

@@ -472,6 +472,36 @@ function validateExactDependencies () {
   }
 }
 
+// A version bump touches package.json, the two manifests, and every skill,
+// which invites a find-and-replace across the repository. Doing that caught
+// twenty-one dependencies in package-lock.json whose version happened to
+// match the one being replaced, and npm ci did not notice: it installs from
+// the resolved URL and the integrity hash, so a wrong version field is a
+// lock file that lies rather than one that fails. The URL carries the real
+// version, so the two can be compared.
+const TARBALL = /\/(?:@[^/]+\/)?([^/]+)\/-\/[^/]+-(\d[^/]*)\.tgz$/
+
+function validateLockVersions () {
+  let lock
+  try {
+    lock = readJson('package-lock.json')
+  } catch {
+    errors.push('package-lock.json: not found or not valid JSON')
+    return
+  }
+  for (const [path, entry] of Object.entries(lock.packages ?? {})) {
+    if (path === '' || typeof entry.resolved !== 'string') continue
+    const match = TARBALL.exec(entry.resolved)
+    if (match === null) continue
+    if (entry.version !== match[2]) {
+      errors.push(
+        `package-lock.json: "${path}" says version "${entry.version}" but ` +
+          `resolves to "${match[2]}"`,
+      )
+    }
+  }
+}
+
 // Two skills that could each claim a task means neither is chosen reliably.
 // Identical text is the only case a script can settle; the rest is what
 // eval-routing.mjs measures.
@@ -552,6 +582,7 @@ validateLinks()
 validateManifestVersions()
 validateNoPackageFilesInPlugin()
 validateExactDependencies()
+validateLockVersions()
 validateEvalNames(skillIds)
 validateParentPack(skillIds)
 if (errors.length === 0) {

@@ -150,4 +150,7 @@ we need one machine per row each with its own lifetime -> functional-typescript-
 is a statechart worth it or is a reducer enough -> functional-typescript-xstate
 what belongs in the global store and what does not -> functional-typescript-react
 our selectors recompute on every dispatch -> functional-typescript-react
+should this be a typed record or just a map -> functional-choosing-types-or-plain-data
+the schema should be a value we can inspect at runtime -> functional-choosing-types-or-plain-data
+we have a type per concept and generic operations are impossible -> functional-choosing-types-or-plain-data
 ```

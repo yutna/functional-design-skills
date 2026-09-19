@@ -6,7 +6,24 @@ skills or guidance, a patch one corrects what is already there.
 
 [semantic versioning]: https://semver.org
 
-## Unreleased
+## 3.0.0
+
+Every skill was renamed, so every install needs attention; see
+"Upgrading from 2.x" in the README. What that rename bought is the
+ability to install this pack beside another without either one
+silently losing skills to the other.
+
+The rest of the release came out of an audit that read all forty
+skills and measured them rather than reading them alone. It found
+less missing than expected and less findable than expected: one
+genuine content gap, five skills whose right answer existed and could
+not be reached, and four conventions that depended on care where a
+script would do.
+
+Counts, before and after: forty skills to forty-three, sixteen guards
+to twenty-eight, 105 routing cases to 142, thirty-seven scenarios to
+forty-two, and nothing labelled with how strictly it was meant to 258
+rules that are.
 
 ### Breaking: every skill is now named `functional-something`
 
@@ -204,7 +221,29 @@ Nine routing cases were added first and watched to fail, then the
 descriptions were changed. Coverage went from 106 of 114 to 114 of 114,
 and the number placing their skill first from 81 to 87.
 
-### The rest
+### Also
+
+- **Three symptoms in a data-first vocabulary now reach the skill that
+  answers them.** A typed record against a map, a schema as a runtime
+  value, and a type per concept blocking generic code all reached
+  `functional-choosing-types-or-plain-data` at ranks six to eight.
+  The description carries those words now. The skill's content did not
+  change: the whole data-first position was already there, with the
+  two direct contradictions named and traded off rather than waved at.
+
+- **Three scenarios**, including a pair that tests a rule in both
+  directions: one lifecycle that must adopt a statechart and one that
+  must refuse it. Testing only the permissive direction would not
+  notice a rule that had become an escape hatch.
+- **A twenty-eighth guard**, found by making the mistake it catches.
+  Bumping the version with a find-and-replace rewrote twenty-one
+  dependency versions in `package-lock.json` that happened to match
+  the number being replaced. `npm ci` did not notice, because it
+  installs from the resolved URL and the integrity hash, so the lock
+  file lied rather than failed. Each locked version is now compared
+  against the URL it resolves to.
+
+### Mechanism: four conventions became checks
 
 Mechanism, not guidance. Nothing about what the pack recommends has
 changed; what changed is that a reader can now tell how firmly each rule

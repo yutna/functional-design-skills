@@ -92,6 +92,28 @@ There is nothing to build and no dependency to install.
 
 Start a new session afterwards, whichever route you took.
 
+### Upgrading from 2.x
+
+Every skill was renamed in 3.0.0: the thirty-three core skills gained
+the `functional-` prefix the index and the language packs already had.
+Skills install flat into `~/.claude/skills/`, where a name like
+`hiding-information` is one any pack might claim, and the second pack
+to claim it lost silently.
+
+The plugin route replaces the old skills and needs nothing from you.
+The install script does not delete what it did not install, so remove
+the old directories first:
+
+```bash
+cd ~/.claude/skills
+ls -d */ | grep -v '^functional-' | xargs rm -rf
+```
+
+Check what that would remove before running it if anything else lives
+there. From 3.0.0 on, each skill records the pack it came from, and
+the installers report a name another pack owns as `conflict` rather
+than skipping it.
+
 ## Tell the agent the pack is there
 
 Installing puts the rules within reach. It does not say what outranks
