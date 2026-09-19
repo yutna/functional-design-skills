@@ -1,0 +1,34 @@
+{
+  "name": "functional-design-skills",
+  "version": "2.0.0",
+  "description": "Agent Skills carrying design rules for codebases written in a functional style: diagnosing complexity, modelling a domain in types, composing workflows of total functions, module boundaries, effects at the edges, and refactoring imperative code toward all of it",
+  "author": {
+    "name": "Yutthana Siphuengchai",
+    "url": "https://github.com/yutna"
+  },
+  "homepage": "https://github.com/yutna/functional-design-skills",
+  "repository": "https://github.com/yutna/functional-design-skills",
+  "license": "MIT",
+  "keywords": [
+    "functional-programming",
+    "software-design",
+    "domain-modelling",
+    "type-driven-design",
+    "refactoring",
+    "code-review",
+    "architecture"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Functional Design Skills",
+    "shortDescription": "Design rules for codebases written in a functional style",
+    "longDescription": "Diagnose what a design costs, model a domain so illegal states cannot be built, compose workflows out of total functions with errors as values, keep effects at the edges, and move imperative code toward all of it. Language packs translate the rules into JavaScript, TypeScript, React and Next.js, and Elixir and Phoenix.",
+    "developerName": "Yutthana Siphuengchai",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/yutna/functional-design-skills"
+  }
+}
