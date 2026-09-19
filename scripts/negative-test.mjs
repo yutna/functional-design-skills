@@ -13,8 +13,8 @@
 // Usage: node scripts/negative-test.mjs
 
 import {
-  cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, symlinkSync,
-  unlinkSync, writeFileSync,
+  cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync,
+  symlinkSync, unlinkSync, writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
@@ -366,6 +366,85 @@ for (const script of SCRIPTS) {
 }
 rmSync(empty, { recursive: true, force: true })
 
+// The installer, run for real. Continuous integration only ever passed it
+// --dry-run, which writes nothing and therefore proves nothing about the
+// two branches that matter: what happens when a name is already taken, and
+// what --force is allowed to delete. Both were wrong.
+const installer = process.platform === 'win32'
+  ? { command: 'pwsh', args: ['-NoProfile', '-File', join(ROOT, 'scripts', 'install.ps1')], force: '-Force' }
+  : { command: 'bash', args: [join(ROOT, 'scripts', 'install.sh')], force: '--force' }
+
+function install (home, ...extra) {
+  const result = spawnSync(installer.command, [...installer.args, ...extra], {
+    encoding: 'utf8',
+    env: { ...process.env, HOME: home, USERPROFILE: home },
+  })
+  return `${result.stdout}${result.stderr}`
+}
+
+function skillDir (home, name) {
+  return join(home, '.claude', 'skills', name)
+}
+
+function placeSkill (home, name, frontmatter) {
+  const dir = skillDir(home, name)
+  mkdirSync(dir, { recursive: true })
+  writeFileSync(join(dir, 'SKILL.md'), frontmatter)
+  return join(dir, 'SKILL.md')
+}
+
+const canInstall = installer.command === 'bash' ||
+  spawnSync('pwsh', ['-NoProfile', '-Command', 'exit 0']).status === 0
+if (!canInstall) {
+  process.stdout.write('inst skip no pwsh on PATH; the installer is not exercised\n')
+} else {
+  const home = mkdtempSync(join(tmpdir(), 'fds-home-'))
+  const expect = (label, output, wanted) => {
+    if (output.includes(wanted)) {
+      process.stdout.write(`inst ok  ${label}\n`)
+    } else {
+      process.stderr.write(`inst FAIL ${label} -> expected "${wanted}", got:\n${output}\n`)
+      failures++
+    }
+  }
+
+  const fresh = install(home)
+  expect('a first install copies every skill', fresh, '0 skipped, 0 in conflict')
+  expect('a second install skips them all', install(home), '0 skill(s) installed')
+
+  // A Windows checkout ends Markdown lines \r\n, and Git Bash and WSL read
+  // it that way. The shell installer took the pack name to be
+  // "functional-design-skills\r", matched nothing, and called all
+  // forty-three of this pack's own skills somebody else's.
+  for (const entry of readdirSync(join(home, '.claude', 'skills'))) {
+    const file = join(skillDir(home, entry), 'SKILL.md')
+    writeFileSync(file, readFileSync(file, 'utf8').replace(/\r?\n/g, '\r\n'))
+  }
+  expect('CRLF in an installed skill is not a conflict', install(home), '0 in conflict')
+
+  rmSync(join(home, '.claude'), { recursive: true, force: true })
+  placeSkill(home, 'functional-design',
+    '---\nname: functional-design\nmetadata:\n  pack: another-pack\n---\n')
+  expect('another pack owning the name is refused', install(home, installer.force),
+    'conflict functional-design belongs to another-pack')
+
+  // The one that lost data. metadata.pack is this pack's own convention, so
+  // almost every skill in the world carries no marker; treating unmarked as
+  // "mine" meant --force deleted a stranger's work without a word.
+  const stranger = placeSkill(home, 'functional-design',
+    '---\nname: functional-design\n---\n\n# Not from this pack at all\n')
+  expect('an unmarked directory is refused too', install(home, installer.force),
+    'unmarked functional-design claims no pack')
+  if (readFileSync(stranger, 'utf8').includes('Not from this pack at all')) {
+    process.stdout.write('inst ok  --force left the unmarked directory alone\n')
+  } else {
+    process.stderr.write('inst FAIL --force deleted a directory this pack does not own\n')
+    failures++
+  }
+
+  rmSync(home, { recursive: true, force: true })
+}
+
 rmSync(work, { recursive: true, force: true })
 
 if (failures > 0) {
@@ -374,6 +453,7 @@ if (failures > 0) {
 }
 process.stdout.write(
   `\n${CASES.length + CREATED.length} guard(s) fired on the defect each was ` +
-    `written for, ${SCRIPTS.length} read a CRLF checkout unchanged, and ` +
-    `${SCRIPTS.length} refused to pass with nothing to read\n`,
+    `written for, ${SCRIPTS.length} read a CRLF checkout unchanged, ` +
+    `${SCRIPTS.length} refused to pass with nothing to read, and the ` +
+    `installer did the right thing with a name it does not own\n`,
 )

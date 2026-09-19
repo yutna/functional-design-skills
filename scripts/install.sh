@@ -55,8 +55,14 @@ PACK_NAME="functional-design-skills"
 # same directory name. Without this the second install just says "skip" and
 # the user is quietly missing skills they believe they installed. Every
 # SKILL.md carries the pack it came from under metadata.pack.
+# tr -d '\r' because a Windows checkout of a Markdown file ends its lines
+# \r\n, and Git Bash and WSL both read it that way. Without it the pack name
+# came back as "functional-design-skills\r", matched nothing, and every one
+# of this pack's own skills was reported as belonging to somebody else:
+# forty-three conflicts and nothing installed.
 pack_of() {
   sed -n '1,20p' "$1/SKILL.md" 2>/dev/null \
+    | tr -d '\r' \
     | sed -n 's/^  pack: *//p' | head -n 1
 }
 
@@ -71,7 +77,17 @@ for src in "$SKILLS_SRC"/*; do
 
   if [ -e "$dest" ] || [ -L "$dest" ]; then
     owner="$(pack_of "$dest")"
-    if [ -n "$owner" ] && [ "$owner" != "$PACK_NAME" ]; then
+    # A directory that names no pack is not this pack's to delete. Most
+    # skills in the world carry no marker -- metadata.pack is this pack's
+    # own convention -- so treating "unmarked" as "mine" meant --force
+    # removed a stranger's work without saying so. Being told to remove it
+    # by hand is the cost of never doing that.
+    if [ -z "$owner" ]; then
+      printf 'unmarked %s claims no pack; remove it first if this pack should own it\n' "$name"
+      conflicts=$((conflicts + 1))
+      continue
+    fi
+    if [ "$owner" != "$PACK_NAME" ]; then
       printf 'conflict %s belongs to %s; remove it first\n' "$name" "$owner"
       conflicts=$((conflicts + 1))
       continue
@@ -101,8 +117,9 @@ printf '\n%d skill(s) installed, %d skipped, %d in conflict\n' \
   "$installed" "$skipped" "$conflicts"
 
 if [ "$conflicts" -gt 0 ]; then
-  printf 'A conflict means another pack already owns that skill name.\n'
-  printf 'Remove the directory yourself if you want this pack to own it.\n'
+  printf 'A conflict means that skill name is already taken, by another\n'
+  printf 'pack or by something that does not say. Neither is replaced, even\n'
+  printf 'with --force. Remove the directory yourself to hand it over.\n'
 fi
 
 if [ "$installed" -gt 0 ] && [ "$dry_run" -eq 0 ]; then

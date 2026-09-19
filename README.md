@@ -72,7 +72,8 @@ cd functional-design-skills
 ```
 
 Options: `--force` to replace an existing copy, `--dry-run` to see what
-it would do.
+it would do. `--force` replaces this pack's own skills and nothing else;
+a name held by anything it did not install is reported and left alone.
 
 On Windows, without needing a shell or WSL:
 
@@ -112,7 +113,11 @@ ls -d */ | grep -v '^functional-' | xargs rm -rf
 Check what that would remove before running it if anything else lives
 there. From 3.0.0 on, each skill records the pack it came from, and
 the installers report a name another pack owns as `conflict` rather
-than skipping it.
+than skipping it. A directory that records no pack at all is reported
+as `unmarked` and is never replaced, `--force` included: the marker is
+this pack's own convention, so an unmarked skill is more likely to be
+someone else's than an old copy of this one. Remove it by hand to hand
+the name over.
 
 ## Tell the agent the pack is there
 
