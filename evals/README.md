@@ -6,14 +6,14 @@ prove different things, and neither proves what the other does.
 ## 1. Routing keyword coverage — automated
 
 ```sh
-python3 scripts/eval-routing.py            # summary, plus any miss
-python3 scripts/eval-routing.py --report   # rank for every case
+node scripts/eval-routing.mjs            # summary, plus any miss
+node scripts/eval-routing.mjs --report   # rank for every case
 ```
 
 Scores each symptom in [routing-cases.md](routing-cases.md) against the
 `name` and `description` of every skill — the text an agent sees before
 it opens anything — and reports where the expected skill ranked. It runs
-in `scripts/verify.sh` and fails the build if any expected skill falls
+in `npm test` and fails the build if any expected skill falls
 outside the top three.
 
 **What it proves:** every skill's description contains enough of the

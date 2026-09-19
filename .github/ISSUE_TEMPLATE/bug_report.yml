@@ -1,0 +1,43 @@
+name: Problem with a skill
+description: A skill gave wrong guidance, or did not trigger when it should have
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        A concrete transcript is worth far more than a general report.
+        Most problems turn out to be triggering problems rather than
+        content problems.
+  - type: input
+    id: skill
+    attributes:
+      label: Which skill
+      description: >
+        The directory name, such as `making-illegal-states-unrepresentable`.
+        Write "none triggered" if the agent answered without reaching one.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Claude Code version
+      description: The output of `claude --version`.
+  - type: textarea
+    id: asked
+    attributes:
+      label: What you asked
+      description: The prompt, as close to verbatim as you can manage.
+    validations:
+      required: true
+  - type: textarea
+    id: happened
+    attributes:
+      label: What the agent produced
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead
+    validations:
+      required: true

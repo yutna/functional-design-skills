@@ -1,0 +1,18 @@
+# Only GitHub Actions are updated automatically.
+#
+# npm is deliberately left out. markdownlint runs here with default rules and
+# no configuration file, so a new release can add a rule and turn the build
+# red with no content change. Those bumps want a person deciding when to take
+# them. Security advisories still arrive, through Dependabot security updates
+# rather than through this file.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    labels:
+      - dependencies
+      - chore
+    commit-message:
+      prefix: "chore"

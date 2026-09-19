@@ -1,7 +1,7 @@
 # Routing Cases
 
 Symptoms in the words someone would actually use, each with the skill
-that should answer it. Read by `scripts/eval-routing.py`, which checks
+that should answer it. Read by `scripts/eval-routing.mjs`, which checks
 that each expected skill's `name` and `description` contain enough of
 those words to be found.
 
