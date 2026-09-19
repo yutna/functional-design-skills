@@ -108,4 +108,5 @@ two requests read the same balance and one update was lost -> managing-state-imm
 how do i test a lifecycle against random sequences of commands -> testing-functional-code
 which property testing library should we use -> testing-functional-code
 copying a large map on every update shows up in the profile -> managing-state-immutably
+updating one field three levels down means rebuilding every level above it -> managing-state-immutably
 ```

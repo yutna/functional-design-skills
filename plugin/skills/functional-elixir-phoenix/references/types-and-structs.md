@@ -7,6 +7,7 @@
 - [Tagged tuples for choices](#tagged-tuples-for-choices)
 - [Guards as constraints](#guards-as-constraints)
 - [Typespecs and Dialyzer](#typespecs-and-dialyzer)
+- [Updating nested structs](#updating-nested-structs)
 - [Immutability caveats](#immutability-caveats)
 - [Testing](#testing)
 
@@ -127,6 +128,61 @@ Dialyzer proves absence of type errors rather than presence of
 correctness, so it will not catch everything a stricter language would.
 It does catch the impossible-match and unreachable-clause mistakes that
 follow from a refactor, which is most of the value.
+
+## Updating nested structs
+
+The update syntax only reaches one level, so changing a field three
+levels down restates the two levels that are not changing:
+
+```elixir
+%{
+  booking
+  | clinic: %{
+      booking.clinic
+      | address: %{booking.clinic.address | city: "York"}
+    }
+}
+```
+
+Every restatement is a place to name the wrong struct. The `*_in`
+family does the same thing in one line:
+
+```elixir
+booking = put_in(booking.clinic.address.city, "York")
+booking = update_in(booking.notes, &["late arrival" | &1])
+{old_code, booking} = get_and_update_in(booking.clinic.address.postcode,
+                        fn code -> {code, "YO1"} end)
+```
+
+Three things decide which form to write.
+
+**The dot form is for structs.** It is resolved when the module
+compiles, so a misspelled field is a compile error rather than a
+`nil` at run time.
+
+**The bracket form is for maps and keyword lists.** A struct does not
+implement `Access`, so `booking[:clinic]` raises
+`UndefinedFunctionError`. Use brackets for options, parsed JSON, and
+anything whose keys are data.
+
+```elixir
+opts = put_in(opts[:retry][:max], 3)
+```
+
+**A path decided at run time is a list**, and `Access.key!/1` is the
+element that reaches into a struct. `Access.key/2` is the same with a
+default instead of a raise; `Access.all/0` and `Access.at/1` walk a
+list.
+
+```elixir
+path = [Access.key!(:clinic), Access.key!(:address), Access.key!(:city)]
+booking = put_in(booking, path, "York")
+```
+
+Keep these inside the module that owns the struct. A caller reaching
+three levels into a value with a path is the same coupling as reaching
+three levels in with dots, written more compactly. See
+[hiding-information](../../hiding-information/SKILL.md).
 
 ## Immutability caveats
 

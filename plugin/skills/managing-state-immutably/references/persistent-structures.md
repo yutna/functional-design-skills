@@ -9,6 +9,7 @@ does not copy the map.
 
 - [Structural sharing](#structural-sharing)
 - [Choosing the structure](#choosing-the-structure)
+- [Updating deep inside a structure](#updating-deep-inside-a-structure)
 - [Cost model](#cost-model)
 - [Batch updates](#batch-updates)
 - [Immutability in languages without persistent collections](#immutability-in-languages-without-persistent-collections)
@@ -77,6 +78,41 @@ Two ways out, and they are not the same thing:
 
 Reach for the first when a profile shows copying costs, and the second
 when the pain is nested updates rather than size.
+
+## Updating deep inside a structure
+
+Structural sharing makes a deep update cheap. It does not make it
+readable: rebuilding a record three levels down by hand restates every
+level that did not change, and the restating is where the mistakes get
+in. Both ecosystems the language packs cover have a direct answer, and
+neither of them is a lens library.
+
+**Elixir** has `get_in/1`, `put_in/2`, `update_in/2`,
+`get_and_update_in/2` and `pop_in/1`, in two forms that are not
+interchangeable.
+
+```elixir
+# dot form: works on structs, and the path is resolved at compile time
+booking = put_in(booking.clinic.address.city, "York")
+booking = update_in(booking.notes, &["late arrival" | &1])
+
+# bracket form: maps and keyword lists only, because a struct does not
+# implement Access, so booking[:clinic] raises
+opts = put_in(opts[:retry][:max], 3)
+
+# path decided at run time; Access.key!/1 is what reaches into a struct
+path = [Access.key!(:clinic), Access.key!(:address), Access.key!(:city)]
+booking = put_in(booking, path, "York")
+```
+
+**JavaScript and TypeScript** have no equivalent built in. That is the
+nested update problem `immer` exists for: write the change as though
+mutating a draft, and receive a new frozen value.
+
+A lens library earns its vocabulary only when paths become values in
+their own right, stored and passed and composed with each other. Naming
+one path is a small gain; the vocabulary that arrives with it is not
+small.
 
 ## Cost model
 
