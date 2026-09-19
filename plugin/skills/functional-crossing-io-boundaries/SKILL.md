@@ -35,7 +35,7 @@ Not for: deciding what the domain types should be, which is
 
 ## Core rules
 
-1. Default. **Two type families, always.** Domain types inside; transfer types
+1. Rule. **Two type families, always.** Domain types inside; transfer types
    at the edge. Even when they look identical today.
 2. Rule. **Transfer types are dumb.** Primitives, plain records, nullable
    fields, no invariants. Their job is to survive transmission.
