@@ -3,6 +3,7 @@ name: parameterizing-dependencies
 description: Use when domain code needs a database, clock, or service, when tests need heavy mocking, or when deciding how to supply I/O to business logic.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -74,20 +75,20 @@ where that payoff is real.
 
 ## Core rules
 
-1. **Prefer rejection, then parameterization, then interpretation.**
+1. Default. **Prefer rejection, then parameterization, then interpretation.**
    Reach for the heaviest only when the lighter ones do not fit.
-2. **Declare the function type in the domain**, in the domain's words.
+2. Default. **Declare the function type in the domain**, in the domain's words.
    `GetTreatmentPrice`, not `ITreatmentRepository`.
-3. **One function type per capability used**, not one record per service.
-   See
+3. Default. **One function type per capability used**, not one record per
+   service. See
    [applying-solid-functionally](../applying-solid-functionally/SKILL.md).
-4. **Dependencies first, data last**, so partial application produces the
-   shape a pipeline wants.
-5. **Bind dependencies once, at the edge.** The wiring happens in one
+4. Default. **Dependencies first, data last**, so partial application produces
+   the shape a pipeline wants.
+5. Default. **Bind dependencies once, at the edge.** The wiring happens in one
    composition-root function, not at every call site.
-6. **Never thread a dependency through a function that does not use it.**
+6. Rule. **Never thread a dependency through a function that does not use it.**
    Apply it where it is needed, so intermediate signatures stay clean.
-7. **Treat time, randomness, and identifier generation as dependencies.**
+7. Rule. **Treat time, randomness, and identifier generation as dependencies.**
    They are I/O wearing an innocent face.
 
 ## Pattern

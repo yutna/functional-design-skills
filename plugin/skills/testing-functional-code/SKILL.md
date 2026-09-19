@@ -3,6 +3,7 @@ name: testing-functional-code
 description: Use when writing tests for functional code, when tests need heavy mocking or a database to check a rule, or when deciding what to test and how.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -33,20 +34,20 @@ you when it is wrong.
 
 ## Core rules
 
-1. **Test the core with values.** No framework, no doubles, no setup. If
+1. Rule. **Test the core with values.** No framework, no doubles, no setup. If
    that is not possible, fix the design first.
-2. **Test the shell with a few integration tests.** Prove the wiring, the
-   mapping, and the transactions; do not re-test business rules there.
-3. **Stub capabilities with plain functions.** A dependency that needs a
-   mocking library is too wide. See
+2. Default. **Test the shell with a few integration tests.** Prove the wiring,
+   the mapping, and the transactions; do not re-test business rules there.
+3. Default. **Stub capabilities with plain functions.** A dependency that needs
+   a mocking library is too wide. See
    [applying-solid-functionally](../applying-solid-functionally/SKILL.md).
-4. **Assert on returned values, not on interactions.** A test that checks
+4. Rule. **Assert on returned values, not on interactions.** A test that checks
    which functions were called is testing the implementation.
-5. **Use properties where the rule is general.** Round trips, invariants,
-   and totality are better stated as properties than as examples.
-6. **Test the design, not the coverage number.** A suite that covers
+5. Default. **Use properties where the rule is general.** Round trips,
+   invariants, and totality are better stated as properties than as examples.
+6. Default. **Test the design, not the coverage number.** A suite that covers
    every line and no failure mode is worse than an honest smaller one.
-7. **Let a hard test change the design.** Difficulty is information.
+7. Judgement. **Let a hard test change the design.** Difficulty is information.
 
 ## What to test where
 

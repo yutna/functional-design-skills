@@ -27,7 +27,7 @@ load them. The directory it creates is gitignored.
 ## Verifying a change
 
 ```bash
-npm test          # lint, skills, prose, code examples, routing coverage
+npm test          # lint, skills, prose, examples, rules, counts, routing
 npm run test:guards   # break every guard and confirm it fires
 ```
 
@@ -60,6 +60,18 @@ node scripts/eval-routing.mjs --profile full  # also score the "When to use" sec
 - Dependencies are pinned to an exact version, never a range.
 - No book titles, author names, or bibliographic references in any
   tracked file.
+- Every numbered item under `## Core rules` opens with `Rule.`,
+  `Default.`, or `Judgement.` so a reader can tell a contract from a
+  preference. `Rule` means breaking it is a defect; `Default` means do
+  this unless a stated condition holds; `Judgement` means two answers
+  are defensible.
+- Every skill carries `metadata.pack`, which the installer reads to tell
+  "already installed" from "another pack owns this name".
+- A skill whose name extends another's links to it and repeats no
+  paragraph from it.
+- A count written in prose is registered in
+  `scripts/validate-counts.mjs`, so it cannot drift from the thing it
+  counts.
 - Scripts are JavaScript, shell, or PowerShell, and nothing else.
 
 ## Adding a skill

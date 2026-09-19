@@ -3,6 +3,7 @@ name: crossing-io-boundaries
 description: Use when mapping between domain types and JSON, database rows, or API payloads, or when a storage or wire shape has leaked into the domain model.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -34,20 +35,20 @@ Not for: deciding what the domain types should be, which is
 
 ## Core rules
 
-1. **Two type families, always.** Domain types inside; transfer types at
-   the edge. Even when they look identical today.
-2. **Transfer types are dumb.** Primitives, plain records, nullable
+1. Default. **Two type families, always.** Domain types inside; transfer types
+   at the edge. Even when they look identical today.
+2. Rule. **Transfer types are dumb.** Primitives, plain records, nullable
    fields, no invariants. Their job is to survive transmission.
-3. **Parse inward, serialise outward.** One function each direction, per
+3. Rule. **Parse inward, serialise outward.** One function each direction, per
    boundary.
-4. **Parsing returns `Result`.** The outside can always send something
-   the domain forbids.
-5. **Serialising is total.** A valid domain value can always be written
+4. Rule. **Parsing returns `Result`.** The outside can always send something the
+   domain forbids.
+5. Rule. **Serialising is total.** A valid domain value can always be written
    out, so it needs no failure case.
-6. **Validate once, at the boundary.** Nothing downstream re-checks.
-7. **Version the transfer type, not the domain type.** Add a new transfer
-   version and a new mapping; leave the domain alone.
-8. **Keep the domain persistence-ignorant.** No annotations, no base
+6. Rule. **Validate once, at the boundary.** Nothing downstream re-checks.
+7. Default. **Version the transfer type, not the domain type.** Add a new
+   transfer version and a new mapping; leave the domain alone.
+8. Rule. **Keep the domain persistence-ignorant.** No annotations, no base
    types, no lazy-loading proxies, no framework attributes.
 
 ## Pattern

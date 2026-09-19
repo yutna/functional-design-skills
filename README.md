@@ -137,7 +137,16 @@ the wrong directory.
 The symptom is a wrapper type on a throwaway script, a new error union
 for a one-line change, or a review finding against something the team
 decided on purpose. The cause is the agent applying a heavier rule than
-the task warrants. Three things fix it, in order of how much they buy:
+the task warrants.
+
+Every core rule says how strictly it is meant, as the first word of the
+item. `Rule` means breaking it is a defect. `Default` means do this
+unless the stated condition holds. `Judgement` means two answers are
+defensible and the skill says what tips it. An agent that quotes a
+`Default` as though it were a `Rule` is misreading the pack, and saying
+so is usually enough.
+
+Three more things fix it, in order of how much they buy:
 
 1. **Say what outranks what**, as in the snippet above. Most
    over-application is an agent with no stated precedence treating every

@@ -3,6 +3,7 @@ name: handling-errors-with-results
 description: Use when a function throws and callers cannot tell, when exceptions cross module boundaries, or when validation must report every problem.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -34,20 +35,19 @@ Not for: failures that can be removed by design, which is
 
 ## Core rules
 
-1. **Expected failures are values.** If a caller should act on it, return
-   it. Reserve exceptions for programmer bugs and unrecoverable
-   conditions.
-2. **Name the failures in the domain's words.** `QuoteExpired`, not
+1. Rule. **Expected failures are values.** If a caller should act on it, return
+   it. Reserve exceptions for programmer bugs and unrecoverable conditions.
+2. Rule. **Name the failures in the domain's words.** `QuoteExpired`, not
    `Error500` or a bare string.
-3. **One error choice type per workflow.** Steps keep narrow error types
-   and are lifted at composition, so callers match on one thing.
-4. **Short-circuit sequential steps; accumulate independent ones.** Bind
-   for a pipeline, applicative combination for a form.
-5. **Convert exceptions at the boundary.** Libraries throw; wrap them
+3. Default. **One error choice type per workflow.** Steps keep narrow error
+   types and are lifted at composition, so callers match on one thing.
+4. Default. **Short-circuit sequential steps; accumulate independent ones.**
+   Bind for a pipeline, applicative combination for a form.
+5. Rule. **Convert exceptions at the boundary.** Libraries throw; wrap them
    once, at the edge, into your own error type.
-6. **Never encode failure as a magic value.** No empty string, no `-1`,
-   no null. Those hide the branch the type should show.
-7. **Do not log and rethrow.** Return the error; let the edge decide what
+6. Rule. **Never encode failure as a magic value.** No empty string, no `-1`, no
+   null. Those hide the branch the type should show.
+7. Rule. **Do not log and rethrow.** Return the error; let the edge decide what
    to log, once.
 
 ## Pattern

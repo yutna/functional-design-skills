@@ -3,6 +3,7 @@ name: capturing-the-domain
 description: Use when starting a feature or system, when code and the business use different words for the same thing, or when drawing boundaries between subsystems.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -33,26 +34,26 @@ which is
 
 ## Core rules
 
-1. **Use the domain's words, unchanged.** If experts say "quote", the
-   type is `Quote`, not `PricingRequestDto`. Words invented by developers
-   are the beginning of two models.
-2. **Discover through events.** Ask what happens, in the past tense:
-   "booking confirmed", "payment declined". Events reveal boundaries that
-   nouns hide.
-3. **Every workflow is a command in, events out.** Name the trigger, the
-   work, and what the rest of the world learns. That triple is the unit
-   of design. See
+1. Rule. **Use the domain's words, unchanged.** If experts say "quote", the type
+   is `Quote`, not `PricingRequestDto`. Words invented by developers are the
+   beginning of two models.
+2. Default. **Discover through events.** Ask what happens, in the past tense:
+   "booking confirmed", "payment declined". Events reveal boundaries that nouns
+   hide.
+3. Default. **Every workflow is a command in, events out.** Name the trigger,
+   the work, and what the rest of the world learns. That triple is the unit of
+   design. See
    [designing-workflow-pipelines](../designing-workflow-pipelines/SKILL.md).
-4. **Draw a context boundary wherever a word changes meaning.** If
-   "customer" means a billing account here and a person there, those are
-   two contexts, and the two `Customer` types must be different types.
-5. **Never share a model across contexts.** Translate at the border, in
+4. Rule. **Draw a context boundary wherever a word changes meaning.** If
+   "customer" means a billing account here and a person there, those are two
+   contexts, and the two `Customer` types must be different types.
+5. Rule. **Never share a model across contexts.** Translate at the border, in
    one place, deliberately.
-6. **Persist nothing until the model holds.** Deriving the model from a
+6. Default. **Persist nothing until the model holds.** Deriving the model from a
    schema imports the storage's compromises into the domain forever.
-7. **Write the model down as types, and read them back to the experts.**
-   Types are the cheapest reviewable artefact, and non-programmers can
-   follow a well-named choice type.
+7. Default. **Write the model down as types, and read them back to the
+   experts.** Types are the cheapest reviewable artefact, and non-programmers
+   can follow a well-named choice type.
 
 ## Pattern
 

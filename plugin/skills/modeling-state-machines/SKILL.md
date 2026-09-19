@@ -3,6 +3,7 @@ name: modeling-state-machines
 description: Use when an entity has a lifecycle, when a status field drives branching, or when a function must ask what state a value is in before acting on it.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -34,19 +35,19 @@ are [designing-workflow-pipelines](../designing-workflow-pipelines/SKILL.md).
 
 ## Core rules
 
-1. **One case per state.** Named as the business names it.
-2. **Each case carries only its own data.** A tracking number belongs to
+1. Default. **One case per state.** Named as the business names it.
+2. Rule. **Each case carries only its own data.** A tracking number belongs to
    the shipped and delivered cases, not to the type.
-3. **One function per transition**, taking the specific source state, not
-   the whole union.
-4. **Transitions return the target state**, or a `Result` when the
+3. Default. **One function per transition**, taking the specific source state,
+   not the whole union.
+4. Rule. **Transitions return the target state**, or a `Result` when the
    transition can be refused.
-5. **Make illegal transitions unwriteable.** If `deliver` takes a
+5. Rule. **Make illegal transitions unwriteable.** If `deliver` takes a
    `Shipped`, nothing can deliver a `Pending`.
-6. **Keep the union for storage and dispatch only.** Business functions
+6. Default. **Keep the union for storage and dispatch only.** Business functions
    take the specific case they operate on.
-7. **Draw the table before writing code.** States down, commands across,
-   cells are the outcome. Empty cells are the illegal transitions.
+7. Default. **Draw the table before writing code.** States down, commands
+   across, cells are the outcome. Empty cells are the illegal transitions.
 
 ## Pattern
 

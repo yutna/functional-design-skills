@@ -3,6 +3,7 @@ name: functional-react-nextjs
 description: Use when building React or Next.js interfaces functionally, deciding between derived and stored state, or placing logic across the server and client boundary.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -32,21 +33,21 @@ Not for: visual design, or framework configuration.
 
 ## Core rules
 
-1. **Render is a pure function.** Same props and state, same output. No
+1. Rule. **Render is a pure function.** Same props and state, same output. No
    fetching, no writing, no mutation during render.
-2. **Do not store what you can derive.** Duplicated state is duplicated
+2. Default. **Do not store what you can derive.** Duplicated state is duplicated
    knowledge, and it goes stale.
-3. **`useEffect` is for synchronising with something outside React**,
-   not for reacting to your own state. Most effects in a codebase should
-   not exist.
-4. **Model interface state as a choice type**, not as several booleans.
+3. Default. **`useEffect` is for synchronising with something outside React**,
+   not for reacting to your own state. Most effects in a codebase should not
+   exist.
+4. Default. **Model interface state as a choice type**, not as several booleans.
    `isLoading`, `error`, and `data` together permit states no screen has.
-5. **Keep the decision pure and let the framework act.** A reducer, or a
-   plain function, decides; the component or the action performs.
-6. **Push data fetching to the edge**: server components, loaders, or a
+5. Default. **Keep the decision pure and let the framework act.** A reducer, or
+   a plain function, decides; the component or the action performs.
+6. Default. **Push data fetching to the edge**: server components, loaders, or a
    query layer, not into the middle of a component tree.
-7. **A component's props are its interface.** Deep components take few
-   props and hide a lot; shallow ones take twenty and hide nothing.
+7. Judgement. **A component's props are its interface.** Deep components take
+   few props and hide a lot; shallow ones take twenty and hide nothing.
 
 ## Pattern
 

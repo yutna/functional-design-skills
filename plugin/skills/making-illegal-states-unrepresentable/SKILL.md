@@ -3,6 +3,7 @@ name: making-illegal-states-unrepresentable
 description: Use when a type can hold combinations the business forbids, when booleans and nullable fields encode state, or when code guards impossible values.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -39,21 +40,21 @@ optional, which is the defect this skill exists to remove. See
 
 ## Core rules
 
-1. **Count the states.** List what the type can hold and what the
+1. Default. **Count the states.** List what the type can hold and what the
    business allows. Every extra state is a defect waiting for an input.
-2. **Prefer construction over validation.** A value that exists is
+2. Default. **Prefer construction over validation.** A value that exists is
    already valid. Push the check into the only place a value can be made.
-3. **Give each state its own case, with its own data.** Correlated
+3. Default. **Give each state its own case, with its own data.** Correlated
    optional fields become cases of a choice type.
-4. **Make the constructor the only door.** If a record can be built
-   field by field from anywhere, its invariants are advisory.
-5. **Encode the phase in the type.** `UnvalidatedBooking`, `ValidatedBooking`
-   and `PricedBooking` are different types, so a function cannot receive
-   the wrong phase.
-6. **Never write a guard for a state the type forbids.** If you feel the
-   need, either the type is wrong or the guard is dead code pretending to
-   be safety.
-7. **Accept representable-but-invalid only at the edge**, where data
+4. Rule. **Make the constructor the only door.** If a record can be built field
+   by field from anywhere, its invariants are advisory.
+5. Default. **Encode the phase in the type.** `UnvalidatedBooking`,
+   `ValidatedBooking` and `PricedBooking` are different types, so a function
+   cannot receive the wrong phase.
+6. Rule. **Never write a guard for a state the type forbids.** If you feel the
+   need, either the type is wrong or the guard is dead code pretending to be
+   safety.
+7. Rule. **Accept representable-but-invalid only at the edge**, where data
    really does arrive that way, and convert immediately.
 
 ## Pattern

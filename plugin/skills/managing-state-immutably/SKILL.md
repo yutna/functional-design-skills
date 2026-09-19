@@ -3,6 +3,7 @@ name: managing-state-immutably
 description: Use when code mutates shared data or updates a record in place, when a concurrent update is lost or races, or when deciding how state changes over time.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -34,20 +35,20 @@ Not for: deciding which effects the system performs, which is
 
 ## Core rules
 
-1. **Transform, do not mutate.** A function that changes a value returns
-   a new one. The caller decides what to keep.
-2. **State transitions are pure functions.** `State -> Event -> State`.
-   No I/O inside, no clock, no randomness.
-3. **Keep mutable state in one place, at the edge.** One reference cell,
-   one database row, one actor. Not a field on ten objects.
-4. **Swap, do not edit.** Replace the whole value atomically; never
+1. Rule. **Transform, do not mutate.** A function that changes a value returns a
+   new one. The caller decides what to keep.
+2. Rule. **State transitions are pure functions.** `State -> Event -> State`. No
+   I/O inside, no clock, no randomness.
+3. Default. **Keep mutable state in one place, at the edge.** One reference
+   cell, one database row, one actor. Not a field on ten objects.
+4. Default. **Swap, do not edit.** Replace the whole value atomically; never
    partially update a shared structure.
-5. **Share structure instead of copying.** Persistent data structures
+5. Default. **Share structure instead of copying.** Persistent data structures
    make "a new version" cheap. See
    [persistent-structures.md](references/persistent-structures.md).
-6. **Local mutation is acceptable when invisible.** Inside one function,
-   never escaping, with a measurement that justified it.
-7. **Do not defend with copies.** If values are immutable, defensive
+6. Default. **Local mutation is acceptable when invisible.** Inside one
+   function, never escaping, with a measurement that justified it.
+7. Default. **Do not defend with copies.** If values are immutable, defensive
    copying is dead code.
 
 ## Pattern

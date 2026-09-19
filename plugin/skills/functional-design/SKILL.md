@@ -3,6 +3,7 @@ name: functional-design
 description: Use when starting design or review, deciding how much design a task warrants, from a throwaway script to a subsystem, unsure which skill fits, or the requirement is undecided.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 

@@ -3,6 +3,7 @@ name: functional-javascript
 description: Use when applying functional design in plain JavaScript, without a type checker, including immutability, tagged unions, and Result-style error handling.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -42,20 +43,20 @@ Not for: TypeScript projects, which have
 
 ## Core rules
 
-1. **Freeze what you export.** `Object.freeze` at construction turns
+1. Default. **Freeze what you export.** `Object.freeze` at construction turns
    accidental mutation into a visible failure in strict mode.
-2. **Construct through functions.** Never build a tagged value with a
+2. Rule. **Construct through functions.** Never build a tagged value with a
    literal outside its module. The constructor is where rules live.
-3. **One tag key across the codebase.** Pick `tag` and never mix in
-   `type` or `kind`.
-4. **Never mutate an argument.** Return a new object; the spread operator
+3. Rule. **One tag key across the codebase.** Pick `tag` and never mix in `type`
+   or `kind`.
+4. Rule. **Never mutate an argument.** Return a new object; the spread operator
    makes it cheap to read.
-5. **Return values for expected failures.** Reserve `throw` for
-   programmer errors.
-6. **Add JSDoc types and check them.** A type checker over JSDoc costs a
-   comment per function and catches most shape mistakes.
-7. **Test exhaustiveness.** Every dispatch gets a test driven by the list
-   of tags.
+5. Rule. **Return values for expected failures.** Reserve `throw` for programmer
+   errors.
+6. Default. **Add JSDoc types and check them.** A type checker over JSDoc costs
+   a comment per function and catches most shape mistakes.
+7. Default. **Test exhaustiveness.** Every dispatch gets a test driven by the
+   list of tags.
 
 ## Pattern
 

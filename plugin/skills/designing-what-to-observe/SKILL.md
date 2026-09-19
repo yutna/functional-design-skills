@@ -3,6 +3,7 @@ name: designing-what-to-observe
 description: Use when deciding what to log, trace, or measure, when an incident could not be diagnosed from what was recorded, or when adding observability late.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -35,25 +36,23 @@ Not for: choosing what an interface exposes to callers, which is
 
 ## Core rules
 
-1. **Write the questions first.** "Why did this booking fail?", "How many
-   bookings are stuck?", "Is checkout slower than yesterday?" The fields
+1. Default. **Write the questions first.** "Why did this booking fail?", "How
+   many bookings are stuck?", "Is checkout slower than yesterday?" The fields
    follow from the questions; the reverse produces data nobody uses.
-2. **Emit domain events, not log lines.** The workflow already returns
-   what happened. The shell projects those into whatever the platform
-   wants.
-3. **Log once, at the edge.** A step that logs and returns an error
+2. Default. **Emit domain events, not log lines.** The workflow already returns
+   what happened. The shell projects those into whatever the platform wants.
+3. Rule. **Log once, at the edge.** A step that logs and returns an error
    produces two records of one event and buries the useful one.
-4. **Correlate at the edge.** Create one identifier per request or
-   message, carry it as a value, and attach it where records are written.
-   Carry the identifier, never a context object that accumulates.
-5. **Structured errors are already structured logs.** The error type
-   built for callers has the case, the identifiers, and the values. Do
-   not flatten it to a sentence before recording it.
-6. **Never record secrets or personal data.** Decide this at the type
+4. Default. **Correlate at the edge.** Create one identifier per request or
+   message, carry it as a value, and attach it where records are written. Carry
+   the identifier, never a context object that accumulates.
+5. Default. **Structured errors are already structured logs.** The error type
+   built for callers has the case, the identifiers, and the values. Do not
+   flatten it to a sentence before recording it.
+6. Rule. **Never record secrets or personal data.** Decide this at the type
    level, so a careless serialisation cannot leak it.
-7. **Alert on what users feel**, not on what a machine noticed. Queue
-   depth trending up and the oldest unprocessed item beat processor
-   utilisation.
+7. Default. **Alert on what users feel**, not on what a machine noticed. Queue
+   depth trending up and the oldest unprocessed item beat processor utilisation.
 
 ## Pattern
 

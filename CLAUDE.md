@@ -28,7 +28,8 @@ npm run test:guards
 ```
 
 `npm test` runs Markdown linting, skill validation, the prose checks, a
-parse of every code example, and routing coverage. `npm run test:guards`
+parse of every code example, the strictness labels, the documented counts,
+and routing coverage. `npm run test:guards`
 breaks every guard on a throwaway copy and confirms it still fires. All
 of it must pass. Run them as you write, not once at the end; the
 line-length rule in particular is easier to satisfy while drafting than
@@ -61,6 +62,29 @@ rejected.
 - **No citations.** Do not add book titles, author names, publisher
   names, or bibliographic references to any tracked file. The rules
   stay, in this pack's own words with its own examples.
+  `validate-prose.mjs` catches the marks that citing leaves behind -- an
+  `ISBN`, a chapter number, an edition, a year in parentheses -- but it
+  cannot catch a name, so the rule is still yours to keep.
+- **Every core rule declares how strictly it is meant.** A numbered item
+  under `## Core rules` opens with `Rule.`, `Default.`, or `Judgement.`
+  before its bold statement. `Rule` means breaking it is a defect;
+  `Default` means do this unless a stated condition holds, and the
+  condition belongs in its own sentence rather than appended to the rule;
+  `Judgement` means two answers are defensible and the skill says what
+  tips it. Without the label every rule reads with the same weight, and
+  an agent cannot tell a contract from a preference.
+- **Every skill says which pack it came from.** `metadata.pack` must be
+  `functional-design-skills`. The installer reads it to tell "already
+  installed" from "another pack owns this name", which is the difference
+  between a skip and silently missing skills.
+- **A pack that extends another says only what it changes.** A skill
+  whose name extends another skill's name -- `functional-typescript-effect`
+  over `functional-typescript` -- must link to it, and must not repeat a
+  paragraph from it. Both are checked.
+- **Numbers in prose are checked against reality.** If you write a count
+  of skills, scenarios, or cases anywhere in the documentation, add it to
+  `scripts/validate-counts.mjs` in the same commit. Counts written by
+  hand are counts that drift; three already had.
 - **Scripts are JavaScript, shell, or PowerShell, and nothing else.**
   One language for the tooling; the two script pairs exist for Windows.
 

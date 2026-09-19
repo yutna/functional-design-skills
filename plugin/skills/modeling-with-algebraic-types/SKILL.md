@@ -3,6 +3,7 @@ name: modeling-with-algebraic-types
 description: Use when designing domain types, when a record has many optional fields, or when choosing between a record, a union, and a bare primitive.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -34,22 +35,22 @@ Not for: enforcing value ranges on a single primitive, which is
 
 ## Core rules
 
-1. **Say AND with a record, OR with a choice.** Read the requirement
+1. Default. **Say AND with a record, OR with a choice.** Read the requirement
    aloud. Every "or" in the sentence is a case; every "and" is a field.
-2. **Attach data to the case that owns it.** A field that is meaningful
+2. Rule. **Attach data to the case that owns it.** A field that is meaningful
    only in one state belongs inside that state's case, not beside it.
-3. **Replace booleans that mean something.** A boolean carries one bit
+3. Default. **Replace booleans that mean something.** A boolean carries one bit
    and no name. A two-case choice type carries a name, and can grow data.
-4. **Match exhaustively.** Every case handled, no wildcard, so adding a
+4. Rule. **Match exhaustively.** Every case handled, no wildcard, so adding a
    case produces a list of places to think about.
-5. **Compose, do not flatten.** Build big types from small named ones.
+5. Default. **Compose, do not flatten.** Build big types from small named ones.
    `Booking` holding `CustomerInfo` and `ShippingAddress` reads better and
    changes better than twenty fields in a row.
-6. **Name every case and every field in the domain's words.** The type is
+6. Rule. **Name every case and every field in the domain's words.** The type is
    the documentation; see
    [capturing-the-domain](../capturing-the-domain/SKILL.md).
-7. **Prefer a type over a comment.** If the comment explains which fields
-   are valid together, the type is wrong.
+7. Default. **Prefer a type over a comment.** If the comment explains which
+   fields are valid together, the type is wrong.
 
 ## Pattern
 

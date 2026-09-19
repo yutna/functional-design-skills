@@ -232,6 +232,36 @@ function checkBoxes (file, fenced) {
 // tell "production" from "product", so it coined "treatmention" here and no
 // linter noticed. Identifiers legitimately compound these nouns, so this runs
 // on prose only, and only on lower-case runs.
+// This pack names no book, author, or publisher in any tracked file. The
+// rule was enforced by hand until 3.0.0, after an audit had to strip a
+// chapter-by-chapter coverage map that had already shipped. These are the
+// marks that framing leaves behind: not the ideas, which stay, but the
+// apparatus of citing them.
+const CITATION_MARKS = [
+  [/\bISBN\b/, 'an ISBN'],
+  [/\bet al\./, '"et al."'],
+  [/\bop\. cit\./i, '"op. cit."'],
+  [/\bibid\./i, '"ibid."'],
+  [/\bChapter \d/, 'a chapter reference'],
+  [/\b\d+(?:st|nd|rd|th) edition\b/i, 'an edition number'],
+  [/\bpp?\. \d/, 'a page reference'],
+  [/\([12]\d{3}\)/, 'a year in parentheses'],
+]
+
+function checkCitations (file, prose) {
+  for (const here of prose) {
+    // A code span is how this repository quotes a defect it is describing,
+    // including in the documentation for this very check. Without stripping
+    // them the check fires on the sentence that explains it.
+    const line = here.line.replace(/`[^`]*`/g, '``')
+    for (const [pattern, what] of CITATION_MARKS) {
+      if (pattern.test(line)) {
+        report(file, here.n, `${what} — this pack cites no sources`)
+      }
+    }
+  }
+}
+
 const SINGULAR_NOUNS = ['booking', 'treatment', 'appointment', 'patient', 'clinician', 'shipment']
 
 function checkCoinedWords (file, prose) {
@@ -251,6 +281,7 @@ function checkFile (path) {
   checkIdioms(file, prose)
   checkArticles(file, prose)
   checkCoinedWords(file, prose)
+  checkCitations(file, prose)
   checkBoxes(file, fenced)
 }
 
@@ -267,6 +298,9 @@ function selftest () {
     ['article-wrapped', 'Write each rule as a sentence. "An\nbooking\'s total equals the sum."', checkArticles, 'prose'],
     ['coined', 'A limit the developer invented becomes a treatmention incident.', checkCoinedWords, 'prose'],
     ['box', '+-----+\n|  a  |\n|  ab  |\n+-----+', checkBoxes, 'fenced'],
+    ['citation', 'The idea comes from Chapter 4 of the second book.', checkCitations, 'prose'],
+    ['citation', 'Stated plainly by Wadler and others (1998).', checkCitations, 'prose'],
+    ['citation', 'The second edition, ISBN 978-0-13-235088-4, says otherwise.', checkCitations, 'prose'],
   ]
   let failures = 0
   for (const [label, sample, check, kind] of cases) {
@@ -288,6 +322,8 @@ function selftest () {
     ['article', 'An hour later the booking expires, and an HTTP call is made.', checkArticles],
     ['article', 'Read "an X and a Y" as a record, and a choice of A or B as a union.', checkArticles],
     ['coined', 'Every booking has treatments, and the patients wait patiently.', checkCoinedWords],
+    ['citation', 'The rule stays, in this pack\'s own words, with 1 example.', checkCitations],
+    ['citation', 'The check looks for an `ISBN` and for `Chapter 4` in prose.', checkCitations],
   ]
   for (const [label, sample, check] of clean) {
     problems.length = 0
@@ -302,9 +338,79 @@ function selftest () {
   process.exit(failures > 0 ? 1 : 0)
 }
 
+// A pack whose name extends another pack's name says only what its
+// framework or library changes; the base says the rest. Nothing enforced
+// that until 3.0.0, and the cost of losing it is the one this repository
+// warns about most: the same sentence in two places, corrected in one.
+//
+// Only substantial paragraphs are compared. A short line can legitimately
+// repeat — a heading, a one-clause reminder — and flagging those would make
+// the check noise rather than signal.
+const SKILLS_DIR = join(ROOT, 'plugin', 'skills')
+const SHARED_PARAGRAPH_CHARS = 120
+
+function paragraphsOf (dir) {
+  const found = new Map()
+  const files = [join(dir, 'SKILL.md')]
+  try {
+    for (const name of readdirSync(join(dir, 'references'))) {
+      if (name.endsWith('.md')) files.push(join(dir, 'references', name))
+    }
+  } catch { /* a skill without references is normal */ }
+  for (const file of files) {
+    let text
+    try {
+      text = readFileSync(file, 'utf8')
+    } catch { continue }
+    // Fenced code is excluded: two packs showing the same neutral-notation
+    // snippet is the point of a shared notation, not a duplication.
+    const prose = text.split(/^```[\s\S]*?^```$/gm).join('\n\n')
+    for (const block of prose.split(/\n\s*\n/)) {
+      const normalised = block.trim().replace(/\s+/g, ' ')
+      if (normalised.length < SHARED_PARAGRAPH_CHARS) continue
+      if (normalised.startsWith('#') || normalised.startsWith('|')) continue
+      if (!found.has(normalised)) found.set(normalised, relative(ROOT, file))
+    }
+  }
+  return found
+}
+
+function checkDeltaPacks () {
+  let ids
+  try {
+    ids = readdirSync(SKILLS_DIR, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+  } catch { return }
+  const known = new Set(ids)
+  for (const id of ids) {
+    const parts = id.split('-')
+    let parent
+    for (let i = parts.length - 1; i > 1; i--) {
+      const candidate = parts.slice(0, i).join('-')
+      if (known.has(candidate)) {
+        parent = candidate
+        break
+      }
+    }
+    if (parent === undefined) continue
+    const base = paragraphsOf(join(SKILLS_DIR, parent))
+    for (const [text, file] of paragraphsOf(join(SKILLS_DIR, id))) {
+      if (!base.has(text)) continue
+      report(
+        file,
+        0,
+        `repeats a paragraph from ${base.get(text)}; a pack that extends ` +
+          `another says only what it changes`,
+      )
+    }
+  }
+}
+
 if (process.argv.includes('--selftest')) selftest()
 
 for (const path of walk(ROOT)) checkFile(path)
+checkDeltaPacks()
 
 for (const problem of problems) {
   process.stderr.write(`error ${problem}\n`)

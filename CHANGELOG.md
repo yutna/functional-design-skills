@@ -6,6 +6,51 @@ skills or guidance, a patch one corrects what is already there.
 
 [semantic versioning]: https://semver.org
 
+## Unreleased
+
+Mechanism, not guidance. Nothing about what the pack recommends has
+changed; what changed is that a reader can now tell how firmly each rule
+is meant, and that four things which used to depend on care now depend
+on a script. Ten new guards, taking the total from sixteen to twenty-six.
+
+- **Added: every core rule says how strictly it is meant.** All 235
+  numbered rules across 34 skills now open with `Rule.`, `Default.`, or
+  `Judgement.`. Before this, "Name the accumulator type first" and "Do
+  not export what callers should not use" read with identical force,
+  though breaking the first leaves working code and breaking the second
+  breaks a promise. The split came out at 42% Rule, 54% Default, 4%
+  Judgement; `validate-rules.mjs` reports the share on every run as a
+  health signal, because a pack that is nearly all Rule is overclaiming
+  and one with almost none is not saying anything.
+- **Added: every skill records which pack it came from.**
+  `metadata.pack` is documented as a free-form map read by your own
+  tooling, and that is exactly what the installers now do with it.
+- **Added: the installers tell a skip from a conflict.** Skills are
+  copied flat into `~/.claude/skills`, so a second pack claiming a name
+  the first already took used to print `skip` and leave the user
+  quietly missing skills. Both installers now print `conflict`, name
+  the pack that owns it, and refuse rather than overwrite.
+- **Added: `validate-counts.mjs`, which checks numbers written in prose
+  against the thing they count.** It found one on its first run.
+- **Added: a check that nothing in `evals/` names a skill that does not
+  exist.** `scenarios.md` mentions skills in backticks 43 times and no
+  script had ever read it, so a rename could have left every one of
+  them dangling with the build still green.
+- **Added: a pack that extends another must link to it and must not
+  repeat a paragraph from it.** Both existing library packs already
+  followed the convention; now it cannot be lost.
+- **Added: a check for the marks a citation leaves behind** -- an `ISBN`,
+  a chapter number, an edition, a year in parentheses. The no-citations
+  rule was enforced by hand until now, after an audit had to strip a
+  coverage map that had already shipped.
+- **Fixed: `evals/README.md` said thirty-five scenarios where
+  `scenarios.md` holds thirty-seven.** Found by the count check above,
+  on the run that introduced it.
+- **Fixed: a recorded measurement had outlived the suite it was taken
+  on.** The note that no case reaches the top three on a zero score was
+  measured when there were 87 cases; there are 105. Re-measured rather
+  than re-typed: still zero.
+
 ## 2.0.1
 
 A production-readiness sweep: every file run, parsed, or installed

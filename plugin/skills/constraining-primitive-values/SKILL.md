@@ -3,6 +3,7 @@ name: constraining-primitive-values
 description: Use when domain values are raw strings or numbers, when the same format or range check appears in more than one place, or when ids can be swapped.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -33,19 +34,19 @@ Not for: values that genuinely are unconstrained free text with no rules.
 
 ## Core rules
 
-1. **One type per domain concept**, even when the underlying primitive is
-   the same. `CustomerId` and `BookingId` are different types.
-2. **Constructors can fail; return `Result`.** The constructor is the
-   only place the rule lives.
-3. **No public raw construction.** If the wrapper can be built directly
+1. Default. **One type per domain concept**, even when the underlying primitive
+   is the same. `CustomerId` and `BookingId` are different types.
+2. Rule. **Constructors can fail; return `Result`.** The constructor is the only
+   place the rule lives.
+3. Rule. **No public raw construction.** If the wrapper can be built directly
    from a primitive anywhere, the type is decoration.
-4. **Unwrap late, at the edge.** Inside the domain, pass the wrapper.
+4. Default. **Unwrap late, at the edge.** Inside the domain, pass the wrapper.
    Convert to a primitive only when serialising or displaying.
-5. **Put the unit in the type, not in the name.** `Meters`, not
+5. Default. **Put the unit in the type, not in the name.** `Meters`, not
    `distanceInMeters: Float`, so mixing units cannot compile.
-6. **Choose the constraint the business names.** Encode "a quantity is at
+6. Rule. **Choose the constraint the business names.** Encode "a quantity is at
    least one", not "an integer between one and 2147483647".
-7. **Keep the rule in one place forever.** When it changes, exactly one
+7. Rule. **Keep the rule in one place forever.** When it changes, exactly one
    function changes.
 
 ## Pattern

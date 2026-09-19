@@ -3,6 +3,7 @@ name: writing-useful-comments
 description: Use when writing or reviewing comments and documentation, when a comment restates the code, or when a contract cannot be expressed in a type.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -96,21 +97,19 @@ See [comment-kinds.md](references/comment-kinds.md).
 
 ## Core rules
 
-1. **Write the interface comment before the code.** If it is hard to
-   write, the interface is wrong, and you have learned that before
-   implementing it. See
-   [comments-first.md](references/comments-first.md).
-2. **Describe things the reader cannot see.** Never restate the
-   signature.
-3. **Say why, not what.** The what is in the code; the why is not.
-4. **Keep interface comments free of implementation.** Anything a caller
+1. Default. **Write the interface comment before the code.** If it is hard to
+   write, the interface is wrong, and you have learned that before implementing
+   it. See [comments-first.md](references/comments-first.md).
+2. Rule. **Describe things the reader cannot see.** Never restate the signature.
+3. Default. **Say why, not what.** The what is in the code; the why is not.
+4. Rule. **Keep interface comments free of implementation.** Anything a caller
    should not rely on must not be in the interface comment.
-5. **Put the comment where the reader will be.** Next to the code it
+5. Default. **Put the comment where the reader will be.** Next to the code it
    explains, not in a document elsewhere.
-6. **Update comments in the same edit.** A false comment costs more than
+6. Rule. **Update comments in the same edit.** A false comment costs more than
    no comment.
-7. **Prefer a type to a comment.** If the comment states a constraint, a
-   type can often state it instead, and then it cannot go stale. See
+7. Default. **Prefer a type to a comment.** If the comment states a constraint,
+   a type can often state it instead, and then it cannot go stale. See
    [constraining-primitive-values](../constraining-primitive-values/SKILL.md).
 
 ## What belongs in an interface comment

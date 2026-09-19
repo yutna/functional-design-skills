@@ -3,6 +3,7 @@ name: separating-pure-core-from-shell
 description: Use when business logic cannot be tested without I/O, when one call deep inside forces every caller to become async, or when deciding where a database or HTTP call belongs.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -52,23 +53,22 @@ is the only layer allowed to be impure.
 
 ## Core rules
 
-1. **All I/O at the edges.** Read what is needed, run the pure decision,
+1. Rule. **All I/O at the edges.** Read what is needed, run the pure decision,
    write what it produced.
-2. **The core returns decisions, not actions.** Events, instructions,
+2. Rule. **The core returns decisions, not actions.** Events, instructions,
    updated values. The shell performs.
-3. **Nothing inward-facing imports outward.** No driver, framework, or
+3. Rule. **Nothing inward-facing imports outward.** No driver, framework, or
    transport type appears in domain or workflow code.
-4. **Time, randomness and identifiers are parameters.** They are effects,
+4. Rule. **Time, randomness and identifiers are parameters.** They are effects,
    however innocent they look.
-5. **The shell holds no rules.** If a decision is being made in the
-   shell, it belongs in the core.
-6. **Keep the shell thin and dull.** Its job is wiring, translation, and
-   sequencing; nothing that needs a test to explain.
-7. **The composition root wires the two together**, in one place.
-8. **Fix an effect where it is introduced, not where it surfaced.**
-   Calling something impure makes the caller impure, so one lookup
-   buried deep turns every function above it asynchronous for no reason
-   of its own. See
+5. Rule. **The shell holds no rules.** If a decision is being made in the shell,
+   it belongs in the core.
+6. Default. **Keep the shell thin and dull.** Its job is wiring, translation,
+   and sequencing; nothing that needs a test to explain.
+7. Default. **The composition root wires the two together**, in one place.
+8. Rule. **Fix an effect where it is introduced, not where it surfaced.**
+   Calling something impure makes the caller impure, so one lookup buried deep
+   turns every function above it asynchronous for no reason of its own. See
    [what-belongs-where.md](references/what-belongs-where.md).
 
 ## Pattern

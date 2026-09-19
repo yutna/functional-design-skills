@@ -3,6 +3,7 @@ name: functional-typescript
 description: Use when applying functional design in TypeScript without a functional library, including branded types, discriminated unions, and hand-rolled Result.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -65,17 +66,17 @@ runtime undefined in otherwise well-typed code.
 
 ## Core rules
 
-1. **`readonly` everywhere in domain types**, including array fields:
+1. Rule. **`readonly` everywhere in domain types**, including array fields:
    `readonly BookedTreatment[]`.
-2. **Brand every domain primitive**, and export only the parser.
-3. **Discriminate unions on a literal field**, one field name across the
+2. Default. **Brand every domain primitive**, and export only the parser.
+3. Rule. **Discriminate unions on a literal field**, one field name across the
    codebase.
-4. **Exhaust with `never`**, never with a permissive `default`.
-5. **No `any`, no non-null `!`, no unchecked `as`.** Each is a hole in
+4. Rule. **Exhaust with `never`**, never with a permissive `default`.
+5. Rule. **No `any`, no non-null `!`, no unchecked `as`.** Each is a hole in
    every guarantee above it.
-6. **Return `Result`, do not throw**, for expected failures.
-7. **Type the boundary separately.** DTO types are their own types, with
-   a parse step between them and the domain.
+6. Rule. **Return `Result`, do not throw**, for expected failures.
+7. Rule. **Type the boundary separately.** DTO types are their own types, with a
+   parse step between them and the domain.
 
 ## Pattern
 
