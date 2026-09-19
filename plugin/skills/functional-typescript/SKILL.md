@@ -161,8 +161,11 @@ const BookingDto = z.object({
 });
 
 // one mapping into the domain, where the guarantees live
-const toBooking = (dto: z.infer<typeof BookingDto>): Result<Booking, MapError> =>
-  ...;
+const toBooking = (
+  dto: z.infer<typeof BookingDto>,
+): Result<Booking, MapError> => {
+  /* ... */
+};
 ```
 
 Letting the inferred type _be_ the domain model reintroduces every wire

@@ -125,10 +125,12 @@ failure mode of hand-written mappers.
 The schema is the versioned artefact; the domain type is not.
 
 ```ts
-const OrderV1 = Schema.Struct({ ... });
-const OrderV2 = Schema.Struct({ ... });
+const BookingV1 = Schema.Struct({ /* ... */ });
+const BookingV2 = Schema.Struct({ /* ... */ });
 
-const fromV1 = (dto: Schema.Schema.Encoded<typeof OrderV1>): Booking => ...;
+const fromV1 = (
+  dto: Schema.Schema.Encoded<typeof BookingV1>,
+): Booking => toBooking(dto);
 ```
 
 Add a schema and a mapping per wire version; keep the domain type stable.

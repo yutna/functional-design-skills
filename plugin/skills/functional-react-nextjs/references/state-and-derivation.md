@@ -65,7 +65,9 @@ type Event =
   | { tag: "Succeeded"; reference: BookingRef }
   | { tag: "Failed"; errors: readonly FieldError[] };
 
-const reduce = (state: State, event: Event): State => { ... };
+const reduce = (state: State, event: Event): State => {
+  /* one case per (state, event) pair */
+};
 ```
 
 The reducer is a pure function of two values. It can be tested as a
@@ -139,7 +141,7 @@ subtree untestable. See
 ```tsx
 // rules in the handler: untestable, unreusable
 const onSubmit = () => {
-  if (booking.total > 5000 && !customer.isVerified) { ... }
+  if (booking.total > 5000 && !customer.isVerified) { /* ... */ }
 };
 
 // rules in a pure module, tested without React
@@ -157,14 +159,16 @@ A component's props are its interface, and the same depth rule applies.
 
 ```tsx
 // shallow: the caller assembles everything
-<BookingTable
-  rows={rows} columns={columns} sortKey={sortKey} sortDir={sortDir}
-  onSort={onSort} page={page} pageSize={pageSize} onPage={onPage}
-  isLoading={isLoading} error={error} emptyText={emptyText}
-/>
+const shallow = (
+  <BookingTable
+    rows={rows} columns={columns} sortKey={sortKey} sortDir={sortDir}
+    onSort={onSort} page={page} pageSize={pageSize} onPage={onPage}
+    isLoading={isLoading} error={error} emptyText={emptyText}
+  />
+);
 
 // deep: one thing to know
-<BookingTable bookings={bookings} onSelect={onSelect} />
+const deep = <BookingTable bookings={bookings} onSelect={onSelect} />;
 ```
 
 Sorting, paging, and empty handling are the table's job. Pull that

@@ -84,8 +84,8 @@ structure:
 
 ```js
 const HANDLERS = Object.freeze({
-  [SHIPMENT.pending]: (s) => ...,
-  [SHIPMENT.shipped]: (s) => ...,
+  [SHIPMENT.pending]: () => "awaiting dispatch",
+  [SHIPMENT.shipped]: (s) => `in transit: ${s.tracking}`,
 });
 
 const describe = (s) => {
@@ -130,7 +130,7 @@ comment.
  * @param {Shipment} s
  * @returns {string}
  */
-export const describe = (s) => { ... };
+export const describe = (s) => { /* the switch above */ };
 ```
 
 With `checkJs` enabled, the checker narrows on `s.tag` exactly as it does

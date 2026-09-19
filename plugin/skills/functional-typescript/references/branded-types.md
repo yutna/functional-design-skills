@@ -107,7 +107,9 @@ export type BookingId = Brand<string, "BookingId">;
 export const transfer = (
   customer: CustomerId,
   booking: BookingId,
-): Result<void, TransferError> => { ... };
+): Result<void, TransferError> => {
+  /* ... */
+};
 ```
 
 ## Rehydrating from a trusted store
