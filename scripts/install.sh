@@ -47,6 +47,18 @@ fi
 
 installed=0
 skipped=0
+conflicts=0
+
+PACK_NAME="functional-design-skills"
+
+# Skills are copied flat into ~/.claude/skills, so two packs can claim the
+# same directory name. Without this the second install just says "skip" and
+# the user is quietly missing skills they believe they installed. Every
+# SKILL.md carries the pack it came from under metadata.pack.
+pack_of() {
+  sed -n '1,20p' "$1/SKILL.md" 2>/dev/null \
+    | sed -n 's/^  pack: *//p' | head -n 1
+}
 
 # No trailing slash on the glob: with one, the shell sorts
 # "functional-typescript-effect/" before "functional-typescript/",
@@ -57,10 +69,18 @@ for src in "$SKILLS_SRC"/*; do
   name="$(basename "$src")"
   dest="${CLAUDE_DIR}/${name}"
 
-  if { [ -e "$dest" ] || [ -L "$dest" ]; } && [ "$force" -eq 0 ]; then
-    printf 'skip   %s (already installed; use --force to replace)\n' "$name"
-    skipped=$((skipped + 1))
-    continue
+  if [ -e "$dest" ] || [ -L "$dest" ]; then
+    owner="$(pack_of "$dest")"
+    if [ -n "$owner" ] && [ "$owner" != "$PACK_NAME" ]; then
+      printf 'conflict %s belongs to %s; remove it first\n' "$name" "$owner"
+      conflicts=$((conflicts + 1))
+      continue
+    fi
+    if [ "$force" -eq 0 ]; then
+      printf 'skip   %s (already installed; use --force to replace)\n' "$name"
+      skipped=$((skipped + 1))
+      continue
+    fi
   fi
 
   if [ "$dry_run" -eq 1 ]; then
@@ -77,7 +97,13 @@ for src in "$SKILLS_SRC"/*; do
   installed=$((installed + 1))
 done
 
-printf '\n%d skill(s) installed, %d skipped\n' "$installed" "$skipped"
+printf '\n%d skill(s) installed, %d skipped, %d in conflict\n' \
+  "$installed" "$skipped" "$conflicts"
+
+if [ "$conflicts" -gt 0 ]; then
+  printf 'A conflict means another pack already owns that skill name.\n'
+  printf 'Remove the directory yourself if you want this pack to own it.\n'
+fi
 
 if [ "$installed" -gt 0 ] && [ "$dry_run" -eq 0 ]; then
   printf 'Start a new session for the skills to be discovered.\n'

@@ -3,6 +3,7 @@ name: splitting-and-joining-code
 description: Use when deciding whether to split a function or module, when a boolean parameter selects behaviour, or when two pieces always change together.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 

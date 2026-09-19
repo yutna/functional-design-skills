@@ -3,6 +3,7 @@ name: separating-layers
 description: Use when adjacent layers repeat the same abstraction, when a function only forwards, when callers repeat the same lines after it, or when a utility carries a feature's policy.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -33,27 +34,25 @@ Not for: deciding whether two things belong in the same module, which is
 
 ## Core rules
 
-1. **Each layer changes the abstraction.** If the layer above and the
+1. Default. **Each layer changes the abstraction.** If the layer above and the
    layer below use the same nouns, delete one of them.
-2. **Delete pass-through functions.** A function that takes the same
-   arguments and calls one function with them adds interface and hides
-   nothing. Let the caller call directly.
-3. **Pull complexity downward.** Given a choice between a slightly harder
-   implementation and a slightly harder interface, make the
-   implementation harder. One implementer pays once; every caller pays
-   forever.
-4. **Absorb the common case.** If every caller does the same thing after
-   calling you, do it for them.
-5. **Do not add configuration to avoid a decision.** An option exported
-   so callers can choose is complexity moved upward. Decide, and expose a
-   choice only where callers genuinely differ.
-6. **Keep decorators rare.** A wrapper that adds one small behaviour is
-   usually better as a parameter or as part of the thing it wraps.
-7. **Order the layers by how often each changes**, fastest at the top,
-   and keep every function above what it calls. A general utility that
-   knows a business rule has pinned the rule to the slowest-moving
-   thing in the system. See
-   [layer-smells.md](references/layer-smells.md).
+2. Default. **Delete pass-through functions.** A function that takes the same
+   arguments and calls one function with them adds interface and hides nothing.
+   Let the caller call directly.
+3. Default. **Pull complexity downward.** Given a choice between a slightly
+   harder implementation and a slightly harder interface, make the
+   implementation harder. One implementer pays once; every caller pays forever.
+4. Default. **Absorb the common case.** If every caller does the same thing
+   after calling you, do it for them.
+5. Default. **Do not add configuration to avoid a decision.** An option exported
+   so callers can choose is complexity moved upward. Decide, and expose a choice
+   only where callers genuinely differ.
+6. Judgement. **Keep decorators rare.** A wrapper that adds one small behaviour
+   is usually better as a parameter or as part of the thing it wraps.
+7. Default. **Order the layers by how often each changes**, fastest at the top,
+   and keep every function above what it calls. A general utility that knows a
+   business rule has pinned the rule to the slowest-moving thing in the system.
+   See [layer-smells.md](references/layer-smells.md).
 
 ## Pattern
 

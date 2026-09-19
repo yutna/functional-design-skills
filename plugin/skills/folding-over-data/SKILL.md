@@ -3,6 +3,7 @@ name: folding-over-data
 description: Use when a loop accumulates into a variable, when combining a collection into one value, or when traversing a tree or other recursive structure.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -33,19 +34,19 @@ selecting elements, which is a filter.
 
 ## Core rules
 
-1. **Name the accumulator type first.** What is being built determines
+1. Default. **Name the accumulator type first.** What is being built determines
    the fold's shape more than the elements do.
-2. **The combining function is pure and total.** Same accumulator and
+2. Rule. **The combining function is pure and total.** Same accumulator and
    element, same result, no effect.
-3. **Prefer the specific operation when one exists.** `sum`, `maximum`,
+3. Default. **Prefer the specific operation when one exists.** `sum`, `maximum`,
    `groupBy` and `count` say more than a fold with a lambda.
-4. **Fold from the left for accumulation, from the right to build a
-   structure.** Left folds are iterative and constant in stack; right
-   folds build lazily and suit infinite sequences.
-5. **One fold per pass, unless the passes are independent.** Combining
+4. Default. **Fold from the left for accumulation, from the right to build a
+   structure.** Left folds are iterative and constant in stack; right folds
+   build lazily and suit infinite sequences.
+5. Default. **One fold per pass, unless the passes are independent.** Combining
    three folds into one obscures all three; profile before merging.
-6. **Give a recursive type its fold.** Write it once beside the type, and
-   consume the type through it everywhere else.
+6. Default. **Give a recursive type its fold.** Write it once beside the type,
+   and consume the type through it everywhere else.
 
 ## Pattern
 

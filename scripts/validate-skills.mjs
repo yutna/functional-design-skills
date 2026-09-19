@@ -65,6 +65,13 @@ const RESERVED_NAME = 'synced'
 const RESERVED_SUBSTRINGS = ['anthropic', 'claude']
 const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/
 
+// The installer copies skills flat into ~/.claude/skills, where two packs
+// can claim the same directory name. Every skill carries the pack it came
+// from so install.sh can say "conflict" instead of skipping in silence.
+// metadata is documented as a free-form map read by your own tooling, which
+// is exactly this.
+const PACK_NAME = 'functional-design-skills'
+
 const errors = []
 const warnings = []
 
@@ -208,6 +215,20 @@ function validateVersion (id, frontmatter) {
 
 // Headings must be counted outside fenced code, or a `# comment` in an example
 // reads as a second level-one heading.
+// Added in 3.0.0. Without it the two packs this author publishes cannot be
+// installed side by side: the second install silently skips every skill whose
+// name the first already took.
+function validatePack (id, frontmatter) {
+  const pack = frontmatter.metadata?.pack
+  if (pack === undefined) {
+    fail(id, 'frontmatter "metadata.pack" is missing')
+    return
+  }
+  if (pack !== PACK_NAME) {
+    fail(id, `"metadata.pack" is "${pack}" but this pack is "${PACK_NAME}"`)
+  }
+}
+
 function stripFences (body) {
   const kept = []
   let fence = null
@@ -392,6 +413,7 @@ function validateSkill (id) {
   validateDescription(id, frontmatter)
   validateKeys(id, frontmatter)
   validateVersion(id, frontmatter)
+  validatePack(id, frontmatter)
   validateBody(id, match[2])
   validateReferences(id, dir, match[2])
   validateContentsList(id, dir)
@@ -467,6 +489,58 @@ function validateDistinctDescriptions (ids) {
   }
 }
 
+// evals/scenarios.md names skills in backticks and nothing read it, so a
+// rename could leave it pointing at skills that no longer exist and every
+// check would still pass. eval-routing.mjs reads routing-cases.md; this
+// covers the rest of the directory.
+function validateEvalNames (ids) {
+  const known = new Set(ids)
+  const evalsDir = join(ROOT, 'evals')
+  let files
+  try {
+    files = readdirSync(evalsDir).filter((file) => file.endsWith('.md'))
+  } catch {
+    errors.push('evals/: directory not found')
+    return
+  }
+  for (const file of files) {
+    const text = readFileSync(join(evalsDir, file), 'utf8')
+    const pattern = /`((?:[a-z]+-){1,4}[a-z]+)`/g
+    for (const [, name] of text.matchAll(pattern)) {
+      if (known.has(name)) continue
+      // A hyphenated word in backticks is not automatically a skill name.
+      // Only shapes this pack actually uses are worth complaining about, so
+      // `use-server` or `ts-pattern` in prose stay out of it.
+      if (!/^functional-|^[a-z]+ing-/.test(name)) continue
+      errors.push(`evals/${file}: names "${name}", which is not a skill`)
+    }
+  }
+}
+
+// A pack whose name extends another pack's name is a delta: it says only what
+// its framework or library changes and the base says the rest. A reader who
+// lands on the delta first has to be able to find the base, so the link is
+// required rather than conventional.
+function validateParentPack (ids) {
+  const known = new Set(ids)
+  for (const id of ids) {
+    const parts = id.split('-')
+    let parent
+    for (let i = parts.length - 1; i > 1; i--) {
+      const candidate = parts.slice(0, i).join('-')
+      if (known.has(candidate)) {
+        parent = candidate
+        break
+      }
+    }
+    if (parent === undefined) continue
+    const body = readFileSync(join(SKILLS_DIR, id, 'SKILL.md'), 'utf8')
+    if (!body.includes(`../${parent}/SKILL.md`)) {
+      fail(id, `extends "${parent}" but does not link to it`)
+    }
+  }
+}
+
 const skillIds = readSkillDirs()
 if (skillIds.length === 0 && errors.length === 0) {
   errors.push('plugin/skills/: no skill directories found')
@@ -478,6 +552,8 @@ validateLinks()
 validateManifestVersions()
 validateNoPackageFilesInPlugin()
 validateExactDependencies()
+validateEvalNames(skillIds)
+validateParentPack(skillIds)
 if (errors.length === 0) {
   validateDistinctDescriptions(skillIds)
 }

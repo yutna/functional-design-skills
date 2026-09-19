@@ -3,6 +3,7 @@ name: making-effects-reliable
 description: Use when a timeout leaves an effect unsure, when a retry could charge or send twice, when a saved change is published separately, or across systems.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -36,23 +37,23 @@ choosing transaction boundaries, which is
 
 ## Core rules
 
-1. **Give every command an identity.** A client-supplied key, carried
+1. Rule. **Give every command an identity.** A client-supplied key, carried
    through the workflow, is what makes de-duplication possible at all.
-2. **Make the effect idempotent, not the decision.** The pure core is
+2. Rule. **Make the effect idempotent, not the decision.** The pure core is
    already safe to repeat; the write, the charge, and the send are not.
    Idempotency belongs in the adapter.
-3. **Assume at-least-once, everywhere.** Exactly-once delivery does not
+3. Rule. **Assume at-least-once, everywhere.** Exactly-once delivery does not
    exist across a network. De-duplicate on receipt instead.
-4. **Never write and publish in two places.** Either the event is
-   recorded in the same transaction as the state change and relayed
-   afterwards, or a consumer will eventually see one without the other.
-5. **Retry at the shell, bounded.** A domain step that retries hides
-   latency and cannot be tested in time. Bound attempts, bound total
-   time, and add jitter.
-6. **Compensate; do not lock across systems.** A distributed transaction
-   is a lock held over a network. Undo explicitly instead, and accept
-   that the undo is a business operation with a business name.
-7. **Model partial success explicitly.** "Three of five sent" is not a
+4. Rule. **Never write and publish in two places.** Either the event is recorded
+   in the same transaction as the state change and relayed afterwards, or a
+   consumer will eventually see one without the other.
+5. Default. **Retry at the shell, bounded.** A domain step that retries hides
+   latency and cannot be tested in time. Bound attempts, bound total time, and
+   add jitter.
+6. Default. **Compensate; do not lock across systems.** A distributed
+   transaction is a lock held over a network. Undo explicitly instead, and
+   accept that the undo is a business operation with a business name.
+7. Default. **Model partial success explicitly.** "Three of five sent" is not a
    `Result`. It is a report type with both lists inside it.
 
 ## Pattern

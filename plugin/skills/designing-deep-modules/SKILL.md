@@ -3,6 +3,7 @@ name: designing-deep-modules
 description: Use when designing a module interface, when it exports nearly as much as it hides, or when many tiny modules or one-function files multiply.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -55,22 +56,21 @@ contract as possible, and to reduce the rest to nothing.
 
 ## Core rules
 
-1. **Measure depth as functionality hidden per unit of interface.** Count
-   the interface, including the informal parts above. If the count
-   approaches the size of the implementation, the module is not earning
-   its existence.
-2. **Prefer fewer, larger modules over many tiny ones.** Each boundary
+1. Default. **Measure depth as functionality hidden per unit of interface.**
+   Count the interface, including the informal parts above. If the count
+   approaches the size of the implementation, the module is not earning its
+   existence.
+2. Default. **Prefer fewer, larger modules over many tiny ones.** Each boundary
    costs an interface. A boundary must buy more than it costs.
-3. **Design the interface for the common case.** Make the frequent use a
-   one-liner; let the rare use be more work, not the other way round.
-4. **Do not export what callers should not use.** Test through the
-   interface. See
-   [hiding-information](../hiding-information/SKILL.md).
-5. **Make it somewhat general purpose.** Not maximally general, and not
-   welded to today's single caller. See
+3. Default. **Design the interface for the common case.** Make the frequent use
+   a one-liner; let the rare use be more work, not the other way round.
+4. Rule. **Do not export what callers should not use.** Test through the
+   interface. See [hiding-information](../hiding-information/SKILL.md).
+5. Judgement. **Make it somewhat general purpose.** Not maximally general, and
+   not welded to today's single caller. See
    [general-purpose-questions.md](references/general-purpose-questions.md).
-6. **Reject pure pass-throughs.** A function whose body is one call with
-   the same arguments adds interface and hides nothing.
+6. Default. **Reject pure pass-throughs.** A function whose body is one call
+   with the same arguments adds interface and hides nothing.
 
 ## Pattern
 

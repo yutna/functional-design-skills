@@ -3,6 +3,7 @@ name: using-recursion-and-laziness
 description: Use when a stack overflows, when data is too large to hold in memory, when an expensive result is recomputed, or when writing recursive functions.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -34,19 +35,19 @@ Not for: reducing a collection to a value, which is
 
 ## Core rules
 
-1. **Write the base case first.** Then the recursive case, and check that
-   it always moves towards the base.
-2. **Make the recursive call the last thing.** A tail call can be turned
-   into a loop; a call whose result is then modified cannot.
-3. **Know whether your language eliminates tail calls.** If it does not,
+1. Default. **Write the base case first.** Then the recursive case, and check
+   that it always moves towards the base.
+2. Default. **Make the recursive call the last thing.** A tail call can be
+   turned into a loop; a call whose result is then modified cannot.
+3. Rule. **Know whether your language eliminates tail calls.** If it does not,
    bound the depth, use an explicit accumulator loop, or trampoline.
-4. **Prefer an existing traversal.** Fold, map, and unfold cover most
+4. Default. **Prefer an existing traversal.** Fold, map, and unfold cover most
    cases; hand-written recursion is for shapes they do not fit.
-5. **Memoise only pure functions**, and own the cache in one place.
-6. **Use laziness for size, not for style.** An unevaluated computation
+5. Rule. **Memoise only pure functions**, and own the cache in one place.
+6. Default. **Use laziness for size, not for style.** An unevaluated computation
    holding a reference to a large structure is a leak with a nice name.
-7. **Force at the boundary.** A lazy value crossing into the shell should
-   be evaluated where its cost and failures are visible.
+7. Default. **Force at the boundary.** A lazy value crossing into the shell
+   should be evaluated where its cost and failures are visible.
 
 ## Recursion shapes
 

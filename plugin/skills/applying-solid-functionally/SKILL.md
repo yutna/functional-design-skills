@@ -3,6 +3,7 @@ name: applying-solid-functionally
 description: Use when a function takes a whole service to use one part, when adding a variant forces edits everywhere, or when structuring module dependencies.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -38,25 +39,24 @@ Not for: naming, or judging interface size in isolation.
 
 ## Core rules
 
-1. **Split by who asks for the change, not by what the code does.** Two
-   calculations that look alike but answer to different stakeholders
-   belong in different modules, whatever the duplication.
-2. **Choose the axis of change before choosing the mechanism.** New cases
-   and new operations pull in opposite directions. See the expression
+1. Default. **Split by who asks for the change, not by what the code does.** Two
+   calculations that look alike but answer to different stakeholders belong in
+   different modules, whatever the duplication.
+2. Default. **Choose the axis of change before choosing the mechanism.** New
+   cases and new operations pull in opposite directions. See the expression
    problem below.
-3. **Make the extension point a parameter.** A function passed in is the
-   simplest open-closed mechanism there is, and it needs no registry, no
+3. Default. **Make the extension point a parameter.** A function passed in is
+   the simplest open-closed mechanism there is, and it needs no registry, no
    class, and no framework.
-4. **Keep passed-in functions total and faithful.** A substitute that
-   throws where the type says `Result`, or that demands more of its
-   input than the type states, breaks every caller written against the
-   type.
-5. **Pass functions, not modules.** `GetPrice = TreatmentCode -> Price` is
-   an interface with one member. A repository record with twenty members
+4. Rule. **Keep passed-in functions total and faithful.** A substitute that
+   throws where the type says `Result`, or that demands more of its input than
+   the type states, breaks every caller written against the type.
+5. Default. **Pass functions, not modules.** `GetPrice = TreatmentCode -> Price`
+   is an interface with one member. A repository record with twenty members
    forces every consumer to depend on all twenty.
-6. **Point dependencies at the domain.** The domain defines the function
-   types it needs; the shell supplies implementations. Nothing in the
-   domain imports the database, the framework, or the transport.
+6. Rule. **Point dependencies at the domain.** The domain defines the function
+   types it needs; the shell supplies implementations. Nothing in the domain
+   imports the database, the framework, or the transport.
 
 ## The expression problem
 

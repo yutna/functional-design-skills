@@ -3,6 +3,7 @@ name: deciding-what-matters
 description: Use when code is correct but hard to follow, when deciding what an interface should expose, or when a reader cannot tell which parts are important.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -32,20 +33,20 @@ Not for: deciding module boundaries, which is
 
 ## Core rules
 
-1. **Decide what matters, explicitly.** For each module, list the facts a
-   caller must know. That list is the interface. Everything else is
+1. Default. **Decide what matters, explicitly.** For each module, list the facts
+   a caller must know. That list is the interface. Everything else is
    implementation and must not be visible.
-2. **Make what matters unmissable.** Put it in the type first, the name
+2. Default. **Make what matters unmissable.** Put it in the type first, the name
    second, the doc comment third. Never only in prose far from use.
-3. **Make what does not matter invisible.** Not merely unimportant-
-   looking: absent. An exported helper nobody should call still costs
-   attention every time someone reads the module's exports.
-4. **Judge obviousness from outside.** You cannot assess your own code's
+3. Default. **Make what does not matter invisible.** Not merely unimportant-
+   looking: absent. An exported helper nobody should call still costs attention
+   every time someone reads the module's exports.
+4. Rule. **Judge obviousness from outside.** You cannot assess your own code's
    obviousness. If a reader stumbled, the code is not obvious, and their
    confusion is the measurement, not their skill.
-5. **Give the reader the information where they need it.** A fact needed
-   at a call site belongs in the signature, not in the implementation.
-6. **Prefer explicit over inferred.** If a reader must derive a fact by
+5. Default. **Give the reader the information where they need it.** A fact
+   needed at a call site belongs in the signature, not in the implementation.
+6. Default. **Prefer explicit over inferred.** If a reader must derive a fact by
    reasoning about three other facts, state it.
 
 ## Pattern

@@ -3,6 +3,7 @@ name: functional-typescript-ts-pattern
 description: Use when a TypeScript project uses ts-pattern for matching, including exhaustive dispatch over unions, state machines, and Result handling.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -33,18 +34,18 @@ Not for: designing the union itself, which is
 
 ## Core rules
 
-1. **End every match with `.exhaustive()`.** That is the whole point;
+1. Rule. **End every match with `.exhaustive()`.** That is the whole point;
    `.otherwise()` throws the guarantee away.
-2. **Match on the discriminant first**, then on nested structure, so the
-   patterns read in the order a person would ask the questions.
-3. **Use `P.when` for guards**, not for business rules that deserve a
+2. Default. **Match on the discriminant first**, then on nested structure, so
+   the patterns read in the order a person would ask the questions.
+3. Default. **Use `P.when` for guards**, not for business rules that deserve a
    name. A guard should fit on a line.
-4. **Select what you use.** `P.select()` names the parts a handler needs
-   instead of reaching back into the value.
-5. **Keep handlers small.** A match arm that is ten lines should call a
-   named function.
-6. **Do not match on primitives that should be types.** Matching on a
-   raw status string is the smell the type was supposed to remove.
+4. Default. **Select what you use.** `P.select()` names the parts a handler
+   needs instead of reaching back into the value.
+5. Judgement. **Keep handlers small.** A match arm that is ten lines should call
+   a named function.
+6. Rule. **Do not match on primitives that should be types.** Matching on a raw
+   status string is the smell the type was supposed to remove.
 
 ## Pattern
 

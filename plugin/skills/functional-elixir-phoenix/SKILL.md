@@ -3,6 +3,7 @@ name: functional-elixir-phoenix
 description: Use when applying functional design in Elixir or Phoenix, including structs and typespecs, ok and error tuples, Ecto changesets, contexts, and OTP.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -45,21 +46,20 @@ Not for: Erlang-specific runtime tuning or release configuration.
 
 ## Core rules
 
-1. **`@enforce_keys` on every domain struct.** A struct with optional
-   keys is a record of maybes.
-2. **Construct through `new/1`**, returning `{:ok, struct}` or
-   `{:error, reason}`. Never build a domain struct with a literal outside
-   its module.
-3. **Tagged tuples for choices**, matched by function clauses rather than
-   by `case` inside one clause.
-4. **No catch-all clause on a domain function.** An unmatched value
-   should raise `FunctionClauseError`, which is a loud, findable bug.
-5. **`with` for pipelines that can fail**, and an `else` that names each
-   failure rather than one catch-all.
-6. **Contexts are bounded contexts**, not folders. Each owns its structs
+1. Rule. **`@enforce_keys` on every domain struct.** A struct with optional keys
+   is a record of maybes.
+2. Rule. **Construct through `new/1`**, returning `{:ok, struct}` or `{:error,
+   reason}`. Never build a domain struct with a literal outside its module.
+3. Default. **Tagged tuples for choices**, matched by function clauses rather
+   than by `case` inside one clause.
+4. Rule. **No catch-all clause on a domain function.** An unmatched value should
+   raise `FunctionClauseError`, which is a loud, findable bug.
+5. Default. **`with` for pipelines that can fail**, and an `else` that names
+   each failure rather than one catch-all.
+6. Rule. **Contexts are bounded contexts**, not folders. Each owns its structs
    and exposes functions; none reaches into another's schemas.
-7. **`@spec` on every public function, and run Dialyzer in CI.** Without
-   it the specs are comments.
+7. Default. **`@spec` on every public function, and run Dialyzer in CI.**
+   Without it the specs are comments.
 
 ## Pattern
 

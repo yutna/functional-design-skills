@@ -51,6 +51,16 @@ jobs:
       - name: Parse every code example
         run: npm run validate:examples
 
+      # A rule written in the same voice as every other rule gives an agent
+      # no way to tell a contract from a preference. This checks the label
+      # is there, not that it is the right one.
+      - name: Check every core rule declares how strict it is
+        run: npm run validate:rules
+
+      # A hand-written count is a count that drifts; three had by 3.0.0.
+      - name: Check documented counts against reality
+        run: npm run validate:counts
+
       - name: Score routing coverage
         run: npm run eval:routing
 

@@ -3,6 +3,7 @@ name: enforcing-consistency-boundaries
 description: Use when deciding what one transaction must cover, when two entities have to stay in step, or when identity and equality of domain values are unclear.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -53,24 +54,22 @@ Consequences worth acting on:
 
 ## Core rules
 
-1. **List the invariants first.** Write each rule as a sentence. "A
+1. Default. **List the invariants first.** Write each rule as a sentence. "A
    booking's total equals the sum of its treatments."
-2. **Group by invariant, not by relationship.** Data that must be
-   consistent together lives in the same aggregate. A foreign key is not
-   a reason to group.
-3. **One entry point per aggregate.** All changes go through the root;
+2. Rule. **Group by invariant, not by relationship.** Data that must be
+   consistent together lives in the same aggregate. A foreign key is not a
+   reason to group.
+3. Rule. **One entry point per aggregate.** All changes go through the root;
    nothing reaches inside to modify a part.
-4. **One aggregate, one transaction.** If an operation must change two
-   aggregates atomically, either the boundary is wrong or the rule is
-   eventual.
-5. **Reference other aggregates by identifier**, never by holding their
+4. Rule. **One aggregate, one transaction.** If an operation must change two
+   aggregates atomically, either the boundary is wrong or the rule is eventual.
+5. Rule. **Reference other aggregates by identifier**, never by holding their
    value. Holding it invites updating it.
-6. **Keep aggregates small.** The smallest cluster that keeps its
-   invariants is the right one; large aggregates serialise unrelated
-   work.
-7. **Say what happens between aggregates.** An event, a retry, a
-   reconciliation. "Eventually consistent" without a mechanism is a bug
-   with a name.
+6. Default. **Keep aggregates small.** The smallest cluster that keeps its
+   invariants is the right one; large aggregates serialise unrelated work.
+7. Rule. **Say what happens between aggregates.** An event, a retry, a
+   reconciliation. "Eventually consistent" without a mechanism is a bug with a
+   name.
 
 ## Pattern
 

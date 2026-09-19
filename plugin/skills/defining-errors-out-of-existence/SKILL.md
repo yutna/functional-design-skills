@@ -3,6 +3,7 @@ name: defining-errors-out-of-existence
 description: Use when error handling dwarfs the happy path, when the same failure is handled in many places, or when an interface forces callers to handle rare cases.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -78,18 +79,17 @@ produces damage that is worse and harder to trace.
 
 ## Core rules
 
-1. **Count the failures in an interface, and challenge each one.** For
-   each, ask what a caller could sensibly do. If the answer is nothing,
-   or always the same thing, it should not be there.
-2. **Prefer changing the definition to adding handling.** The best error
-   handling is an interface where the error is impossible or harmless.
-3. **Mask only where the recovery is universal.** If two callers would
+1. Default. **Count the failures in an interface, and challenge each one.** For
+   each, ask what a caller could sensibly do. If the answer is nothing, or
+   always the same thing, it should not be there.
+2. Default. **Prefer changing the definition to adding handling.** The best
+   error handling is an interface where the error is impossible or harmless.
+3. Rule. **Mask only where the recovery is universal.** If two callers would
    choose differently, the choice belongs to them.
-4. **Aggregate at the edge.** One place turns errors into responses,
+4. Default. **Aggregate at the edge.** One place turns errors into responses,
    messages, or retries.
-5. **Crash on impossible states.** Do not model programmer bugs as
-   values.
-6. **Do not define away a failure the business cares about.** Silently
+5. Rule. **Crash on impossible states.** Do not model programmer bugs as values.
+6. Rule. **Do not define away a failure the business cares about.** Silently
    returning a default for an unknown treatment code hides a real problem.
 
 ## Pattern

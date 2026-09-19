@@ -3,6 +3,7 @@ name: composing-functions
 description: Use when two steps do not fit together, when deciding parameter order, or when a signature is partial rather than total.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -33,19 +34,19 @@ Not for: designing the domain types themselves.
 
 ## Core rules
 
-1. **Make every function total.** Narrow the input type, or widen the
+1. Rule. **Make every function total.** Narrow the input type, or widen the
    output type to `Option` or `Result`. Never leave the gap implicit.
-2. **One input, one output, conceptually.** Group related parameters into
-   a named record rather than passing six positional arguments.
-3. **Put the varying argument last.** Data last, configuration and
+2. Judgement. **One input, one output, conceptually.** Group related parameters
+   into a named record rather than passing six positional arguments.
+3. Default. **Put the varying argument last.** Data last, configuration and
    dependencies first, so partial application produces a useful function.
-4. **Name the composed function.** A pipeline assigned to a name that
+4. Default. **Name the composed function.** A pipeline assigned to a name that
    states the business process beats a long anonymous chain.
-5. **Prefer explicit parameters to captured context.** A closure over
+5. Default. **Prefer explicit parameters to captured context.** A closure over
    module state is a hidden input.
-6. **Stop before the chain becomes unreadable.** Point-free style is a
-   tool, not a goal; a named intermediate value is often clearer.
-7. **Match the shapes before composing.** Lift pure into fallible, and
+6. Judgement. **Stop before the chain becomes unreadable.** Point-free style is
+   a tool, not a goal; a named intermediate value is often clearer.
+7. Rule. **Match the shapes before composing.** Lift pure into fallible, and
    fallible into asynchronous, deliberately.
 
 ## Totality

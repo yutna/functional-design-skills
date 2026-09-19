@@ -3,6 +3,7 @@ name: designing-workflow-pipelines
 description: Use when implementing a use case, command handler, or business process, or when logic for one operation is scattered across services and layers.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -34,20 +35,20 @@ Not for: designing the data itself, which is
 
 ## Core rules
 
-1. **Start with the end points.** Write the workflow's own signature
+1. Default. **Start with the end points.** Write the workflow's own signature
    before its steps: command in, `Result` of events out.
-2. **One type per stage.** The output of a step is a type that did not
+2. Default. **One type per stage.** The output of a step is a type that did not
    exist before it ran, so later steps cannot receive unvalidated data.
-3. **Each step is total.** Everything that can go wrong is in the return
+3. Rule. **Each step is total.** Everything that can go wrong is in the return
    type. No exceptions, no nulls, no hidden failure.
-4. **Effects at the ends only.** Steps that need the world take their
+4. Rule. **Effects at the ends only.** Steps that need the world take their
    capability as a parameter; the shell supplies it. See
    [parameterizing-dependencies](../parameterizing-dependencies/SKILL.md).
-5. **Steps are named in the domain's words**, and each one is meaningful
-   to a domain expert.
-6. **The pipeline is the documentation.** Reading the composed function
+5. Default. **Steps are named in the domain's words**, and each one is
+   meaningful to a domain expert.
+6. Default. **The pipeline is the documentation.** Reading the composed function
    should tell a reader what the business process is.
-7. **Emit events, do not perform them.** The workflow returns what
+7. Rule. **Emit events, do not perform them.** The workflow returns what
    happened; the shell decides who is told.
 
 ## Pattern

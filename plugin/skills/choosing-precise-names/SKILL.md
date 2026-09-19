@@ -3,6 +3,7 @@ name: choosing-precise-names
 description: Use when naming a function, type or variable, when a name is vague like data or handle, or when a name is generic or unusually hard to pick.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -31,21 +32,23 @@ Not for: deciding what to comment, which is
 
 ## Core rules
 
-1. **Be precise, not general.** A name should distinguish this thing from
-   everything nearby. `blockCount` beats `count`; `remainingBytes` beats
+1. Default. **Be precise, not general.** A name should distinguish this thing
+   from everything nearby. `blockCount` beats `count`; `remainingBytes` beats
    `size`.
-2. **Name the concept, not the shape.** `pendingInvoices` beats
+2. Default. **Name the concept, not the shape.** `pendingInvoices` beats
    `invoiceList`. The reader can see it is a list.
-3. **One word per concept, everywhere.** Pick `fetch` or `get` or `load`,
+3. Rule. **One word per concept, everywhere.** Pick `fetch` or `get` or `load`,
    and never use the other two for the same operation.
-4. **Do not encode the type or the module.** `bookingService.bookingSave` is
-   three redundancies; `Booking.save` says it once.
-5. **Name what it returns, not what it does inside.** `total`, not
+4. Default. **Do not encode the type or the module.**
+   `bookingService.bookingSave` is three redundancies; `Booking.save` says it
+   once.
+5. Default. **Name what it returns, not what it does inside.** `total`, not
    `calculateAndCacheTotal`.
-6. **Say what a boolean is true of.** `isExpired`, `hasUnpaidTreatments`.
-   Never `flag`, `check`, `status` for a boolean.
-7. **Treat difficulty as a signal.** If no good name exists, the thing is
-   doing two jobs or has no clear identity. Fix that instead of settling.
+6. Default. **Say what a boolean is true of.** `isExpired`,
+   `hasUnpaidTreatments`. Never `flag`, `check`, `status` for a boolean.
+7. Judgement. **Treat difficulty as a signal.** If no good name exists, the
+   thing is doing two jobs or has no clear identity. Fix that instead of
+   settling.
 
 ## Pattern
 

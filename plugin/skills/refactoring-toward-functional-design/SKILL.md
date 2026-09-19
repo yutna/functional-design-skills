@@ -3,6 +3,7 @@ name: refactoring-toward-functional-design
 description: Use when moving imperative or object-oriented code to functional design, when a code smell needs a move, or when a shape cannot absorb new requirements.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -34,30 +35,29 @@ Not for: designing something new, which starts at
 
 ## Core rules
 
-1. **Ask whether the thing should exist before choosing a move for it.**
-   State the requirement in the domain's words. Anything in the code that
-   the sentence did not mention — a flag, a cache, a required call order,
-   an unread field — is complexity you added, and it is deleted rather
-   than moved. Refactoring it is how it becomes permanent: once it has a
-   good name and a test, nobody removes it. See
+1. Rule. **Ask whether the thing should exist before choosing a move for it.**
+   State the requirement in the domain's words. Anything in the code that the
+   sentence did not mention — a flag, a cache, a required call order, an unread
+   field — is complexity you added, and it is deleted rather than moved.
+   Refactoring it is how it becomes permanent: once it has a good name and a
+   test, nobody removes it. See
    [essential-and-accidental.md](../diagnosing-complexity/references/essential-and-accidental.md).
-2. **Refactor where you are already working.** Unrelated cleanup is hard
-   to review and hides the real change.
-3. **One move at a time, tests green between each.** A move that cannot
-   be verified is a rewrite in disguise.
-4. **Start at the boundary of the module you are in**, not at the centre
-   of the system.
-5. **Make each move pay for itself.** If a step leaves the code no
+2. Default. **Refactor where you are already working.** Unrelated cleanup is
+   hard to review and hides the real change.
+3. Rule. **One move at a time, tests green between each.** A move that cannot be
+   verified is a rewrite in disguise.
+4. Default. **Start at the boundary of the module you are in**, not at the
+   centre of the system.
+5. Default. **Make each move pay for itself.** If a step leaves the code no
    better, it is not one of the moves below.
-6. **Move rules inward, effects outward.** Every step should shrink the
+6. Default. **Move rules inward, effects outward.** Every step should shrink the
    impure region.
-7. **Convert types before functions.** A precise type makes the function
-   changes obvious and often mechanical.
-8. **Never widen a type to accommodate a new requirement.** Ask first
+7. Default. **Convert types before functions.** A precise type makes the
+   function changes obvious and often mechanical.
+8. Rule. **Never widen a type to accommodate a new requirement.** Ask first
    whether the requirement is a different concept.
-9. **One move per commit, and revert any move that takes more than a
-   few minutes.** A half-applied move is the worst state the code can
-   be in.
+9. Rule. **One move per commit, and revert any move that takes more than a few
+   minutes.** A half-applied move is the worst state the code can be in.
 
 ## The ordered moves
 

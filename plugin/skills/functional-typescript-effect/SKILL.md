@@ -3,6 +3,7 @@ name: functional-typescript-effect
 description: Use when applying functional design in a TypeScript project built on the Effect library, including services, layers, schema boundaries, and tagged errors.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -49,19 +50,19 @@ Not for: TypeScript without Effect, which has
 
 ## Core rules
 
-1. **Keep pure functions pure.** A calculation that needs nothing from
-   the world is a plain function, not an `Effect`. Wrapping it hides that
-   it is free of effects.
-2. **Put every failure in the error channel**, as a tagged error, never
-   as a thrown exception.
-3. **Declare dependencies as services**; let the requirements channel
+1. Rule. **Keep pure functions pure.** A calculation that needs nothing from the
+   world is a plain function, not an `Effect`. Wrapping it hides that it is free
+   of effects.
+2. Rule. **Put every failure in the error channel**, as a tagged error, never as
+   a thrown exception.
+3. Default. **Declare dependencies as services**; let the requirements channel
    accumulate them, and provide layers only at the edge.
-4. **Parse at the boundary with a schema**, producing branded domain
+4. Rule. **Parse at the boundary with a schema**, producing branded domain
    types, and never let the encoded shape inward.
-5. **One error union per workflow**, built from tagged errors, handled
+5. Default. **One error union per workflow**, built from tagged errors, handled
    with `catchTag` or `catchTags`.
-6. **Acquire resources with a scope**, so release happens on every path.
-7. **Run the effect once, at the edge.** `runPromise` belongs in the
+6. Rule. **Acquire resources with a scope**, so release happens on every path.
+7. Rule. **Run the effect once, at the edge.** `runPromise` belongs in the
    composition root, not in domain code.
 
 ## Pattern

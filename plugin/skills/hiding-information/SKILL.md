@@ -3,6 +3,7 @@ name: hiding-information
 description: Use when callers know how a module works inside, when one data format appears in several modules, or when each step of a process became a module.
 license: MIT
 metadata:
+  pack: functional-design-skills
   version: 2.0.1
 ---
 
@@ -33,21 +34,21 @@ Not for: judging whether a module is worth its interface, which is
 
 ## Core rules
 
-1. **Name the knowledge each module owns.** Write one line per module:
-   "this module is the only place that knows X". If two modules claim the
-   same X, that is leakage, and one of them must stop.
-2. **Decompose by knowledge, not by time.** Modules named `parse`,
-   `enrich`, `send` follow the order things happen. Order changes;
-   knowledge does not. See
+1. Default. **Name the knowledge each module owns.** Write one line per module:
+   "this module is the only place that knows X". If two modules claim the same
+   X, that is leakage, and one of them must stop.
+2. Default. **Decompose by knowledge, not by time.** Modules named `parse`,
+   `enrich`, `send` follow the order things happen. Order changes; knowledge
+   does not. See
    [temporal-decomposition.md](references/temporal-decomposition.md).
-3. **Export the least that still serves callers.** Every exported name is
-   a promise. Removing one later breaks people.
-4. **Do not leak through types.** An exported type whose fields mirror a
+3. Default. **Export the least that still serves callers.** Every exported name
+   is a promise. Removing one later breaks people.
+4. Rule. **Do not leak through types.** An exported type whose fields mirror a
    database row leaks the schema even if no function does.
-5. **Do not leak through errors.** An error carrying a driver-specific
+5. Rule. **Do not leak through errors.** An error carrying a driver-specific
    code makes every caller depend on the driver.
-6. **Do not thread values that nobody in between reads.** A pass-through
-   value in five signatures is five modules knowing about it. See
+6. Default. **Do not thread values that nobody in between reads.** A
+   pass-through value in five signatures is five modules knowing about it. See
    [leakage-catalog.md](references/leakage-catalog.md).
 
 ## Pattern
