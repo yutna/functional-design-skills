@@ -1,6 +1,9 @@
 ---
 name: crossing-io-boundaries
 description: Use when mapping between domain types and JSON, database rows, or API payloads, or when a storage or wire shape has leaked into the domain model.
+license: MIT
+metadata:
+  version: 2.0.0
 ---
 
 # Crossing IO Boundaries

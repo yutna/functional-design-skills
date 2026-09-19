@@ -1,6 +1,9 @@
 ---
 name: making-effects-reliable
 description: Use when a timeout leaves an effect unsure, when a retry could charge or send twice, when a saved change is published separately, or across systems.
+license: MIT
+metadata:
+  version: 2.0.0
 ---
 
 # Making Effects Reliable

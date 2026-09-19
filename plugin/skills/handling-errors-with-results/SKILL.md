@@ -1,6 +1,9 @@
 ---
 name: handling-errors-with-results
 description: Use when a function throws and callers cannot tell, when exceptions cross module boundaries, or when validation must report every problem.
+license: MIT
+metadata:
+  version: 2.0.0
 ---
 
 # Handling Errors With Results

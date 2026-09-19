@@ -1,6 +1,9 @@
 ---
 name: hiding-information
 description: Use when callers know how a module works inside, when one data format appears in several modules, or when each step of a process became a module.
+license: MIT
+metadata:
+  version: 2.0.0
 ---
 
 # Hiding Information

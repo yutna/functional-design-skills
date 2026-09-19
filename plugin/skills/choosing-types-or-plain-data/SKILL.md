@@ -1,6 +1,9 @@
 ---
 name: choosing-types-or-plain-data
 description: Use when deciding whether a shape belongs in a type or stays generic data, when fields vary by tenant, config, or request, or when wrapper types feel heavy.
+license: MIT
+metadata:
+  version: 2.0.0
 ---
 
 # Choosing Types or Plain Data

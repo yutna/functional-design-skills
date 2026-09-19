@@ -1,6 +1,9 @@
 ---
 name: folding-over-data
 description: Use when a loop accumulates into a variable, when combining a collection into one value, or when traversing a tree or other recursive structure.
+license: MIT
+metadata:
+  version: 2.0.0
 ---
 
 # Folding Over Data

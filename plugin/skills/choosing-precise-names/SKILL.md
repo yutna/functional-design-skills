@@ -1,6 +1,9 @@
 ---
 name: choosing-precise-names
 description: Use when naming a function, type or variable, when a name is vague like data or handle, or when a name is generic or unusually hard to pick.
+license: MIT
+metadata:
+  version: 2.0.0
 ---
 
 # Choosing Precise Names

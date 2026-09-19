@@ -1,6 +1,9 @@
 ---
 name: functional-typescript-effect
 description: Use when applying functional design in a TypeScript project built on the Effect library, including services, layers, schema boundaries, and tagged errors.
+license: MIT
+metadata:
+  version: 2.0.0
 ---
 
 # Functional TypeScript With Effect

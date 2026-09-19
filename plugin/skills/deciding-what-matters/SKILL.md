@@ -1,6 +1,9 @@
 ---
 name: deciding-what-matters
 description: Use when code is correct but hard to follow, when deciding what an interface should expose, or when a reader cannot tell which parts are important.
+license: MIT
+metadata:
+  version: 2.0.0
 ---
 
 # Deciding What Matters

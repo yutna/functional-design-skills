@@ -1,6 +1,9 @@
 ---
 name: making-illegal-states-unrepresentable
 description: Use when a type can hold combinations the business forbids, when booleans and nullable fields encode state, or when code guards impossible values.
+license: MIT
+metadata:
+  version: 2.0.0
 ---
 
 # Making Illegal States Unrepresentable

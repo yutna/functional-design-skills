@@ -1,6 +1,9 @@
 ---
 name: refactoring-toward-functional-design
 description: Use when moving imperative or object-oriented code to functional design, when a code smell needs a move, or when a shape cannot absorb new requirements.
+license: MIT
+metadata:
+  version: 2.0.0
 ---
 
 # Refactoring Toward Functional Design

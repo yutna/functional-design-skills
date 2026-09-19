@@ -1,6 +1,9 @@
 ---
 name: modeling-with-algebraic-types
 description: Use when designing domain types, when a record has many optional fields, or when choosing between a record, a union, and a bare primitive.
+license: MIT
+metadata:
+  version: 2.0.0
 ---
 
 # Modeling With Algebraic Types

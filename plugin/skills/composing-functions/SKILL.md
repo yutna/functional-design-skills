@@ -1,6 +1,9 @@
 ---
 name: composing-functions
 description: Use when two steps do not fit together, when deciding parameter order, or when a signature is partial rather than total.
+license: MIT
+metadata:
+  version: 2.0.0
 ---
 
 # Composing Functions

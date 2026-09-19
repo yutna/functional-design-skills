@@ -1,6 +1,9 @@
 ---
 name: functional-typescript-ts-pattern
 description: Use when a TypeScript project uses ts-pattern for matching, including exhaustive dispatch over unions, state machines, and Result handling.
+license: MIT
+metadata:
+  version: 2.0.0
 ---
 
 # Functional TypeScript With ts-pattern

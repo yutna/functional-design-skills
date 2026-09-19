@@ -1,6 +1,9 @@
 ---
 name: functional-javascript
 description: Use when applying functional design in plain JavaScript, without a type checker, including immutability, tagged unions, and Result-style error handling.
+license: MIT
+metadata:
+  version: 2.0.0
 ---
 
 # Functional JavaScript

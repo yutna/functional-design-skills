@@ -1,6 +1,9 @@
 ---
 name: managing-state-immutably
 description: Use when code mutates shared data or updates a record in place, when a concurrent update is lost or races, or when deciding how state changes over time.
+license: MIT
+metadata:
+  version: 2.0.0
 ---
 
 # Managing State Immutably

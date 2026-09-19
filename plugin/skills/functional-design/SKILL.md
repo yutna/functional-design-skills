@@ -1,6 +1,9 @@
 ---
 name: functional-design
 description: Use when starting design or review, when deciding how much design a task warrants, from a throwaway script to a new subsystem, or when unsure which skill fits.
+license: MIT
+metadata:
+  version: 2.0.0
 ---
 
 # Functional Design

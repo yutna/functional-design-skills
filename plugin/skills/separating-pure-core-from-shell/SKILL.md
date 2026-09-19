@@ -1,6 +1,9 @@
 ---
 name: separating-pure-core-from-shell
 description: Use when business logic cannot be tested without I/O, when deciding where a database or HTTP call belongs, or when structuring a service or application.
+license: MIT
+metadata:
+  version: 2.0.0
 ---
 
 # Separating Pure Core From Shell

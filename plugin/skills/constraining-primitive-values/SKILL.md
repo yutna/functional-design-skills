@@ -1,6 +1,9 @@
 ---
 name: constraining-primitive-values
 description: Use when domain values are raw strings or numbers, when the same format or range check appears in more than one place, or when ids can be swapped.
+license: MIT
+metadata:
+  version: 2.0.0
 ---
 
 # Constraining Primitive Values

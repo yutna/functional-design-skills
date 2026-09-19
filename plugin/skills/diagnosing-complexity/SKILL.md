@@ -1,6 +1,9 @@
 ---
 name: diagnosing-complexity
 description: Use when a small change touches many files, when an edit breaks a module nobody expected, when code is slow to read, or when complexity looks self-inflicted.
+license: MIT
+metadata:
+  version: 2.0.0
 ---
 
 # Diagnosing Complexity

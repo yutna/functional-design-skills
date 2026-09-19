@@ -1,6 +1,9 @@
 ---
 name: functional-typescript
 description: Use when applying functional design in TypeScript without a functional library, including branded types, discriminated unions, and hand-rolled Result.
+license: MIT
+metadata:
+  version: 2.0.0
 ---
 
 # Functional TypeScript

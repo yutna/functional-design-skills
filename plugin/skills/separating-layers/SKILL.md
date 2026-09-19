@@ -1,6 +1,9 @@
 ---
 name: separating-layers
 description: Use when adjacent layers repeat the same abstraction, when a function only forwards to another, or when callers repeat the same lines after it.
+license: MIT
+metadata:
+  version: 2.0.0
 ---
 
 # Separating Layers

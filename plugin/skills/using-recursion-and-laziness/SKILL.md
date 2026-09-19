@@ -1,6 +1,9 @@
 ---
 name: using-recursion-and-laziness
 description: Use when a stack overflows, when data is too large to hold in memory, when an expensive result is recomputed, or when writing recursive functions.
+license: MIT
+metadata:
+  version: 2.0.0
 ---
 
 # Using Recursion and Laziness

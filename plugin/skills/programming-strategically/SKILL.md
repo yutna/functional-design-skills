@@ -1,6 +1,9 @@
 ---
 name: programming-strategically
 description: Use when a deadline tempts a shortcut, when editing existing code, or when a codebase degrades a little with every change.
+license: MIT
+metadata:
+  version: 2.0.0
 ---
 
 # Programming Strategically

@@ -249,7 +249,10 @@ function validateBody (id, rawBody) {
 // worked-read-model.md and worked-refactor.md were in that state.
 function validateReferences (id, dir, body) {
   const linked = new Set()
-  for (const match of body.matchAll(/references\/([\w-]+\.md)/g)) {
+  // Only this skill's own references. A cross-skill link reads
+  // `../other-skill/references/x.md`, so anything preceded by a path
+  // separator belongs to somebody else.
+  for (const match of body.matchAll(/(?<![\w/.-])references\/([\w-]+\.md)/g)) {
     linked.add(match[1])
   }
   let present
