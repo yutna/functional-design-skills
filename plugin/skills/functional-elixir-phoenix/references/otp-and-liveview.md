@@ -55,7 +55,7 @@ disagree with the database eventually.
 ## Supervision and failure
 
 Letting a process crash is the Elixir form of
-[defining-errors-out-of-existence](../../defining-errors-out-of-existence/SKILL.md):
+[functional-defining-errors-out-of-existence](../../functional-defining-errors-out-of-existence/SKILL.md):
 for a condition that means the program is wrong, crashing and restarting
 from a known state is more honest than handling.
 
@@ -82,7 +82,7 @@ end
 
 The fetches run concurrently; the decision stays pure and sequential.
 This is dependency rejection: gather first, decide afterwards. See
-[strategies.md](../../parameterizing-dependencies/references/strategies.md).
+[strategies.md](../../functional-parameterizing-dependencies/references/strategies.md).
 
 ## LiveView
 
@@ -121,7 +121,7 @@ Rules that keep it clean:
 ## PubSub and events
 
 A context that returns events, as
-[designing-workflow-pipelines](../../designing-workflow-pipelines/SKILL.md)
+[functional-designing-workflow-pipelines](../../functional-designing-workflow-pipelines/SKILL.md)
 describes, lets the shell decide who hears about them.
 
 ```elixir

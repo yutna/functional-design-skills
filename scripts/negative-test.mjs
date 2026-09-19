@@ -19,7 +19,7 @@ import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)))
-const SKILL = join('plugin', 'skills', 'folding-over-data', 'SKILL.md')
+const SKILL = join('plugin', 'skills', 'functional-folding-over-data', 'SKILL.md')
 
 // Each case: what we break, the edit that breaks it, the text the validator
 // must produce, and which validator. The edit is [find, replace] applied to
@@ -31,7 +31,7 @@ const SKILL = join('plugin', 'skills', 'folding-over-data', 'SKILL.md')
 // copy of it is gone.
 const CASES = [
   ['name mismatches its directory', SKILL,
-    ['name: folding-over-data', 'name: folding-over-datum'], 'but the directory is'],
+    ['name: functional-folding-over-data', 'name: folding-over-datum'], 'but the directory is'],
   ['a frontmatter key the platform has not got', SKILL,
     ['license: MIT', 'license: MIT\ncolour: blue'], 'is not one Claude Code accepts'],
   ['a skill left on the previous version', SKILL,
@@ -47,10 +47,10 @@ const CASES = [
   ['a link to a reference that is not there', SKILL,
     ['references/monoids.md', 'references/nope.md'], 'but the file is missing'],
   ['a long reference with no way into it',
-    join('plugin', 'skills', 'folding-over-data', 'references', 'monoids.md'),
+    join('plugin', 'skills', 'functional-folding-over-data', 'references', 'monoids.md'),
     ['## Contents', '## Table of contents'], 'has no contents list'],
   ['a contents list whose anchor matches no heading',
-    join('plugin', 'skills', 'folding-over-data', 'references', 'monoids.md'),
+    join('plugin', 'skills', 'functional-folding-over-data', 'references', 'monoids.md'),
     ['## Familiar examples', '## Familiar exampels'], 'no heading matches the anchor'],
   ['a reference no skill links to', SKILL,
     ['[fold-recipes.md](references/fold-recipes.md)', 'fold-recipes.md'], 'is not linked from its own SKILL.md'],
@@ -76,7 +76,7 @@ const CASES = [
     'but this pack is'],
   ['an eval naming a skill that no longer exists',
     join('evals', 'scenarios.md'),
-    ['`folding-over-data`', '`folding-over-datum`'],
+    ['`functional-folding-over-data`', '`functional-folding-over-datum`'],
     'which is not a skill'],
   ['a pack that extends another without linking to it',
     join('plugin', 'skills', 'functional-typescript-effect', 'SKILL.md'),

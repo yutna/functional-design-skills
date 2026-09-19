@@ -126,7 +126,7 @@ at the end. Worth using whenever the arms are non-trivial.
    configuration, where a coverage test replaces the compiler's check.
 
 Everywhere else, `.otherwise()` is a silenced compile error. See
-[applying-solid-functionally](../../applying-solid-functionally/SKILL.md)
+[functional-applying-solid-functionally](../../functional-applying-solid-functionally/SKILL.md)
 for choosing between a closed union and an open dispatch.
 
 ## Interaction with the design rules
@@ -136,7 +136,7 @@ for choosing between a closed union and an open dispatch.
   work.
 - **Match on types, not on strings.** If the pattern is a string
   literal from a `status` field, the type is wrong. See
-  [modeling-state-machines](../../modeling-state-machines/SKILL.md).
+  [functional-modeling-state-machines](../../functional-modeling-state-machines/SKILL.md).
 - **One match per decision.** Two matches over the same value in one
   function usually means the second belongs in the first's handlers.
 - **Handlers call named functions.** A match is a dispatch table; the

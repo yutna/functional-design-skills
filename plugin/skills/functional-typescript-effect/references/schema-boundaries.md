@@ -60,7 +60,7 @@ const parseBooking = Schema.decodeUnknown(Booking);
 One call parses, validates, and brands, producing a value the rest of the
 system can trust. Everything past it is written against types that cannot
 be wrong. See
-[making-illegal-states-unrepresentable](../../making-illegal-states-unrepresentable/SKILL.md).
+[functional-making-illegal-states-unrepresentable](../../functional-making-illegal-states-unrepresentable/SKILL.md).
 
 To report every problem at once rather than the first:
 
@@ -69,7 +69,7 @@ Schema.decodeUnknown(Booking)(input, { errors: "all" });
 ```
 
 Use that for forms and batch imports. See
-[applicative-validation.md](../../handling-errors-with-results/references/applicative-validation.md).
+[applicative-validation.md](../../functional-handling-errors-with-results/references/applicative-validation.md).
 
 ## Encoding
 
@@ -137,7 +137,7 @@ const fromV1 = (
 
 Add a schema and a mapping per wire version; keep the domain type stable.
 See
-[dto-mapping.md](../../crossing-io-boundaries/references/dto-mapping.md).
+[dto-mapping.md](../../functional-crossing-io-boundaries/references/dto-mapping.md).
 
 ## What not to do
 

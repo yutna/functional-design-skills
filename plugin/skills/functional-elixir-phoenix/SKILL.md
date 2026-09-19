@@ -101,7 +101,7 @@ The first clause matches only a held appointment, so an illegal
 transition cannot reach the body. The status tuple carries the timestamp
 that belongs to each state, which removes the nullable
 `confirmed_at`, `cancelled_at` columns from the domain type. See
-[modeling-state-machines](../modeling-state-machines/SKILL.md).
+[functional-modeling-state-machines](../functional-modeling-state-machines/SKILL.md).
 
 ## Pipelines with `with`
 
@@ -123,7 +123,7 @@ end
 ```
 
 `with` is the railway composition of
-[handling-errors-with-results](../handling-errors-with-results/SKILL.md).
+[functional-handling-errors-with-results](../functional-handling-errors-with-results/SKILL.md).
 Name each failure in `else`; a single `_ -> {:error, :failed}` throws
 away everything the error channel was carrying.
 
@@ -163,7 +163,7 @@ or when the map is only stored and forwarded.
 
 The usual answer is a struct whose one field is a map: the envelope
 modelled, the varying part generic. See
-[choosing-types-or-plain-data](../choosing-types-or-plain-data/SKILL.md).
+[functional-choosing-types-or-plain-data](../functional-choosing-types-or-plain-data/SKILL.md).
 Note that Ecto's `:map` column and embedded schemas are exactly this
 split expressed in the database.
 
@@ -196,10 +196,10 @@ split expressed in the database.
 
 ## Related skills
 
-- [modeling-state-machines](../modeling-state-machines/SKILL.md)
-- [handling-errors-with-results](../handling-errors-with-results/SKILL.md)
-- [crossing-io-boundaries](../crossing-io-boundaries/SKILL.md)
-- [capturing-the-domain](../capturing-the-domain/SKILL.md)
+- [functional-modeling-state-machines](../functional-modeling-state-machines/SKILL.md)
+- [functional-handling-errors-with-results](../functional-handling-errors-with-results/SKILL.md)
+- [functional-crossing-io-boundaries](../functional-crossing-io-boundaries/SKILL.md)
+- [functional-capturing-the-domain](../functional-capturing-the-domain/SKILL.md)
 
 ## Further reading
 

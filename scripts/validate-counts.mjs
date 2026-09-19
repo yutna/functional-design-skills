@@ -32,13 +32,36 @@ const skillIds = readdirSync(join(ROOT, 'plugin', 'skills'), {
   withFileTypes: true,
 }).filter((entry) => entry.isDirectory()).map((entry) => entry.name)
 
-// The index is a language pack's sibling by name and neither by job, so it is
-// counted out of both groups.
+// Since 3.0.0 every skill is named functional-something, so the name no
+// longer says whether a skill is a core rule or a language pack. The index
+// already lists the packs, and that list is maintained because readers use
+// it, so it is the authority here rather than a second list in this script.
 const INDEX = 'functional-design'
-const languagePacks = skillIds.filter(
-  (id) => id.startsWith('functional-') && id !== INDEX,
-)
-const coreSkills = skillIds.filter((id) => !id.startsWith('functional-'))
+
+function declaredLanguagePacks () {
+  const body = read(`plugin/skills/${INDEX}/SKILL.md`)
+  const section = /^## Language packs\n([\s\S]*?)^## /m.exec(body)
+  if (section === null) {
+    throw new Error(
+      `plugin/skills/${INDEX}/SKILL.md: no "## Language packs" section, so ` +
+        'nothing can tell a pack from a core skill',
+    )
+  }
+  return [...section[1].matchAll(/^- \[([a-z0-9-]+)\]/gm)].map((m) => m[1])
+}
+
+const languagePacks = declaredLanguagePacks()
+const packSet = new Set([...languagePacks, INDEX])
+const coreSkills = skillIds.filter((id) => !packSet.has(id))
+
+for (const pack of languagePacks) {
+  if (!skillIds.includes(pack)) {
+    throw new Error(
+      `plugin/skills/${INDEX}/SKILL.md lists "${pack}" as a language pack, ` +
+        'but no such skill exists',
+    )
+  }
+}
 
 function read (relative) {
   return readFileSync(join(ROOT, relative), 'utf8')
@@ -86,9 +109,9 @@ const CLAIMS = [
   ['README.md', 'coreSkills', /An index and ([a-z-]+) core skills/],
   ['README.md', 'languagePacks', /([a-z-]+) language packs translate/],
   ['README.md', 'skills', /the (\d+) skills score exactly zero/],
-  ['CLAUDE.md', 'skills', /There are ([a-z-]+) skills\./],
-  ['CLAUDE.md', 'languagePacks', /([A-Za-z-]+) are language packs/],
-  ['CLAUDE.md', 'coreSkills', /the remaining ([a-z-]+) carry one design/],
+  ['CLAUDE.md', 'skills', /There are ([a-z-]+) skills, and every one/],
+  ['CLAUDE.md', 'languagePacks', /([A-Za-z-]+) are\s+language packs, named for the stack/],
+  ['CLAUDE.md', 'coreSkills', /the remaining ([a-z-]+) carry\s+one design/],
   ['evals/README.md', 'skills', /the (\d+) skills score exactly zero/],
   ['evals/README.md', 'scenarios', /holds ([a-z-]+) fuller problems/],
   // A record of a measurement, not a description of the suite. It stays

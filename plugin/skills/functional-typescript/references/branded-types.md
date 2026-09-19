@@ -134,7 +134,7 @@ default.
   what guarantees the value, not the type.
 - **`JSON.parse` results.** They arrive as `unknown` or `any`. Parse into
   branded types at the boundary. See
-  [crossing-io-boundaries](../../crossing-io-boundaries/SKILL.md).
+  [functional-crossing-io-boundaries](../../functional-crossing-io-boundaries/SKILL.md).
 - **Library boundaries.** A library taking `string` accepts a branded
   string, which is usually what you want; unwrap explicitly where the
   intent matters.
@@ -156,4 +156,4 @@ test("rejects each failure case", () => {
 
 Add a property test that arbitrary strings never crash the parser and
 never produce a value violating the pattern. See
-[property-testing.md](../../testing-functional-code/references/property-testing.md).
+[property-testing.md](../../functional-testing-functional-code/references/property-testing.md).

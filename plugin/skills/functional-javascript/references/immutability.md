@@ -94,7 +94,7 @@ plain frozen object, so nothing about `immer` escapes into the domain
 types. That is what makes it a different choice from `immutable`, whose
 `Map` and `List` are their own types and must be confined to one
 module. See
-[persistent-structures.md](../../managing-state-immutably/references/persistent-structures.md).
+[persistent-structures.md](../../functional-managing-state-immutably/references/persistent-structures.md).
 
 ## Maps and sets
 
@@ -111,7 +111,7 @@ data: its values are not plain objects, so everything crossing that
 module's boundary should be converted. Measure first — the copy is
 cheaper than the conversion until the collection is genuinely large.
 See
-[persistent-structures.md](../../managing-state-immutably/references/persistent-structures.md).
+[persistent-structures.md](../../functional-managing-state-immutably/references/persistent-structures.md).
 
 ## Local mutation that is invisible
 
@@ -146,7 +146,7 @@ loop when it reads better.
 
 Do not reach for a deep-equality utility in domain code; it hides the
 question of what equality means for that concept. See
-[enforcing-consistency-boundaries](../../enforcing-consistency-boundaries/SKILL.md).
+[functional-enforcing-consistency-boundaries](../../functional-enforcing-consistency-boundaries/SKILL.md).
 
 ## Class instances
 

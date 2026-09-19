@@ -81,7 +81,7 @@ rule table.
 ## 7. Review
 
 Run the red-flag pass from
-[reviewing-functional-design](../../reviewing-functional-design/SKILL.md).
+[functional-reviewing-functional-design](../../functional-reviewing-functional-design/SKILL.md).
 For this feature the questions that bite are: can an expired discount
 reach `reprice`, does `ApplyDiscountError` distinguish "unknown code" from
 "expired code", and does any caller need to know the order of the steps.

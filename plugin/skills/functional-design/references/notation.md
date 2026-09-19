@@ -73,7 +73,7 @@ confirmBooking = validate >=> price >=> acknowledge
 
 `>>` composes plain functions. `>=>` composes functions that each return
 `Result`, short-circuiting on the first error. See
-[handling-errors-with-results](../../handling-errors-with-results/SKILL.md).
+[functional-handling-errors-with-results](../../functional-handling-errors-with-results/SKILL.md).
 
 ## Standard types
 
@@ -114,7 +114,7 @@ saveBooking : Booking -> AsyncResult<Unit, DbError>
 If a signature has no effect type, it does no I/O, reads no clock, and
 draws no random numbers. That guarantee is what makes the core testable.
 See
-[separating-pure-core-from-shell](../../separating-pure-core-from-shell/SKILL.md).
+[functional-separating-pure-core-from-shell](../../functional-separating-pure-core-from-shell/SKILL.md).
 
 ## Translating to a real language
 

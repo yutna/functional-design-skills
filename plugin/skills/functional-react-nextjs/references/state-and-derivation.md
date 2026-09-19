@@ -49,7 +49,7 @@ the memo.
 
 When a screen has several states and several events, a reducer is the
 state machine from
-[modeling-state-machines](../../modeling-state-machines/SKILL.md).
+[functional-modeling-state-machines](../../functional-modeling-state-machines/SKILL.md).
 
 ```tsx
 type State =
@@ -134,7 +134,7 @@ screen rendering a spinner over stale data.
 A component several levels deep that fetches is the temporal
 decomposition smell: it couples a leaf to the network and makes the
 subtree untestable. See
-[hiding-information](../../hiding-information/SKILL.md).
+[functional-hiding-information](../../functional-hiding-information/SKILL.md).
 
 ## Keeping rules out of components
 
@@ -151,7 +151,7 @@ const onSubmit = () => dispatch({ tag: "Submitted", decision });
 
 The pure function is testable with two plain values, reusable on the
 server, and reviewable by someone who does not know React. See
-[separating-pure-core-from-shell](../../separating-pure-core-from-shell/SKILL.md).
+[functional-separating-pure-core-from-shell](../../functional-separating-pure-core-from-shell/SKILL.md).
 
 ## Components as deep modules
 
@@ -173,7 +173,7 @@ const deep = <BookingTable bookings={bookings} onSelect={onSelect} />;
 
 Sorting, paging, and empty handling are the table's job. Pull that
 complexity down. See
-[separating-layers](../../separating-layers/SKILL.md).
+[functional-separating-layers](../../functional-separating-layers/SKILL.md).
 
 ## Immutability
 

@@ -112,7 +112,7 @@ const pipe =
 ```
 
 Thirty lines covers the whole of
-[handling-errors-with-results](../handling-errors-with-results/SKILL.md).
+[functional-handling-errors-with-results](../functional-handling-errors-with-results/SKILL.md).
 More, including async, in
 [result-and-async.md](references/result-and-async.md).
 
@@ -122,7 +122,7 @@ Without a checker, a wrapper buys a name and a constructor, not an
 enforced guarantee. That makes the temptation to skip modelling stronger
 here than anywhere else in this pack, and the rule is unchanged: model
 the shape, and leave it a plain object only on the observable facts in
-[choosing-types-or-plain-data](../choosing-types-or-plain-data/SKILL.md).
+[functional-choosing-types-or-plain-data](../functional-choosing-types-or-plain-data/SKILL.md).
 
 What changes in JavaScript is the enforcement, not the decision. A
 modelled shape here means a constructor function that is the only place
@@ -160,9 +160,9 @@ absence of any design.
 
 ## Related skills
 
-- [modeling-with-algebraic-types](../modeling-with-algebraic-types/SKILL.md)
-- [handling-errors-with-results](../handling-errors-with-results/SKILL.md)
-- [managing-state-immutably](../managing-state-immutably/SKILL.md)
+- [functional-modeling-with-algebraic-types](../functional-modeling-with-algebraic-types/SKILL.md)
+- [functional-handling-errors-with-results](../functional-handling-errors-with-results/SKILL.md)
+- [functional-managing-state-immutably](../functional-managing-state-immutably/SKILL.md)
 - [functional-typescript](../functional-typescript/SKILL.md)
 
 ## Further reading

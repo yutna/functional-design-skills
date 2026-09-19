@@ -91,7 +91,7 @@ const confirmBooking = (
 ```
 
 Both styles are correct. Pick one per codebase. See
-[consistency.md](../../programming-strategically/references/consistency.md).
+[consistency.md](../../functional-programming-strategically/references/consistency.md).
 
 ## Collections
 
@@ -166,7 +166,7 @@ const classify = (e: unknown): SaveError => {
 `catch (e: unknown)` is the honest type; narrow it with a type guard
 rather than casting. Keep `cause` as `unknown` so callers cannot branch
 on a driver detail. See
-[error-taxonomy.md](../../handling-errors-with-results/references/error-taxonomy.md).
+[error-taxonomy.md](../../functional-handling-errors-with-results/references/error-taxonomy.md).
 
 ## Error types
 

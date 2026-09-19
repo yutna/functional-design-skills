@@ -4,8 +4,18 @@
 # continuous integration. This file exists only to tell mise to honour that
 # file, which recent versions do not do by default.
 #
-# Node is the only tool needed. Every validation script runs on it, and
-# markdownlint-cli2 comes from npm.
+# Node runs every validation script, and markdownlint-cli2 comes from npm.
+#
+# PowerShell is here because this repository keeps two implementations of
+# each install script, and the rule is that a change to one is a change to
+# the other in the same commit. Without a local pwsh there is no way to run
+# the PowerShell half, and "continuous integration will catch it" is how the
+# Windows-only branch of link-local.ps1 went unrun for as long as it did. It
+# is a large download; skip it with `mise settings add disable_tools
+# powershell` if you are only touching prose.
 
 [settings]
 idiomatic_version_file_enable_tools = ["node"]
+
+[tools]
+powershell = "7.6.6"

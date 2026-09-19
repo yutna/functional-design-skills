@@ -114,7 +114,7 @@ is the index; the rest of the pack carries one rule each.
   exists, that is an honest signature and a precise name, nothing more.
 - Before finishing a change that added or reshaped a type, a signature,
   or a module boundary, run the checklist in
-  `reviewing-functional-design`.
+  `functional-reviewing-functional-design`.
 - Use `functional-typescript` for concrete syntax.
 ```
 
@@ -128,9 +128,9 @@ answer names a skill:
 
 > we have four nullable fields that only make sense in some combinations
 
-Expect the agent to reach `making-illegal-states-unrepresentable`. If it
-answers from general knowledge without naming a skill, the files are in
-the wrong directory.
+Expect the agent to reach `functional-making-illegal-states-unrepresentable`. If
+it answers from general knowledge without naming a skill, the files are in the
+wrong directory.
 
 ## If it over-engineers
 

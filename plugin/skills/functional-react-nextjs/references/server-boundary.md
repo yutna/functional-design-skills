@@ -2,7 +2,7 @@
 
 In Next.js the server and client split is a real boundary, with
 serialisation across it. Treat it exactly as
-[crossing-io-boundaries](../../crossing-io-boundaries/SKILL.md)
+[functional-crossing-io-boundaries](../../functional-crossing-io-boundaries/SKILL.md)
 describes: two type families, an explicit mapping, and validation on the
 way in.
 
@@ -51,7 +51,7 @@ functions, and dates all lose or change meaning across the boundary, so
 convert deliberately rather than discovering it at runtime.
 
 A view type per screen is usually better than sending the aggregate. See
-[persistence-patterns.md](../../crossing-io-boundaries/references/persistence-patterns.md).
+[persistence-patterns.md](../../functional-crossing-io-boundaries/references/persistence-patterns.md).
 
 ## Server Actions as workflows
 
@@ -137,7 +137,7 @@ const parseBookingForm = (
 
 Each error carries its field, so the form can highlight the right input.
 See
-[applicative-validation.md](../../handling-errors-with-results/references/applicative-validation.md).
+[applicative-validation.md](../../functional-handling-errors-with-results/references/applicative-validation.md).
 
 ## Optimistic updates
 
@@ -175,4 +175,4 @@ that shows old data after a successful write.
 
 If a rule can only be tested by rendering a page, it is in the wrong
 place. See
-[testing-functional-code](../../testing-functional-code/SKILL.md).
+[functional-testing-functional-code](../../functional-testing-functional-code/SKILL.md).

@@ -60,7 +60,7 @@ reads.
 - **Watch for the exception:** if the feature does not fit the flow's
   abstraction, that is a design finding, and it is the moment to
   restructure rather than to add a flag. See
-  [working-in-existing-code.md](../../programming-strategically/references/working-in-existing-code.md).
+  [working-in-existing-code.md](../../functional-programming-strategically/references/working-in-existing-code.md).
 
 ### A new module, workflow, or context
 

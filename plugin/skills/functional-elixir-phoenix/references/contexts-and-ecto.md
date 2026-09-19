@@ -19,8 +19,8 @@ lib/clinic/
 ```
 
 Each directory is a bounded context in the sense of
-[capturing-the-domain](../../capturing-the-domain/SKILL.md): its own
-vocabulary, its own structs, and a public module that other contexts
+[functional-capturing-the-domain](../../functional-capturing-the-domain/SKILL.md):
+its own vocabulary, its own structs, and a public module that other contexts
 call.
 
 Rules that make it real rather than cosmetic:
@@ -76,7 +76,7 @@ def to_domain(_), do: {:error, :corrupt_row}
 `to_domain` returns a result because the database can hold rows the
 domain forbids, usually written by an earlier version of the code.
 Defaulting instead of failing reintroduces the illegal state. See
-[crossing-io-boundaries](../../crossing-io-boundaries/SKILL.md).
+[functional-crossing-io-boundaries](../../functional-crossing-io-boundaries/SKILL.md).
 
 For a small project where the schema and the domain type genuinely
 coincide, using the schema directly is a reasonable trade. Make it a
@@ -112,7 +112,7 @@ What does not:
 
 Those belong in the domain, where they are pure functions over structs.
 See
-[when-to-validate-instead.md](../../making-illegal-states-unrepresentable/references/when-to-validate-instead.md).
+[when-to-validate-instead.md](../../functional-making-illegal-states-unrepresentable/references/when-to-validate-instead.md).
 
 ## Commands and queries
 
@@ -147,7 +147,7 @@ end)
 
 One aggregate per transaction. The pure function in the middle knows
 nothing about the transaction and cannot start or commit one. See
-[enforcing-consistency-boundaries](../../enforcing-consistency-boundaries/SKILL.md).
+[functional-enforcing-consistency-boundaries](../../functional-enforcing-consistency-boundaries/SKILL.md).
 
 For concurrent updates, use `Ecto.Changeset.optimistic_lock/2` rather
 than a database lock: read with a version, apply the pure transition,
@@ -177,7 +177,7 @@ The `:outbox` step is the point. The state change and the record of the
 event are written in one transaction, which is the only way a consumer
 cannot see one without the other; a relay reads that table afterwards
 and publishes. See
-[making-effects-reliable](../../making-effects-reliable/SKILL.md).
+[functional-making-effects-reliable](../../functional-making-effects-reliable/SKILL.md).
 
 Two cautions. A multi is still one aggregate's transaction — reaching
 for a second aggregate because the multi makes it easy is the boundary
@@ -201,6 +201,6 @@ library and no global configuration.
 A behaviour plus `mox` is the common Elixir alternative. It works, and
 it is heavier: a behaviour is an interface with several members, which
 is the wide-dependency smell from
-[applying-solid-functionally](../../applying-solid-functionally/SKILL.md).
+[functional-applying-solid-functionally](../../functional-applying-solid-functionally/SKILL.md).
 Prefer function values for one or two capabilities, and reserve
 behaviours for genuinely swappable adapters.
