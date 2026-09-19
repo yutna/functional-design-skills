@@ -166,8 +166,8 @@ absence of any design.
 
 ## Further reading
 
-- [immutability.md](references/immutability.md) covers freezing, copying,
-  and persistent collections.
+- [immutability.md](references/immutability.md) covers freezing,
+  copying, nested updates, and which library to reach for when.
 - [tagged-unions.md](references/tagged-unions.md) covers constructors,
   dispatch, and exhaustiveness tests.
 - [result-and-async.md](references/result-and-async.md) covers the

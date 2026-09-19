@@ -155,4 +155,5 @@ something the operator needs.
 - [signals-and-events.md](references/signals-and-events.md) turns domain
   events into indicators, and covers what to count and time.
 - [logs-traces-metrics.md](references/logs-traces-metrics.md) covers
-  correlation, sampling, and what must never be recorded.
+  where the projection is written, correlation, sampling, and what must
+  never be recorded.

@@ -4,6 +4,54 @@ A smart constructor is the only way to build a value of a constrained
 type. It takes a raw input, applies every rule the type promises, and
 returns either the value or a description of what was wrong.
 
+## Why it returns a value rather than a verdict
+
+The constructor above could have been a check. It is not, and the
+difference is the whole reason this file exists.
+
+```text
+-- a verdict: the work is done and then discarded
+isTreatmentCode : String -> Boolean
+
+-- a value: the work is done and kept
+parse : String -> Result<TreatmentCode, TreatmentCodeError>
+```
+
+Both do identical work. They differ in what survives it. The first
+returns one bit and hands back the same `String` it was given, so
+everything downstream holds a value that is no different from an
+unchecked one. The type cannot tell the caller that the check happened,
+so the caller cannot rely on it, and the honest response is to check
+again.
+
+That is where duplicated validation comes from. It is not carelessness;
+it is the only safe reading of a signature that took a `String` and
+gave a `String` back.
+
+The second returns a **narrower type**. The evidence the check produced
+is now carried by the value itself, so no function downstream can be
+handed something unchecked, and none of them needs a guard. One
+function does the work, and the type distributes the result.
+
+Three consequences worth stating, because each is a rule elsewhere in
+this pack that follows from this one:
+
+1. **The check belongs where the type narrows**, which is the boundary,
+   and nowhere else. See
+   [crossing-io-boundaries](../../crossing-io-boundaries/SKILL.md).
+2. **A function that begins with a guard about its own input is telling
+   you its parameter type is too wide.** Narrow the parameter and the
+   guard has nothing to do. See
+   [composing-functions](../../composing-functions/SKILL.md).
+3. **A failure must say what was wrong**, not merely that something
+   was, because the caller has to render or act on it. A boolean cannot
+   carry that; a `Result` can.
+
+The test for any check you are about to write: after it returns true,
+is there a type in the program that could not have existed before? If
+not, the check has produced nothing, and the next reader will write it
+again.
+
 ## The shape
 
 ```text

@@ -186,8 +186,11 @@ See
 - **Migrating code nobody edits.** Effort is best spent where the change
   rate is highest.
 - **Leaving two idioms in place.** Finish each module; do not leave half.
-- **Refactoring without tests.** Add characterisation tests first; they
-  need not be pretty, and they can be deleted afterwards.
+- **Refactoring without tests.** Pin the current behaviour first, by
+  asserting something false and letting the failure tell you what the
+  code actually returns. Those tests need not be pretty and can be
+  deleted afterwards. See
+  [migration-moves.md](references/migration-moves.md).
 
 ## Related skills
 
@@ -199,7 +202,8 @@ See
 ## Further reading
 
 - [migration-moves.md](references/migration-moves.md) is each move with
-  its mechanics, its verification, and its payoff.
+  its mechanics, its verification, and its payoff, preceded by how to
+  pin untested behaviour and where to stand while you do.
 - [tactical-moves.md](references/tactical-moves.md) is the nineteen
   tactical moves, with the commit discipline they depend on.
 - [spotting-what-to-fix.md](references/spotting-what-to-fix.md) arranges

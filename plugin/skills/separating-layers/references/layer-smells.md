@@ -74,3 +74,66 @@ A useful review metric: from the entry point, how many calls before real
 work happens? Two or three is normal in a layered system. Five means at
 least two of them are pass-throughs. Follow the chain and apply the test
 above at each hop.
+
+## The second axis: how often each layer changes
+
+Vocabulary decides whether a boundary exists at all. It does not decide
+which side of it a given function belongs on. For that, ask a different
+question:
+
+> What would have to happen in the world for this to need changing?
+
+Sort the answers and the layers fall out, fastest-changing at the top:
+
+| Answer                                     | Layer            |
+| ------------------------------------------ | ---------------- |
+| A pricing rule changes; a regulator rules  | Business rules   |
+| The business adds a concept                | Domain concepts  |
+| Never, unless the language changes         | General utility  |
+
+The rule that makes this operational: **a function sits above
+everything it calls and below everything that calls it.** A general
+utility that reaches up into a business rule has inverted the order, and
+the rule is now pinned by something that should have been free to move.
+Two symptoms of exactly that:
+
+- A date helper with a parameter named after one feature
+- A "core" module that imports a policy from a feature module
+
+Both are the special-general mixture in
+[splitting-and-joining-code](../../splitting-and-joining-code/SKILL.md),
+seen from the side of who depends on whom.
+
+### Why this is worth checking separately
+
+The vocabulary test passes on plenty of designs that fail this one,
+because two layers can speak different languages and still change
+together. The classic case is a module that translates correctly and
+also encodes a threshold:
+
+```text
+-- storage layer, speaking rows: correct by the vocabulary test
+selectActiveBookings : Instant -> AsyncResult<List<BookingRow>, DbError>
+-- ...and, in the query, `where cancelled_at is null and starts_at > now`
+```
+
+"Active" is a business rule sitting in the slowest-changing layer. The
+vocabulary is right and the rate of change is wrong, so the day the
+definition of active gains a third condition, a storage module has to
+be edited by someone reasoning about the business.
+
+The repair is the direction rule again: pass the definition down rather
+than burying it.
+
+```text
+selectBookingsMatching : BookingFilter -> AsyncResult<List<BookingRow>, DbError>
+activeAt : Instant -> BookingFilter        -- lives with the rules
+```
+
+### The mixed-rate test
+
+Run it on one module at a time. List what it contains, and write beside
+each item what would change it. Two very different answers in one module
+is the finding — usually a rule and a mechanism sharing a file, and
+usually the rule is the one to move out, because it is the one that will
+move again.

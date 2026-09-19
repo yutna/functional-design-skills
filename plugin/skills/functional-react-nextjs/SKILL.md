@@ -185,6 +185,8 @@ that can disagree with the first. See
 ## Further reading
 
 - [state-and-derivation.md](references/state-and-derivation.md) covers
-  what to store, reducers as state machines, and when an effect is right.
+  what to store, reducers as state machines, where a query library
+  belongs, and when an effect is right.
 - [server-boundary.md](references/server-boundary.md) covers server
-  components, actions, forms, and where each kind of logic belongs.
+  components, actions and the hook that calls them, forms, and where
+  each kind of logic belongs.

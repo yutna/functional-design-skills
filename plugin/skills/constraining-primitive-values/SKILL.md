@@ -141,7 +141,8 @@ for which side of that line a value falls on.
 
 ## Further reading
 
-- [smart-constructors.md](references/smart-constructors.md) is the shape
-  of a constructor, including normalisation and error design.
+- [smart-constructors.md](references/smart-constructors.md) is why a
+  constructor returns a value rather than a verdict, and the shape of
+  one, including normalisation and error design.
 - [units-and-measures.md](references/units-and-measures.md) covers
   quantities, money, and the arithmetic that units make safe.

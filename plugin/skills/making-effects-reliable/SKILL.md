@@ -152,7 +152,8 @@ the shell's job. See
 ## Further reading
 
 - [idempotency-and-delivery.md](references/idempotency-and-delivery.md)
-  covers command identity, the outbox, and de-duplication.
+  covers command identity, the outbox, the job queues that already
+  implement it, and de-duplication.
 - [compensating-workflows.md](references/compensating-workflows.md)
   covers process managers, compensation, and when a saga is wrong.
 - [retries-and-backpressure.md](references/retries-and-backpressure.md)

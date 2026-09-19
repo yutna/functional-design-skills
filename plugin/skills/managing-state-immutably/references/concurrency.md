@@ -54,6 +54,62 @@ it was performed, and make the write conditional on that record. The core
 stays unaware, which is right, because idempotency is a property of the
 effect, not of the decision.
 
+## Reading two sequences against each other
+
+The failures immutability does not remove are all the same shape: two
+sequences of effects running at once, interleaving in a way nobody
+wrote down. They are hard to reason about in prose and easy to see
+drawn, so draw them.
+
+One column per thing that runs independently — a request, a worker, a
+tab, a retry of something already in flight. One row per step, in the
+order that column performs them. Only effects and shared reads go on
+it; pure computation cannot interleave with anything and is noise on
+the diagram.
+
+```text
+  request A              request B
+  ---------              ---------
+  read balance 100
+                         read balance 100
+  write balance 90
+                         write balance 80
+```
+
+Ten lost. Both columns are correct on their own, which is why reading
+either one alone never finds it.
+
+Three questions to ask of any such drawing:
+
+1. **Which rows touch the same cell?** Only those can interact. If two
+   columns share nothing, they are independent and need no
+   coordination at all — the common case, and worth confirming rather
+   than assuming.
+2. **Can any row here be repeated?** A retry duplicates a column from
+   some point onward. Draw the retry as a third column starting
+   mid-way; if that changes the outcome, the effect needs an identity.
+3. **Does the order between two columns matter?** If any interleaving
+   is acceptable, nothing more is needed. If one specific order is
+   required, the diagram is now a requirement and something must
+   enforce it — a sequence number, a single writer, or a queue.
+
+Three repairs, in order of preference:
+
+- **Delete a column.** Make the work independent, so there is nothing
+  to interleave. Splitting the shared cell so unrelated work stops
+  contending is this, and it is why small aggregates help.
+- **Make the rows commute.** An operation whose outcome does not depend
+  on the order it lands in needs no coordination.
+  `setStatus(confirmed)` commutes with a retry of itself;
+  `addPayment(amount)` does not.
+- **Join the columns.** Where neither works, one writer or one atomic
+  swap forces a single order, and the update cycle above is that.
+
+Keep the drawing. A comment beside the shared cell saying which columns
+reach it, and which of the three repairs was chosen, is the kind of
+fact no type states and the next reader cannot recover. See
+[writing-useful-comments](../../writing-useful-comments/SKILL.md).
+
 ## What immutability does not fix
 
 **Lost updates across aggregates.** Two operations that each change a

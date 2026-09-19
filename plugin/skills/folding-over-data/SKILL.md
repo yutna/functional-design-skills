@@ -171,4 +171,5 @@ partial results combined. See
 - [fold-recipes.md](references/fold-recipes.md) gives the fold for the
   common accumulation shapes, including fallible and early-exit folds.
 - [monoids.md](references/monoids.md) explains identity and
-  associativity, and what they buy.
+  associativity, what they buy, and how to repair an operation that
+  fails associativity.

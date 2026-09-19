@@ -96,4 +96,16 @@ we use the effect library, how do i declare a service and a layer -> functional-
 we use ts-pattern, how do i make the match exhaustive -> functional-typescript-ts-pattern
 should this be react state or should i derive it during render -> functional-react-nextjs
 how do i do this in elixir with ecto changesets -> functional-elixir-phoenix
+this function had to become async just because one thing it calls is -> separating-pure-core-from-shell
+adding one lookup deep inside made every caller asynchronous -> separating-pure-core-from-shell
+which layer should this helper live in -> separating-layers
+a utility module imports a policy from a feature module -> separating-layers
+a business threshold ended up inside a database query -> separating-pure-core-from-shell
+why do i keep having to re-check a value that was already checked -> constraining-primitive-values
+i cannot test this legacy code and i cannot safely change it either -> refactoring-toward-functional-design
+how do i pin what this untested code currently does before moving it -> refactoring-toward-functional-design
+two requests read the same balance and one update was lost -> managing-state-immutably
+how do i test a lifecycle against random sequences of commands -> testing-functional-code
+which property testing library should we use -> testing-functional-code
+copying a large map on every update shows up in the profile -> managing-state-immutably
 ```

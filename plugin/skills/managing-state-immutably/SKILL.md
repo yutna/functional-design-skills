@@ -164,9 +164,12 @@ updates to the one mutable cell, and that is a small, isolated problem:
 ## Further reading
 
 - [persistent-structures.md](references/persistent-structures.md)
-  explains structural sharing and when copying costs matter.
+  explains structural sharing, when copying costs matter, and where each
+  language's implementations come from — including the two that ship
+  none.
 - [concurrency.md](references/concurrency.md) covers atomic updates,
-  retries, idempotency, and the failure modes immutability does not fix.
+  retries, idempotency, reading two sequences of effects against each
+  other, and the failure modes immutability does not fix.
 
 Worth noting for confidence rather than for new content: the data-first
 school arrives independently at the same advice — one state reference,

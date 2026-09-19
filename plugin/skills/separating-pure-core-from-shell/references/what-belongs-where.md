@@ -2,6 +2,69 @@
 
 A decision procedure for the cases people argue about.
 
+## Contents
+
+- [Why the split drifts on its own](#why-the-split-drifts-on-its-own)
+- [The test](#the-test)
+- [Ambiguous cases](#ambiguous-cases)
+- [The signature test](#the-signature-test)
+- [The test-cost test](#the-test-cost-test)
+
+## Why the split drifts on its own
+
+Placing effects at the edges is not a thing you do once. It is a thing
+that comes undone, and it comes undone in one specific way that is worth
+being able to name.
+
+**Impurity spreads upward.** A function that calls something impure is
+itself impure, whatever its own body does. So one lookup buried three
+levels down makes every caller above it impure too, all the way to the
+entry point — and none of those callers changed. They did not have to.
+
+```text
+-- before: one pure chain
+priceBooking  : PriceList -> Booking -> Priced
+applyDiscount : Priced -> Priced
+buildReceipt  : Priced -> Receipt
+
+-- someone adds a lookup inside applyDiscount
+applyDiscount : Priced -> Async<Priced>      -- now impure
+-- and the type of everything above it has to follow
+buildReceipt  : Priced -> Async<Receipt>     -- for no reason of its own
+```
+
+Nothing about receipts became asynchronous. The signature changed
+because of a decision made two functions away, and every test of
+`buildReceipt` now needs an await and a stub.
+
+That is the whole mechanic, and it explains three things people
+otherwise treat as separate complaints: why "just one query here" is
+never just one query, why a codebase ends up asynchronous everywhere,
+and why the fix is always the same shape — return the need instead of
+satisfying it.
+
+```text
+-- applyDiscount says what it needs and stays pure
+applyDiscount : DiscountPolicy -> Priced -> Priced
+
+-- or it returns the question, and the shell answers it
+applyDiscount : Priced -> Either<NeedsPolicy, Priced>
+```
+
+**The drill.** Read one function, line by line, and mark each line as
+one of three things: it performs an effect, it computes a value from its
+inputs, or it is a value. Then look at where the first kind sits. If the
+effects are at the top and the bottom and the middle is computation, the
+function is already split and only needs cutting. If they are
+interleaved, the interleaving is the work, and it is usually one
+reordering rather than a rewrite: gather first, decide second, perform
+last.
+
+Run the drill upward too. When a function is impure, ask whether it is
+impure for its own reason or because of something it calls. The second
+kind is the one to fix, and fixing it un-does the drift for every caller
+above at once.
+
 ## The test
 
 For any piece of code, ask three questions:

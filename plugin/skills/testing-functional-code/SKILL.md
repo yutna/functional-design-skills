@@ -168,7 +168,9 @@ the module, not at the level of the next failing test.
 
 ## Further reading
 
-- [property-testing.md](references/property-testing.md) covers choosing
-  properties, generators, and shrinking.
+- [property-testing.md](references/property-testing.md) names the
+  library for each stack, then covers choosing properties, generators,
+  shrinking, and testing a lifecycle against generated command
+  sequences.
 - [testing-the-shell.md](references/testing-the-shell.md) covers what to
   cover in integration tests, and how few are enough.

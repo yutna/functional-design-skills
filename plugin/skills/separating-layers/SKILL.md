@@ -1,6 +1,6 @@
 ---
 name: separating-layers
-description: Use when adjacent layers repeat the same abstraction, when a function only forwards to another, or when callers repeat the same lines after it.
+description: Use when adjacent layers repeat the same abstraction, when a function only forwards, when callers repeat the same lines after it, or when a utility carries a feature's policy.
 license: MIT
 metadata:
   version: 2.0.0
@@ -49,6 +49,11 @@ Not for: deciding whether two things belong in the same module, which is
    choice only where callers genuinely differ.
 6. **Keep decorators rare.** A wrapper that adds one small behaviour is
    usually better as a parameter or as part of the thing it wraps.
+7. **Order the layers by how often each changes**, fastest at the top,
+   and keep every function above what it calls. A general utility that
+   knows a business rule has pinned the rule to the slowest-moving
+   thing in the system. See
+   [layer-smells.md](references/layer-smells.md).
 
 ## Pattern
 
@@ -137,6 +142,7 @@ See [pulling-complexity-down.md](references/pulling-complexity-down.md).
 ## Further reading
 
 - [layer-smells.md](references/layer-smells.md) tells a real boundary
-  from a pass-through, with the test for each case.
+  from a pass-through, and orders the layers by how often each one
+  changes.
 - [pulling-complexity-down.md](references/pulling-complexity-down.md)
   gives the decision procedure and its limits.

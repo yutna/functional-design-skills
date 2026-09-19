@@ -124,7 +124,7 @@ part of the interface. Fix the call sites the compiler or tests find.
 **Payoff.** The invariants become enforceable, and the module becomes
 deep.
 
-## Booking and pacing
+## Order and pacing
 
 Moves 1 to 4 are local and can be done in any module at any time. Moves 5
 to 7 need 4 to be useful. Moves 8 to 10 are module-scale and are worth
@@ -134,9 +134,71 @@ Do not attempt more than one move per commit. The value of this list is
 that each row is separately reviewable, and that property is lost the
 moment two are combined.
 
-## Characterisation tests
+## Move 0: pin what it does now
 
-Where the existing behaviour is not covered, write tests that record what
-the code currently does, including the parts that look wrong. They are
-scaffolding: they make the moves safe, and they can be replaced by proper
-tests once the design is right.
+Every move above says "tests green between each", and in the code this
+skill is for, there are no tests. That is not an obstacle to work
+around; it is the first move, and it has its own technique.
+
+### Characterisation tests
+
+A characterisation test records what the code **currently does**,
+including the parts that look wrong. It is not a specification and it
+does not assert anything is correct. Its only job is to fail if a move
+changed behaviour.
+
+The mechanics, which are different from writing an ordinary test:
+
+1. Call the code with some input and assert something deliberately
+   false — `expect(result).toBe("?")`.
+2. Run it. The failure message tells you what the value actually is.
+3. Paste that in as the expectation.
+4. Repeat until the branches you are about to touch are covered.
+
+Guessing what the code should return wastes the afternoon; letting it
+tell you takes minutes. Cover the inputs the moves will pass through,
+not every input — these are scaffolding, and once the design is right
+most of them are replaced by tests that assert a rule instead of a
+recording.
+
+Two things to record that people skip: the failure paths, which is
+where the surprising behaviour lives, and anything the code writes
+besides its return value, since a move that changes what gets written
+is a behaviour change too.
+
+### Finding somewhere to stand
+
+Characterisation needs the code to be callable without its world. When
+it is not, the question is where behaviour can be changed **without
+editing that code in place** — the clock it reads, the function it
+calls, the module it imports. Every such point is somewhere a test can
+stand.
+
+In functional code the answer is usually one of three, in order of
+preference:
+
+| What blocks the test         | Where to stand                    |
+| ---------------------------- | --------------------------------- |
+| It reads the clock or random | Add the parameter; default it     |
+| It calls storage directly    | Take the one function it calls    |
+| It is wired at module load   | Move the wiring to a caller       |
+
+All three are move 5 or move 6 applied early, and each is small enough
+to review on its own. Prefer the parameter with a default: existing
+callers keep compiling, so the change is additive and the test gets
+what it needs in the same commit.
+
+When even that is too invasive to do first, two fallbacks that touch
+nothing:
+
+- **Write the new behaviour beside the old** as a separate function and
+  call it from the one place that needs it, leaving the original
+  untouched. Nothing existing can break, because nothing existing
+  changed.
+- **Wrap the call site** rather than the function, so the old code runs
+  unchanged inside something you can test around.
+
+Both leave the original in place, which is the point: they buy a tested
+path in without a move that cannot be verified. Neither is a resting
+place — the original still owes every move above — but they turn "this
+cannot be refactored safely" into an ordered list of commits.

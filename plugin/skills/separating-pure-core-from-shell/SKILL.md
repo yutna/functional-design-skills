@@ -1,6 +1,6 @@
 ---
 name: separating-pure-core-from-shell
-description: Use when business logic cannot be tested without I/O, when deciding where a database or HTTP call belongs, or when structuring a service or application.
+description: Use when business logic cannot be tested without I/O, when one call deep inside forces every caller to become async, or when deciding where a database or HTTP call belongs.
 license: MIT
 metadata:
   version: 2.0.0
@@ -65,6 +65,11 @@ is the only layer allowed to be impure.
 6. **Keep the shell thin and dull.** Its job is wiring, translation, and
    sequencing; nothing that needs a test to explain.
 7. **The composition root wires the two together**, in one place.
+8. **Fix an effect where it is introduced, not where it surfaced.**
+   Calling something impure makes the caller impure, so one lookup
+   buried deep turns every function above it asynchronous for no reason
+   of its own. See
+   [what-belongs-where.md](references/what-belongs-where.md).
 
 ## Pattern
 
@@ -170,5 +175,6 @@ somewhere, and the test difficulty is telling you where. See
 - [architecture-shapes.md](references/architecture-shapes.md) relates the
   split to onion, hexagonal, and layered architectures, and shows the
   shell's real structure.
-- [what-belongs-where.md](references/what-belongs-where.md) is a decision
-  procedure for the ambiguous cases.
+- [what-belongs-where.md](references/what-belongs-where.md) explains how
+  the split comes undone, and is a decision procedure for the ambiguous
+  cases.

@@ -204,6 +204,7 @@ split expressed in the database.
 - [types-and-structs.md](references/types-and-structs.md) covers structs,
   wrappers, tagged tuples, typespecs, and Dialyzer.
 - [contexts-and-ecto.md](references/contexts-and-ecto.md) covers
-  contexts as bounded contexts and changesets as boundary parsers.
+  contexts as bounded contexts, changesets as boundary parsers, and
+  `Ecto.Multi` for a transaction with more than two steps.
 - [otp-and-liveview.md](references/otp-and-liveview.md) covers where
   stateful processes belong and how LiveView maps onto the split.
