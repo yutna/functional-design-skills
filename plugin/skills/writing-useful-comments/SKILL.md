@@ -3,7 +3,7 @@ name: writing-useful-comments
 description: Use when writing or reviewing comments and documentation, when a comment restates the code, or when a contract cannot be expressed in a type.
 license: MIT
 metadata:
-  version: 2.0.0
+  version: 2.0.1
 ---
 
 # Writing Useful Comments

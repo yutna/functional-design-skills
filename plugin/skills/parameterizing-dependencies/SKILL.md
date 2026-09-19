@@ -3,7 +3,7 @@ name: parameterizing-dependencies
 description: Use when domain code needs a database, clock, or service, when tests need heavy mocking, or when deciding how to supply I/O to business logic.
 license: MIT
 metadata:
-  version: 2.0.0
+  version: 2.0.1
 ---
 
 # Parameterizing Dependencies

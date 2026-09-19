@@ -135,7 +135,9 @@ type Booking = {
   readonly lifecycle: Lifecycle;
 };
 
-const toBooking = (dto: BookingDto): Result<Booking, MapError> => ...;
+const toBooking = (dto: BookingDto): Result<Booking, MapError> => {
+  /* ... */
+};
 ```
 
 A schema rich enough to brand and constrain closes much of the gap, and
@@ -156,8 +158,12 @@ library produced it.
 ```ts
 // the module depends on the interface, not on Zod
 type Validator<T> = { readonly "~standard": StandardSchemaV1<unknown, T> };
-const parseWith = <T>(v: Validator<T>, input: unknown): Result<T, Issue[]> =>
-  ...;
+const parseWith = <T>(
+  v: Validator<T>,
+  input: unknown,
+): Result<T, Issue[]> => {
+  /* ... */
+};
 ```
 
 This is the narrow-dependency rule from

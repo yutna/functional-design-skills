@@ -36,10 +36,15 @@ fail and needs nothing.
 
 ```ts
 // good: no effect, because there is none
-const feeFor = (standard: Money, category: PatientCategory): Money => ...
+const feeFor = (standard: Money, category: PatientCategory): Money =>
+  category.tag === "Insured" ? category.copay : standard;
 
 // bad: uniformity for its own sake
-const feeFor = (...): Effect.Effect<Money> => Effect.succeed(...)
+const feeFor = (
+  standard: Money,
+  category: PatientCategory,
+): Effect.Effect<Money> =>
+  Effect.succeed(category.tag === "Insured" ? category.copay : standard);
 ```
 
 The core skills' split between pure core and shell shows up here as which

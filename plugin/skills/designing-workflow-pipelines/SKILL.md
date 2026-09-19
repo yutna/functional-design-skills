@@ -3,7 +3,7 @@ name: designing-workflow-pipelines
 description: Use when implementing a use case, command handler, or business process, or when logic for one operation is scattered across services and layers.
 license: MIT
 metadata:
-  version: 2.0.0
+  version: 2.0.1
 ---
 
 # Designing Workflow Pipelines

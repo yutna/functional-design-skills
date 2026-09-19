@@ -166,7 +166,10 @@ function parameter:
 ```ts
 const priceBooking =
   (getPrice: (c: TreatmentCode) => Money) =>
-  (booking: ValidatedBooking): PricedBooking => ...
+  (booking: ValidatedBooking): PricedBooking => ({
+    ...booking,
+    fee: getPrice(booking.treatmentCode),
+  });
 ```
 
 No `Effect`, no service, no layer, and the function stays pure. Reach for

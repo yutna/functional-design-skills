@@ -3,7 +3,7 @@ name: designing-what-to-observe
 description: Use when deciding what to log, trace, or measure, when an incident could not be diagnosed from what was recorded, or when adding observability late.
 license: MIT
 metadata:
-  version: 2.0.0
+  version: 2.0.1
 ---
 
 # Designing What to Observe

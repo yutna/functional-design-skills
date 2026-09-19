@@ -3,7 +3,7 @@ name: enforcing-consistency-boundaries
 description: Use when deciding what one transaction must cover, when two entities have to stay in step, or when identity and equality of domain values are unclear.
 license: MIT
 metadata:
-  version: 2.0.0
+  version: 2.0.1
 ---
 
 # Enforcing Consistency Boundaries

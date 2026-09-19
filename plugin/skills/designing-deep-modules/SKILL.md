@@ -3,7 +3,7 @@ name: designing-deep-modules
 description: Use when designing a module interface, when it exports nearly as much as it hides, or when many tiny modules or one-function files multiply.
 license: MIT
 metadata:
-  version: 2.0.0
+  version: 2.0.1
 ---
 
 # Designing Deep Modules

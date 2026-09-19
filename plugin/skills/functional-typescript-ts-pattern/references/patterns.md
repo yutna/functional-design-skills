@@ -29,10 +29,11 @@ them for the cases described below.
 ## Literal and structural patterns
 
 ```ts
-.with({ tag: "Shipped" }, handler)          // discriminant
-.with({ tag: "Shipped", tracking: "X1" }, handler)  // and a literal
-.with({ shipping: { method: "express" } }, handler) // nested
-.with([{ tag: "Draft" }, { tag: "Send" }], handler) // tuple
+match(shipment)
+  .with({ tag: "Shipped" }, handler)                  // discriminant
+  .with({ tag: "Shipped", tracking: "X1" }, handler)  // and a literal
+  .with({ shipping: { method: "express" } }, handler) // nested
+  .with([{ tag: "Draft" }, { tag: "Send" }], handler) // tuple
 ```
 
 An object pattern matches partially: keys not mentioned are unconstrained.
@@ -59,10 +60,11 @@ field can be anything".
 ## Combinators
 
 ```ts
-.with({ tag: P.union("Draft", "Sent") }, handler)
-.with({ status: P.not("cancelled") }, handler)
-.with({ treatments: P.array({ quantity: P.number }) }, handler)
-.with({ note: P.optional(P.string) }, handler)
+match(booking)
+  .with({ tag: P.union("Draft", "Sent") }, handler)
+  .with({ status: P.not("cancelled") }, handler)
+  .with({ treatments: P.array({ quantity: P.number }) }, handler)
+  .with({ note: P.optional(P.string) }, handler)
 ```
 
 `P.array(p)` matches when every element matches `p`. To match on the
@@ -71,8 +73,9 @@ array's length or on specific positions, use a tuple pattern or a guard.
 ## Guards
 
 ```ts
-.with({ total: P.when((t) => t > LARGE_ORDER) }, handler)
-.when((booking) => isAfterCutoff(booking.confirmedAt), handler)
+match(booking)
+  .with({ total: P.when((t) => t > LARGE_BOOKING) }, handler)
+  .when((b) => isAfterCutoff(b.confirmedAt), handler)
 ```
 
 Two forms: `P.when` inside a pattern, and `.when` as a whole-value guard.
@@ -87,12 +90,12 @@ refine within a case.
 ## Selection
 
 ```ts
-.with({ tag: "Failed", reason: P.select() }, (reason) => `failed: ${reason}`)
-
-.with(
-  { tag: "Delivered", tracking: P.select("t"), deliveredAt: P.select("at") },
-  ({ t, at }) => `${t} arrived ${format(at)}`,
-)
+match(shipment)
+  .with({ tag: "Failed", reason: P.select() }, (r) => `failed: ${r}`)
+  .with(
+    { tag: "Delivered", tracking: P.select("t"), deliveredAt: P.select("at") },
+    ({ t, at }) => `${t} arrived ${format(at)}`,
+  )
 ```
 
 An unnamed `P.select()` passes the matched part as the handler's
@@ -106,7 +109,7 @@ from deep inside.
 match(shipment)
   .returnType<string>()
   .with({ tag: "Pending" }, () => "awaiting")
-  ...
+  // ... one arm per tag, then .exhaustive()
 ```
 
 `.returnType<T>()` fixes the result type up front, so a handler returning

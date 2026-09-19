@@ -3,7 +3,7 @@ name: modeling-state-machines
 description: Use when an entity has a lifecycle, when a status field drives branching, or when a function must ask what state a value is in before acting on it.
 license: MIT
 metadata:
-  version: 2.0.0
+  version: 2.0.1
 ---
 
 # Modeling State Machines

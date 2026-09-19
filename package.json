@@ -1,6 +1,6 @@
 {
   "name": "functional-design-skills",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Agent Skills carrying design rules for codebases written in a functional style, for Claude Code",
   "license": "MIT",
   "author": "Yutthana Siphuengchai",
@@ -27,12 +27,17 @@
     "lint:md": "markdownlint-cli2 \"**/*.md\" \"#node_modules\" \"#SOURCES.md\" \"#PRIVATE-NOTES.md\" \"#.claude\"",
     "validate:skills": "node scripts/validate-skills.mjs",
     "validate:prose": "node scripts/validate-prose.mjs",
+    "validate:examples": "node scripts/validate-examples.mjs",
     "eval:routing": "node scripts/eval-routing.mjs",
-    "test": "npm run lint:md && npm run validate:skills && npm run validate:prose && npm run eval:routing",
-    "test:guards": "node scripts/validate-prose.mjs --selftest && node scripts/negative-test.mjs"
+    "test": "npm run lint:md && npm run validate:skills && npm run validate:prose && npm run validate:examples && npm run eval:routing",
+    "test:guards": "node scripts/validate-prose.mjs --selftest && node scripts/validate-examples.mjs --selftest && node scripts/negative-test.mjs"
   },
   "devDependencies": {
     "markdownlint-cli2": "0.23.2",
+    "typescript": "5.9.3",
     "yaml": "2.9.1"
+  },
+  "overrides": {
+    "smol-toml": "1.8.0"
   }
 }

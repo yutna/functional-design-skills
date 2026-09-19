@@ -157,12 +157,15 @@ Past this function, no caller knows which driver is in use, and the
 ## Parallel work
 
 ```js
-const [customer, catalogue] = await Promise.all([
-  loadCustomer(id),
-  loadCatalogue(),
-]);
-if (!customer.ok) return customer;
-if (!catalogue.ok) return catalogue;
+const loadCheckout = async (id) => {
+  const [customer, catalogue] = await Promise.all([
+    loadCustomer(id),
+    loadCatalogue(),
+  ]);
+  if (!customer.ok) return customer;
+  if (!catalogue.ok) return catalogue;
+  return ok({ customer: customer.value, catalogue: catalogue.value });
+};
 ```
 
 `Promise.all` rejects on the first rejection, which is why the operations

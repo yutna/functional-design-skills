@@ -99,7 +99,9 @@ type Shipped = Extract_<Shipment, "Shipped">;
 export const deliver = (
   s: Shipped,
   deliveredAt: Date,
-): Result<Delivered, DeliverError> => { ... };
+): Result<Delivered, DeliverError> => {
+  /* ... */
+};
 ```
 
 Transition functions take the specific case, not the union, so an illegal

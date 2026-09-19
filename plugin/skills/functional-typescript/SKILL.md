@@ -3,7 +3,7 @@ name: functional-typescript
 description: Use when applying functional design in TypeScript without a functional library, including branded types, discriminated unions, and hand-rolled Result.
 license: MIT
 metadata:
-  version: 2.0.0
+  version: 2.0.1
 ---
 
 # Functional TypeScript
@@ -161,8 +161,11 @@ const BookingDto = z.object({
 });
 
 // one mapping into the domain, where the guarantees live
-const toBooking = (dto: z.infer<typeof BookingDto>): Result<Booking, MapError> =>
-  ...;
+const toBooking = (
+  dto: z.infer<typeof BookingDto>,
+): Result<Booking, MapError> => {
+  /* ... */
+};
 ```
 
 Letting the inferred type _be_ the domain model reintroduces every wire

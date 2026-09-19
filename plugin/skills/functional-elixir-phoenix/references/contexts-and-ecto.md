@@ -62,7 +62,12 @@ end
         {:ok, Appointment.t()} | {:error, :corrupt_row}
 def to_domain(%AppointmentRow{status: "held", held_at: at} = row)
     when not is_nil(at) do
-  {:ok, %Appointment{...status: {:held, at}}}
+  {:ok,
+   %Appointment{
+     id: row.id,
+     patient_id: row.patient_id,
+     status: {:held, at}
+   }}
 end
 
 def to_domain(_), do: {:error, :corrupt_row}

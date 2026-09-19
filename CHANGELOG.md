@@ -6,6 +6,58 @@ skills or guidance, a patch one corrects what is already there.
 
 [semantic versioning]: https://semver.org
 
+## 2.0.1
+
+A production-readiness sweep: every file run, parsed, or installed
+rather than read. Same skills, same install routes; sixteen examples
+that could not be pasted now can be.
+
+- **Fixed: fourteen code examples that were not the language their
+  fence claimed.** All fourteen used `...` as an ellipsis, which is
+  spread syntax in JavaScript and TypeScript and not a token at all in
+  Elixir, so `(s) => ...` and `%Appointment{...status: at}` were parse
+  errors rather than omissions.
+- **Fixed: three identifiers a word-level rename had missed.** These
+  parsed; they were simply the wrong name. `OrderV1` and `OrderV2`
+  decoded into `Booking`, and `LARGE_ORDER` was the last
+  screaming-case survivor of the old example domain. A name inside a
+  code span is invisible to a prose check, which is why none had been
+  caught.
+- **Fixed: the two installers disagreed about ordering.** A trailing
+  slash on the shell glob sorted `functional-typescript-effect/` before
+  `functional-typescript/`, because `-` sorts before `/`. The shell was
+  the only one of the four scripts not sorting by name.
+- **Fixed: a high-severity advisory on every clone.** smol-toml at or
+  below 1.7.0 spins on malformed TOML. An exact-pinned override to
+  1.8.0 clears it without the major downgrade npm suggested.
+- **Fixed: `mise` errors on a fresh clone** and `CONTRIBUTING.md` never
+  mentioned `mise trust`. The configuration was right; the instructions
+  were incomplete.
+- **Added: `validate-examples.mjs`**, which parses every fenced example
+  with the real compiler for its language: TypeScript for `ts`, `tsx`
+  and `js`, `JSON.parse` for `json`, and Elixir behind `--with-elixir`,
+  which continuous integration cannot run. It is a parser, not a type
+  checker: an example can still be wrong, but it cannot be unusable to
+  paste. It reads a fence indented into a list item as well as one at
+  the margin, because house style permits both. Two cases in
+  `negative-test.mjs` prove it fires, bringing the guards to sixteen,
+  and seven more run in memory under `--selftest`, which
+  `npm run test:guards` now calls alongside the prose self-test.
+- **Added: `typescript`**, exact-pinned, because the alternative was a
+  guard blind to 89 of the 114 fences it exists for.
+- **Added: continuous integration runs the install scripts.** Nothing
+  had ever run `install.sh`, `install.ps1`, `link-local.sh` or
+  `link-local.ps1` outside the machine they were written on. All four
+  now run on Linux on every push, and a `windows-latest` job runs the
+  PowerShell pair where `link-local.ps1` takes its Windows-only
+  junction branch, then reads a skill back through the junction to
+  prove it resolved.
+- **Added: two lines to the README's list of what the checks do not
+  establish**, for the new one. The parser cannot type-check an
+  example, run it, or know whether the library it names behaves as
+  shown; and 396 of the 537 code blocks are the neutral `text`
+  notation, for which no parser exists.
+
 ## 2.0.0
 
 Claude Code only, shipped as a plugin.
@@ -91,7 +143,7 @@ rather than as prose.
 - **Reading two sequences of effects against each other**, with the
   questions to ask and the repairs in order.
 - **Stateful property testing** in full, where it had six lines.
-- A contents list on all seventy-one references over a hundred lines.
+- A contents list on all seventy-three references that need one.
 - Twelve routing cases for the new material; coverage is 100 of 100.
 - `CLAUDE.md`, which this repository never had. Its house rules lived in
   `CONTRIBUTING.md`, which no agent working here reads.

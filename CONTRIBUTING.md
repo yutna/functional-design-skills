@@ -17,7 +17,9 @@ npm ci
 
 Node 24 or later, as `.node-version` says. `mise` reads that file;
 `actions/setup-node` reads it too, which is why the version lives there
-rather than in `mise.toml`.
+rather than in `mise.toml`. If `mise` reports that the config is not
+trusted, run `mise trust` once: it is asking whether to honour a file
+from a repository you have just cloned.
 
 `link-local` puts the skills where an agent working in this clone can
 load them. The directory it creates is gitignored.
@@ -25,7 +27,7 @@ load them. The directory it creates is gitignored.
 ## Verifying a change
 
 ```bash
-npm test          # lint, skill validation, prose checks, routing coverage
+npm test          # lint, skills, prose, code examples, routing coverage
 npm run test:guards   # break every guard and confirm it fires
 ```
 
@@ -97,7 +99,7 @@ repository has two standing examples in each direction:
   shipped, was audited, and was reported clean.
 
 A new guard adds its case to `scripts/negative-test.mjs`, or to the
-prose self-test, in the same commit.
+self-test of the script it belongs to, in the same commit.
 
 The same applies to the form of the guidance. Over-application is not a
 discipline failure, so a prohibition does not fix it. State the rule as
