@@ -65,6 +65,8 @@ Not for: Erlang-specific runtime tuning or release configuration.
 
 ```elixir
 defmodule Clinic.Scheduling.Appointment do
+  alias Clinic.Scheduling.{Doctor, Patient, Slot}
+
   @enforce_keys [:id, :patient, :doctor, :slot, :status]
   defstruct [:id, :patient, :doctor, :slot, :status]
 
@@ -74,7 +76,7 @@ defmodule Clinic.Scheduling.Appointment do
           | {:cancelled, String.t(), DateTime.t()}
 
   @type t :: %__MODULE__{
-          id: Appointment.Id.t(),
+          id: __MODULE__.Id.t(),
           patient: Patient.Id.t(),
           doctor: Doctor.Id.t(),
           slot: Slot.Id.t(),

@@ -168,12 +168,18 @@ class Quantity {
   plus(other) {
     return new Quantity(this.#value + other.#value);
   }
-  valueOf() {
+  toNumber() {
     return this.#value;
   }
 }
 ```
 
-Private fields give real encapsulation. What to avoid is a class whose
-methods mutate `this` and return `undefined`, which is the shape every
-core skill argues against.
+Private fields give real encapsulation. Two things to avoid:
+
+- **A class whose methods mutate `this` and return `undefined`**, which
+  is the shape every core skill argues against.
+- **`valueOf` as the unwrapper.** It is tempting, and it silently
+  restores the defect the wrapper removed: with `valueOf` defined,
+  `quantity + price` coerces both to numbers and compiles, so mixing
+  two unrelated quantities stops being an error. Name the unwrapper,
+  and let the arithmetic be explicit.
