@@ -1,6 +1,6 @@
 ---
 name: functional-making-effects-reliable
-description: Use when a timeout leaves an effect unsure, when a retry could charge or send twice, when a saved change is published separately, or across systems.
+description: Use when a timeout leaves an effect unsure, when a retry could charge twice, when a saved change is published separately, or when spawned background work outlives its request.
 license: MIT
 metadata:
   pack: functional-design-skills
@@ -55,6 +55,13 @@ or choosing transaction boundaries, which is
    accept that the undo is a business operation with a business name.
 7. Default. **Model partial success explicitly.** "Three of five sent" is not a
    `Result`. It is a report type with both lists inside it.
+8. Rule. **Work that outlives its command has an owner or a cancel.**
+   Something started in the background either has a caller that waits
+   for it or a handle that stops it. Work with neither cannot be
+   drained at shutdown, cannot be stopped when the request that wanted
+   it has gone, and its failures arrive with nothing to attach them to.
+   See
+   [concurrency.md](../functional-managing-state-immutably/references/concurrency.md).
 
 ## Pattern
 

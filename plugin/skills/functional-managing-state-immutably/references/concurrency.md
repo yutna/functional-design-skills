@@ -13,6 +13,7 @@ address.
 - [Reading two sequences against each other](#reading-two-sequences-against-each-other)
 - [What immutability does not fix](#what-immutability-does-not-fix)
 - [Parallelism as a free gain](#parallelism-as-a-free-gain)
+- [Who owns work that was started](#who-owns-work-that-was-started)
 - [Testing concurrent state](#testing-concurrent-state)
 
 ## The update cycle
@@ -156,6 +157,69 @@ treatments |> parallelMap priceTreatment |> sum
 Two cautions: the parallel version is only faster when the work per
 element is substantial, and the function must genuinely be pure. A hidden
 cache or counter inside it reintroduces every problem this skill removes.
+
+## Who owns work that was started
+
+Immutability removes data races. It says nothing about a computation
+that is still running after everyone stopped caring about it, and that
+is the failure this section is about.
+
+**Every spawned computation has a parent that waits for it, or a handle
+that can stop it.** One or the other, chosen deliberately. Work with
+neither is a leak, and it fails in four ways that look unrelated until
+you notice they share a cause:
+
+- The request that wanted the answer returned without it, so the work
+  is now computing something nobody will read.
+- Its failure has nowhere to go. There is no caller to return an error
+  to, so it is logged at best and swallowed at worst.
+- Shutdown cannot drain. A process that does not know what is running
+  cannot wait for it, so it either hangs or kills work mid-effect.
+- Load is unbounded. Nothing counts what has been started, so nothing
+  can refuse to start more.
+
+The shape that fixes all four is the same: the spawn returns something,
+and the thing it returns is held.
+
+```text
+scope (fun spawn ->
+  let priced   = spawn (priceTreatments booking)
+  let reserved = spawn (reserveSlot booking)
+  await2 priced reserved)
+```
+
+The scope does not return until both children have. If either fails,
+the other is cancelled rather than left to finish work whose result is
+already useless. Runtimes name this differently -- a nursery, a task
+group, a supervised scope -- and a language without one is a language
+where you write the join by hand and must not forget it.
+
+### Cancellation is cooperative, and it is a value
+
+Almost nowhere can one computation stop another outright. What actually
+happens is that a cancellation signal is passed in, and the work checks
+it at points where stopping is safe.
+
+That makes cancellation a parameter, which puts it under the same rule
+as time and randomness: it is an effect wearing an innocent face. See
+[functional-parameterizing-dependencies](../../functional-parameterizing-dependencies/SKILL.md).
+
+Two consequences worth stating:
+
+- **The pure core is not cancellable and does not need to be.** A pure
+  function that takes long enough to want cancelling is a chunking
+  problem, not a concurrency one: split the input and check between
+  chunks.
+- **A cancelled effect is not an undone effect.** Cancelling a charge
+  that was already sent leaves the charge. Undo is compensation, which
+  is a business operation with a business name. See
+  [functional-making-effects-reliable](../../functional-making-effects-reliable/SKILL.md).
+
+### Testing it
+
+Assert that the spawned work stopped, not that cancellation was
+requested. A test that checks a flag was set proves the caller tried;
+only observing the effect that did not happen proves it worked.
 
 ## Testing concurrent state
 

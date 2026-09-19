@@ -64,7 +64,7 @@ Two things came out of building it anyway, both worth knowing:
   whichever zero-scoring skill sorts earliest. The first measurement of
   noise reproduced alphabetical order almost exactly before it was
   restricted to skills that actually matched a word.
-- **Coverage is not inflated by that.** Checked directly: zero of the 114
+- **Coverage is not inflated by that.** Checked directly: zero of the 120
   cases place their expected skill in the top three with a score of zero.
   Every pass is earned on shared vocabulary. The gate is sound.
 
@@ -75,7 +75,7 @@ no gate, because it reads as coverage that is not there.
 
 ## 2. Scenarios — manual, against a real agent
 
-[scenarios.md](scenarios.md) holds thirty-seven fuller problems, each a
+[scenarios.md](scenarios.md) holds thirty-eight fuller problems, each a
 paragraph of realistic context with the response a correct answer must
 contain. Run them by hand in an agent session with the pack installed:
 
