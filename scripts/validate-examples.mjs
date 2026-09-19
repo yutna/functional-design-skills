@@ -122,11 +122,16 @@ function syntaxError (fence) {
   }
 }
 
+function haveElixir () {
+  const probe = spawnSync('elixir', ['--version'])
+  return probe.error === undefined && probe.status === 0
+}
+
 // Elixir parses its own examples: Code.string_to_quoted reads without
 // running anything.
 function elixirErrors (list) {
   if (list.length === 0) return []
-  if (spawnSync('elixir', ['--version']).status !== 0) {
+  if (!haveElixir()) {
     process.stdout.write('skip  elixir fences: no elixir on PATH\n')
     return []
   }
@@ -181,6 +186,13 @@ const SELFTEST = [
 function selftest () {
   let failures = 0
   for (const [label, shouldFail, doc, lang] of SELFTEST) {
+    // A case that needs a toolchain this machine has not got is skipped, not
+    // failed. Continuous integration has no Elixir, and a self-test that
+    // passes only where it was written is worse than none.
+    if (lang === 'elixir' && !haveElixir()) {
+      process.stdout.write(`selftest skip: ${label} (no elixir on PATH)\n`)
+      continue
+    }
     const list = fencesIn(doc, 'selftest.md')
     let caught = false
     if (lang === 'elixir') {
