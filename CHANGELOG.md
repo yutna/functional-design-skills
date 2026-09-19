@@ -12,15 +12,17 @@ A production-readiness sweep: every file run, parsed, or installed
 rather than read. Same skills, same install routes; sixteen examples
 that could not be pasted now can be.
 
-- **Fixed: sixteen code examples that were not the language their fence
-  claimed.** Fourteen used `...` as an ellipsis, which is spread syntax
-  in JavaScript and TypeScript and not a token at all in Elixir, so
-  `(s) => ...` and `%Appointment{...status: at}` were parse errors
-  rather than omissions. Two identifiers a word-level rename had missed
-  went with them: `OrderV1` and `OrderV2` decoded into `Booking`, and
-  `LARGE_ORDER` was the last screaming-case survivor of the old domain.
-  A name inside a code span is invisible to a prose check, which is why
-  neither had been caught.
+- **Fixed: fourteen code examples that were not the language their
+  fence claimed.** All fourteen used `...` as an ellipsis, which is
+  spread syntax in JavaScript and TypeScript and not a token at all in
+  Elixir, so `(s) => ...` and `%Appointment{...status: at}` were parse
+  errors rather than omissions.
+- **Fixed: three identifiers a word-level rename had missed.** These
+  parsed; they were simply the wrong name. `OrderV1` and `OrderV2`
+  decoded into `Booking`, and `LARGE_ORDER` was the last
+  screaming-case survivor of the old example domain. A name inside a
+  code span is invisible to a prose check, which is why none had been
+  caught.
 - **Fixed: the two installers disagreed about ordering.** A trailing
   slash on the shell glob sorted `functional-typescript-effect/` before
   `functional-typescript/`, because `-` sorts before `/`. The shell was
@@ -36,10 +38,25 @@ that could not be pasted now can be.
   and `js`, `JSON.parse` for `json`, and Elixir behind `--with-elixir`,
   which continuous integration cannot run. It is a parser, not a type
   checker: an example can still be wrong, but it cannot be unusable to
-  paste. Two cases in `negative-test.mjs` prove it fires, bringing the
-  guards to sixteen.
+  paste. It reads a fence indented into a list item as well as one at
+  the margin, because house style permits both. Two cases in
+  `negative-test.mjs` prove it fires, bringing the guards to sixteen,
+  and seven more run in memory under `--selftest`, which
+  `npm run test:guards` now calls alongside the prose self-test.
 - **Added: `typescript`**, exact-pinned, because the alternative was a
   guard blind to 89 of the 114 fences it exists for.
+- **Added: continuous integration runs the install scripts.** Nothing
+  had ever run `install.sh`, `install.ps1`, `link-local.sh` or
+  `link-local.ps1` outside the machine they were written on. All four
+  now run on Linux on every push, and a `windows-latest` job runs the
+  PowerShell pair where `link-local.ps1` takes its Windows-only
+  junction branch, then reads a skill back through the junction to
+  prove it resolved.
+- **Added: two lines to the README's list of what the checks do not
+  establish**, for the new one. The parser cannot type-check an
+  example, run it, or know whether the library it names behaves as
+  shown; and 396 of the 537 code blocks are the neutral `text`
+  notation, for which no parser exists.
 
 ## 2.0.0
 
