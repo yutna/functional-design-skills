@@ -169,6 +169,7 @@ matches the project and use it alongside the core skill.
 - [functional-typescript](../functional-typescript/SKILL.md)
 - [functional-typescript-effect](../functional-typescript-effect/SKILL.md)
 - [functional-typescript-ts-pattern](../functional-typescript-ts-pattern/SKILL.md)
+- [functional-typescript-xstate](../functional-typescript-xstate/SKILL.md)
 - [functional-typescript-react](../functional-typescript-react/SKILL.md)
 - [functional-typescript-react-nextjs](../functional-typescript-react-nextjs/SKILL.md)
 - [functional-elixir](../functional-elixir/SKILL.md)

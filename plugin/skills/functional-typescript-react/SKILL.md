@@ -1,6 +1,6 @@
 ---
 name: functional-typescript-react
-description: Use when a React component's props grow, when deciding if a value belongs in state or is derived during render, or when an effect computes what render could.
+description: Use when a React component's props grow, when an effect computes state that render could derive, or when deciding what belongs in a global store and what a selector should.
 license: MIT
 metadata:
   pack: functional-design-skills
@@ -150,3 +150,6 @@ does. See
 - [state-and-derivation.md](references/state-and-derivation.md) covers
   what to store, reducers as state machines, where a query library
   belongs, and when an effect is right.
+- [stores.md](references/stores.md) covers what belongs in a global
+  store and what does not, selectors and derived data, normalising,
+  and writing nested updates through a draft.
