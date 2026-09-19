@@ -134,17 +134,34 @@ route still works when you want to watch one:
 ## 3. What the first automated run found
 
 The forty-two scenarios were run this way for the first time in 3.0.1, on
-Sonnet, one session each. Recorded because the method is repeatable, not
-because the number is:
+Sonnet, one session each:
 
-- every scenario loaded a skill once the session had a project to look at;
-- the expected skill was the first one loaded in about three quarters of
-  them, and was loaded at all in a few more;
-- the rest went to a neighbour, and reading the transcripts is what
-  separates a mis-route from a second right answer.
+```text
+expected skill first: 31/41   no skill loaded: 4/42
+```
 
-Nothing in the pack was changed because of it. A description tuned to make
-one sampled run go green is a description fitted to noise.
+Forty-one, because scenario 37 names no skill: it is a behaviour test.
+
+Read the four that loaded nothing before reading the thirty-one. One of
+them is scenario 4, whose stated requirement is "recognition that this
+needs almost none of the pack" -- an agent that answers a one-off script
+question without reaching for a skill has done the right thing, and
+scoring it as a failure would be scoring the wrong thing. The other three
+were answered from general knowledge, correctly enough, with the pack
+sitting unopened.
+
+Of the ten that went elsewhere, most went next door. Scenario 1's nullable
+status with correlated fields is a state machine as fairly as it is an
+illegal state. Scenario 3's list of things a correct answer must contain
+includes "capabilities passed as parameters", which is the skill that
+answered it.
+
+An earlier run of the same forty-two, before the fixture existed, put the
+first skill right 32 times. The difference between 31 and 32 is the noise
+floor of this measurement, which is the number worth remembering about it.
+
+Nothing in the pack was changed because of any of it. A description tuned
+until one sampled run goes green is a description fitted to noise.
 
 ## Adding cases
 
