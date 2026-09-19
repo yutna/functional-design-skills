@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 // Prose checks that markdownlint cannot make, over every tracked Markdown file.
 //
-// All three exist because a defect of that exact shape shipped here. The pack
+// All four exist because a defect of that exact shape shipped here. The pack
 // renamed its example domain with a word-level substitution, which coined a
-// word that does not exist, broke a dozen sentences where the replaced word
+// word that does not exist, broke twenty sentences where the replaced word
 // meant something else, and left five articles disagreeing with the noun that
 // followed. A linter caught none of it, and an audit that read every
 // occurrence of the word reported the skills clean.
+//
+// A file that must quote one of those defects — a changelog, this comment —
+// puts it in backticks, which asEnglish strips. No file is exempt.
 //
 // Usage:
 //   node scripts/validate-prose.mjs            check every file
@@ -18,7 +21,7 @@ import { fileURLToPath } from 'node:url'
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)))
 const SKIP_DIRS = new Set(['node_modules', '.git', '.claude'])
-const SKIP_FILES = new Set(['SOURCES.md', 'PRIVATE-NOTES.md', 'CHANGELOG.md'])
+const SKIP_FILES = new Set(['SOURCES.md', 'PRIVATE-NOTES.md'])
 
 // The nouns this pack's examples are built from. Used by two checks below.
 const DOMAIN_NOUNS = [

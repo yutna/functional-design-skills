@@ -35,13 +35,15 @@ Claude Code only, shipped as a plugin.
 
 ### Fixed
 
-Twenty-five defects that no linter could see. A word-level rename of the
+Thirty-two defects that no linter could see.
+
+Twenty-five of them came from one cause. A word-level rename of the
 example domain had broken prose wherever the replaced word meant
 something else, and the audit that checked it recorded the skills clean.
-They were not. Each fix is recovered from the tree as it stood before
-that rename rather than rewritten from guesswork.
+They were not. Each of these is recovered from the tree as it stood
+before that rename rather than rewritten from guesswork.
 
-- Eighteen places where `order` meant a sequence, so the substitution
+- Seventeen places where `order` meant a sequence, so the substitution
   produced a sentence that parses and means nothing.
 - Two where `service` meant a service object, turning the rule against
   wide dependencies into a rule about the example domain.
@@ -49,11 +51,22 @@ that rename rather than rewritten from guesswork.
   not exist.
 - Five articles left disagreeing with the noun after them, one of them
   split across a line wrap.
+
+The other seven were found by reading the examples as a compiler would
+rather than as prose.
+
 - A box diagram whose lines ran 45, 46 and 47 characters.
 - `>=/>` in the Elixir notation table, which is not an operator.
 - A monoid example labelled "not associative" above a comment saying it
   is associative, when the operation shown is a maximum and therefore
-  associative.
+  associative. It is replaced by an averaging example, which genuinely
+  is not associative, and by the repair.
+- An Elixir example naming a nested module as `Appointment.Id` from
+  inside `Clinic.Scheduling.Appointment`, which resolves to
+  `Elixir.Appointment.Id` and does not exist.
+- A wrapper class defining `valueOf`, which silently restores the
+  defect the wrapper removed: `quantity + price` coerces both and
+  compiles.
 - Two worked examples reachable only from the index, so a reader inside
   the skill that owned each never learned it existed.
 
@@ -89,7 +102,7 @@ that rename rather than rewritten from guesswork.
 
 - `AUDIT.md`. It recorded how each round was verified, and one of its
   claims — that the skills were clean of rename damage — is disproved by
-  the twenty-five fixes above. What was still true about scope and
+  the thirty-two fixes above. What was still true about scope and
   limits has moved into `README.md` and `CONTRIBUTING.md`; the rest is
   in the history.
 
