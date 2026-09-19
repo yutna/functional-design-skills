@@ -72,7 +72,9 @@ When defining a combination over a domain type, check the laws with three
 property tests: left identity, right identity, and associativity. Failing
 associativity is the common one, and it usually means the operation is
 really "apply an update", which is a fold's step function rather than a
-monoid.
+monoid. The general move -- write the claim as an equation over arbitrary
+values, then let the property test be that equation -- is in
+[functional-testing-functional-code](../../functional-testing-functional-code/SKILL.md).
 
 ```text
 -- not associative: averaging two values at a time

@@ -1,6 +1,6 @@
 ---
 name: functional-folding-over-data
-description: Use when a loop accumulates into a variable, when combining a collection into one value, or when traversing a tree or other recursive structure.
+description: Use when a loop accumulates into a variable, when combining a collection into one value, when traversing a tree, or when a combining law such as associativity matters.
 license: MIT
 metadata:
   pack: functional-design-skills

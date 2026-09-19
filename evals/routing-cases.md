@@ -113,4 +113,13 @@ how do i test a lifecycle against random sequences of commands -> functional-tes
 which property testing library should we use -> functional-testing-functional-code
 copying a large map on every update shows up in the profile -> functional-managing-state-immutably
 updating one field three levels down means rebuilding every level above it -> functional-managing-state-immutably
+should we adopt an effect system or just return a result -> functional-parameterizing-dependencies
+is an effect library worth it for this project -> functional-parameterizing-dependencies
+do we need an effect type or is a plain function enough -> functional-parameterizing-dependencies
+every function returns an effect and the simple ones got harder to read -> functional-parameterizing-dependencies
+what law should this combining operation obey -> functional-folding-over-data
+is my merge operation associative and does it matter -> functional-folding-over-data
+how do i check an abstraction obeys the laws i claimed for it -> functional-testing-functional-code
+loading and error and data are three separate booleans -> functional-making-illegal-states-unrepresentable
+our loading flag and our error flag can both be true at once -> functional-making-illegal-states-unrepresentable
 ```
