@@ -1,6 +1,6 @@
 ---
 name: functional-designing-deep-modules
-description: Use when designing a module interface, when it exports nearly as much as it hides, or when many tiny modules or one-function files multiply.
+description: Use when designing a module interface, when it exports nearly as much as it hides or is as complicated as its implementation, or when tiny one-function modules multiply.
 license: MIT
 metadata:
   pack: functional-design-skills

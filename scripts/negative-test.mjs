@@ -99,6 +99,14 @@ const CASES = [
   ['a bibliographic reference in a tracked file', SKILL,
     ['## Pattern', '## Pattern\n\nStated in Chapter 7 of the other book.'],
     'this pack cites no sources', 'validate-prose.mjs'],
+  ['the same paragraph in a pack and its grandparent',
+    [join('plugin', 'skills', 'functional-typescript', 'SKILL.md'),
+      join('plugin', 'skills', 'functional-typescript-react-nextjs', 'SKILL.md')],
+    ['## Red flags',
+      '## Red flags\n\nA value that crosses a process boundary arrives as its ' +
+      'shape without\nits guarantees, so the type on the far side is a claim ' +
+      'nobody checked\nuntil something parses it back.'],
+    'repeats a paragraph from', 'validate-prose.mjs'],
   ['the same paragraph in a pack and the pack it extends',
     [join('plugin', 'skills', 'functional-typescript', 'SKILL.md'),
       join('plugin', 'skills', 'functional-typescript-effect', 'SKILL.md')],

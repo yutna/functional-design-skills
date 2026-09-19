@@ -117,7 +117,7 @@ instructions, which is testable as a table of cases.
 The same shape applies. The core is state, actions, and a pure reducer or
 transition function; the shell is the framework, the network, storage,
 and the rendering. See
-[functional-react-nextjs](../../functional-react-nextjs/SKILL.md).
+[functional-typescript-react](../../functional-typescript-react/SKILL.md).
 
 ## When the shell grows rules
 

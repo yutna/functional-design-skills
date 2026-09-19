@@ -375,6 +375,19 @@ function paragraphsOf (dir) {
   return found
 }
 
+// Every pack the name nests inside, nearest first. The chain matters:
+// functional-typescript-react-nextjs extends the React pack, which extends
+// the TypeScript pack, and a paragraph repeated from either is repeated.
+function ancestorsOf (id, known) {
+  const parts = id.split('-')
+  const found = []
+  for (let i = parts.length - 1; i > 1; i--) {
+    const candidate = parts.slice(0, i).join('-')
+    if (known.has(candidate)) found.push(candidate)
+  }
+  return found
+}
+
 function checkDeltaPacks () {
   let ids
   try {
@@ -384,17 +397,14 @@ function checkDeltaPacks () {
   } catch { return }
   const known = new Set(ids)
   for (const id of ids) {
-    const parts = id.split('-')
-    let parent
-    for (let i = parts.length - 1; i > 1; i--) {
-      const candidate = parts.slice(0, i).join('-')
-      if (known.has(candidate)) {
-        parent = candidate
-        break
+    const ancestors = ancestorsOf(id, known)
+    if (ancestors.length === 0) continue
+    const base = new Map()
+    for (const ancestor of ancestors) {
+      for (const [text, file] of paragraphsOf(join(SKILLS_DIR, ancestor))) {
+        if (!base.has(text)) base.set(text, file)
       }
     }
-    if (parent === undefined) continue
-    const base = paragraphsOf(join(SKILLS_DIR, parent))
     for (const [text, file] of paragraphsOf(join(SKILLS_DIR, id))) {
       if (!base.has(text)) continue
       report(
