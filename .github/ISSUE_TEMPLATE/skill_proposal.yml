@@ -1,0 +1,48 @@
+name: Propose a skill or a change to one
+description: Suggest new content, a new skill, or a correction from experience
+labels: ["proposal"]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        Corrections based on running real suites are the most valuable
+        contributions here. If something in a skill is wrong, describe
+        what you observed instead.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind of change
+      options:
+        - Correction to existing guidance
+        - New content in an existing skill
+        - A new skill
+    validations:
+      required: true
+  - type: input
+    id: skill
+    attributes:
+      label: Skill affected
+      description: Leave blank if proposing a new one.
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you are proposing
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: What you have seen that supports it
+      description: >
+        Experience from a real suite, a case where the current guidance
+        misled an agent, or a gap you hit.
+    validations:
+      required: true
+  - type: textarea
+    id: triggers
+    attributes:
+      label: For a new skill, when should it trigger
+      description: >
+        State the triggering situations without overlapping the existing
+        five, since two skills that could both claim a task means neither
+        is chosen reliably.

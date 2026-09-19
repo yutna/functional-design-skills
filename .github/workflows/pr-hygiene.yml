@@ -1,0 +1,73 @@
+name: PR hygiene
+
+# pull_request_target so the token can write on pull requests from forks.
+# This workflow never checks out the pull request's code, which is what makes
+# that safe: it only reads and writes through the API.
+on:
+  pull_request_target:
+    types: [opened, reopened, ready_for_review, labeled, unlabeled]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  assign:
+    name: assign
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v9
+        with:
+          script: |
+            const pr = context.payload.pull_request
+            if (pr.user.type === 'Bot') return
+            if (pr.assignees.length > 0) return
+            await github.rest.issues.addAssignees({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              assignees: [pr.user.login],
+            })
+
+  labels:
+    name: labels
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v9
+        with:
+          script: |
+            const TYPES = [
+              'feature', 'release', 'bug', 'hotfix', 'chore', 'documentation',
+            ]
+            const pr = context.payload.pull_request
+            // Dependabot cannot choose labels, so it is held to the type it
+            // does apply and excused the rest.
+            const isBot = pr.user.login === 'dependabot[bot]'
+            const names = pr.labels.map((label) => label.name)
+
+            const type = names.filter((name) => TYPES.includes(name))
+            const priority = names.filter((name) => name.startsWith('priority:'))
+
+            const problems = []
+            if (isBot) {
+              if (!names.includes('dependencies')) {
+                problems.push('a Dependabot pull request should carry "dependencies"')
+              }
+            } else {
+              if (type.length === 0) {
+                problems.push(`add one type label: ${TYPES.join(', ')}`)
+              }
+              if (priority.length === 0) {
+                problems.push('add one priority label: priority: high, medium, or low')
+              }
+            }
+            if (priority.length > 1) {
+              problems.push(`only one priority label, found: ${priority.join(', ')}`)
+            }
+
+            // One line: GitHub shows only the first line of a failure
+            // annotation, so a newline here would hide the second problem.
+            if (problems.length > 0) {
+              core.setFailed(problems.join('; '))
+            } else {
+              core.info(`labels ok: ${names.join(', ') || '(bot, none required)'}`)
+            }

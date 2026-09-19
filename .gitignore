@@ -1,30 +1,23 @@
-# macOS
-.DS_Store
-
-# Node, if markdownlint is ever installed locally instead of via npx
+# Dependencies
 node_modules/
 npm-debug.log*
 .npm/
 
-# Editors
+# Local research notes — never published. The repository names no source
+# anywhere on purpose; these files keep that record out of git rather than
+# losing it. Continuous integration fails if either is ever tracked.
+SOURCES.md
+PRIVATE-NOTES.md
+
+# Generated skill link directory (created by scripts/link-local.sh)
+.claude/skills/
+
+# Deliberately NOT ignored: .markdownlint* config files. Default rules are a
+# hard constraint here, and the build fails if such a file exists. Ignoring
+# them would hide an accidental config instead of catching it.
+
+# OS / editor cruft
+.DS_Store
 .vscode/
 .idea/
 *.swp
-
-# Deliberately NOT ignored: .markdownlint* config files.
-# The brief forbids overriding markdownlint's defaults, and
-# scripts/verify.sh fails the build if such a file exists. Ignoring
-# them here would hide an accidental config instead of catching it.
-
-# Local-only: SOURCES.md records the books this pack was built from.
-# The published repository deliberately names no source, so this record
-# is kept out of git rather than lost.
-SOURCES.md
-
-# Local-only: PRIVATE-NOTES.md holds the detail behind increment 5,
-# which came from a client project. The published repository names no
-# installation, so this record is kept out of git rather than lost.
-PRIVATE-NOTES.md
-
-# Python bytecode from importing scripts/ in a REPL
-__pycache__/

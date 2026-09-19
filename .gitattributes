@@ -1,0 +1,15 @@
+# Normalise line endings in the repository, and check text out with the
+# platform's native endings. Without this, a Windows clone can introduce CRLF
+# that the Markdown linter and the shell scripts both dislike.
+* text=auto
+
+# Files that must keep LF even on Windows, because they are executed.
+*.sh text eol=lf
+*.mjs text eol=lf
+*.ps1 text eol=lf
+
+# Keep documentation diffs readable.
+*.md text diff=markdown
+
+# Generated, and noisy in review.
+package-lock.json linguist-generated=true -diff

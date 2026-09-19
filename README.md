@@ -1,7 +1,9 @@
 # Functional Design Skills
 
-A portable pack of agent skills carrying executable design rules for
-codebases written in a functional style. It covers:
+Agent Skills carrying design rules for codebases written in a functional
+style. For Claude Code.
+
+They cover:
 
 - Diagnosing complexity, and telling what a design costs from what it
   looks like
@@ -12,9 +14,9 @@ codebases written in a functional style. It covers:
   process boundary
 - Refactoring imperative or object-oriented code toward all of the above
 
-The skills are language-agnostic. Core skills describe designs in a
-neutral notation; separate language packs translate them into JavaScript,
-TypeScript, React and Next.js, and Elixir and Phoenix.
+The rules are language-agnostic. Thirty-four core skills describe
+designs in a neutral notation; six language packs translate them into
+JavaScript, TypeScript, React and Next.js, and Elixir and Phoenix.
 
 ## What it changes
 
@@ -32,8 +34,8 @@ type Shipment = {
 ```
 
 Five fields, four of them optional, so the type admits sixteen
-combinations of presence for any status. Reports break on the ones nobody
-meant. After:
+combinations of presence for any status. Reports break on the ones
+nobody meant. After:
 
 ```text
 type Shipment =
@@ -48,83 +50,59 @@ check for absence. The gain is not tidiness: every consumer that used to
 branch on a status string and then test a field for `null` now handles
 four cases and cannot forget one.
 
-## What it costs
-
-A skill's `description` is always in the agent's list; its body is read
-only when the skill is selected. So the standing cost is the descriptions
-and nothing else.
-
-| Installed               | Descriptions |
-| ----------------------- | ------------ |
-| 34 core only            | 5,883 chars  |
-| core plus TypeScript    | 6,057 chars  |
-| core, TypeScript, React | 6,241 chars  |
-| all 40                  | 6,951 chars  |
-
-Codex truncates its skill list at roughly 8,000 characters, silently. All
-40 therefore fit only if the project's own skills total under about 1,050
-characters, which is around ten skills. A project with more of its own
-needs to copy only the packs it uses.
-
-When a skill is selected, its `SKILL.md` averages 6,886 bytes, roughly
-1,700 tokens. `functional-design/SKILL.md` is the largest at 10,690
-bytes, which is why nothing below tells the agent to open it every
-session. The 90 reference files average 4,548 bytes and load only when a
-skill links into one.
-
-## Pick only what the project needs
-
-| Stack            | Language pack to copy              |
-| ---------------- | ---------------------------------- |
-| JavaScript       | `functional-javascript`            |
-| TypeScript       | `functional-typescript`            |
-| Effect           | `functional-typescript-effect`     |
-| ts-pattern       | `functional-typescript-ts-pattern` |
-| React or Next.js | `functional-react-nextjs`          |
-| Elixir, Phoenix  | `functional-elixir-phoenix`        |
-
-Copy the core skills in every case. A React or Next.js project wants the
-TypeScript pack alongside the React pack.
-
-Core is every directory under `skills/` whose name does not start with
-`functional-`, plus `functional-design` itself, which is the index. That
-is 34 of the 40.
-
 ## Install
 
-Every skill is a directory holding `SKILL.md` plus optional `references/`.
-Both Claude Code and Codex read that layout, from different paths.
+### As a plugin
 
-```sh
-# Claude Code, project scope, a TypeScript project
-DEST=/path/to/project/.claude/skills
-mkdir -p "$DEST"
-find skills -mindepth 1 -maxdepth 1 -type d \
-  ! -name 'functional-*' -exec cp -R {} "$DEST" \;
-cp -R skills/functional-design \
-      skills/functional-typescript "$DEST"
+```text
+/plugin marketplace add yutna/functional-design-skills
+/plugin install functional-design-skills@functional-design-skills
 ```
 
-For Codex, the only change is `DEST=/path/to/project/.agents/skills`. For
-user scope instead of project scope, use `~/.claude/skills` or
-`~/.agents/skills`.
+### With the install script
 
-A pack you did not copy leaves a few links pointing nowhere: its entry in
-the index's "Language packs" list, and any cross-reference to it from a
-skill you did copy. Installing core plus TypeScript leaves nine such
-links. That is expected and harmless -- they are reading suggestions, not
-a manifest.
+Copies every skill into `~/.claude/skills/`, where Claude Code finds it
+in any project:
+
+```bash
+git clone https://github.com/yutna/functional-design-skills.git
+cd functional-design-skills
+./scripts/install.sh
+```
+
+Options: `--force` to replace an existing copy, `--dry-run` to see what
+it would do.
+
+On Windows, without needing a shell or WSL:
+
+```powershell
+git clone https://github.com/yutna/functional-design-skills.git
+cd functional-design-skills
+.\scripts\install.ps1
+```
+
+Same options, as `-Force` and `-DryRun`. PowerShell 7 or later.
+
+### By hand
+
+Copy any `plugin/skills/<name>/` directory into `~/.claude/skills/` for
+every project, or into a project's `.claude/skills/` for one repository.
+There is nothing to build and no dependency to install.
+
+Start a new session afterwards, whichever route you took.
 
 ## Tell the agent the pack is there
 
-Paste this into the project's `CLAUDE.md` or `AGENTS.md`, with the last
-line naming whichever language pack you copied:
+Installing puts the rules within reach. It does not say what outranks
+what, and an agent with no stated precedence will read a deliberate
+convention as a defect. Paste this into the project's `CLAUDE.md`, with
+the last line naming the language pack that matches the project:
 
 ```markdown
 ## Design rules
 
-This codebase follows functional design. The skills in
-`.claude/skills/` carry the rules, and `functional-design` is the index.
+This codebase follows functional design. The `functional-design` skill
+is the index; the rest of the pack carries one rule each.
 
 - This project's own conventions win. The pack decides what they leave
   open, and a pack red flag is a place to look, not a finding.
@@ -139,9 +117,8 @@ This codebase follows functional design. The skills in
 - Use `functional-typescript` for concrete syntax.
 ```
 
-The first line matters more than it looks. A project that installs the
-pack without it has told the agent nothing about what outranks what, and
-the agent will read a deliberate convention as a defect.
+The first bullet matters more than it looks. It is what stops the pack
+arguing with a decision the team already made.
 
 ## Check it took
 
@@ -152,7 +129,7 @@ answer names a skill:
 
 Expect the agent to reach `making-illegal-states-unrepresentable`. If it
 answers from general knowledge without naming a skill, the files are in
-the wrong directory for that runtime.
+the wrong directory.
 
 ## If it over-engineers
 
@@ -167,67 +144,78 @@ the task warrants. Three things fix it, in order of how much they buy:
 2. **Name the calibration row out loud** in the session: "this is one
    function in a module that already exists". The row is the pack's own
    answer and the agent will take it.
-3. **Scope the rules to the code they apply to.** In Claude Code, a rule
-   file under `.claude/rules/` takes a `paths:` key in its frontmatter,
-   so a codebase that is only partly functional can point these rules at
-   the part that is. The Codex equivalent has not been verified here.
+3. **Scope the rules to the code they apply to.** A rule file under
+   `.claude/rules/` takes a `paths:` key in its frontmatter, so a
+   codebase that is only partly functional can point these rules at the
+   part that is.
 
-## Updating
+## Which skills there are
 
-Record what you copied, so the next person can tell. A file beside the
-skills, or a section in the project's own docs, holding:
+`functional-design` is the index: the calibration table, the
+symptom-to-skill routing, and the notation the core skills use. Start
+there.
 
-```text
-Upstream   https://github.com/yutna/functional-design
-Version    v1.0.0
-Commit     <sha>
-Copied     <date>
-Licence    MIT
-```
+Thirty-three core skills carry one rule each, grouped roughly as:
+complexity and module boundaries; domain modelling and types; workflows,
+composition and errors; effects, state and reliability; naming,
+comments, testing, review and refactoring.
 
-Re-run the install block to update. Two things to know:
+Six language packs give the concrete syntax: `functional-javascript`,
+`functional-typescript`, `functional-typescript-effect`,
+`functional-typescript-ts-pattern`, `functional-react-nextjs`,
+`functional-elixir-phoenix`.
 
-- **`cp -R` does not delete.** A skill removed upstream survives in the
-  target project until someone removes it by hand. Check `git status`
-  for directories the copy did not touch.
-- **Copying overwrites local edits.** Do not edit the skills in place.
-  Project-specific decisions belong outside the pack, in the project's
-  own rule files, which is also what keeps an update a copy rather than a
-  merge. To confirm a copy is still unmodified:
-  `diff -rq skills/<name> /path/to/project/.claude/skills/<name>`.
+Each skill's `description` states the situations that should trigger it,
+and only those; the body is read when the skill is selected. Reference
+files behind each one hold the depth, and load only when a skill links
+into them.
 
 ## Layout
 
 ```text
-skills/                     copied into the target project
-  functional-design/        index: design loop, calibration, routing
-  <core skills>/            one design rule each
-  functional-<stack>/       language packs
-    SKILL.md                the rule, short enough to always read
-    references/*.md         depth, loaded only when needed
-
-evals/                      stays here; not copied
-scripts/                    stays here; not copied
+plugin/skills/<name>/       what ships
+  SKILL.md                  the rule, short enough to always read
+  references/*.md           depth, loaded only when needed
+plugin/.claude-plugin/      the plugin manifest
+.claude-plugin/             the marketplace manifest
+evals/                      routing cases and agent scenarios
+scripts/                    validation, routing, install, link
 ```
 
-Only `skills/` is installed. `evals/` and `scripts/` maintain the pack
-and have no meaning inside a target project.
+Only `plugin/` ships. Everything else maintains the pack.
 
 ## Further reading
 
-- [skills/functional-design/SKILL.md](skills/functional-design/SKILL.md)
-  is the index: the calibration table, the symptom-to-skill routing, and
-  the notation the core skills use.
 - [CONTRIBUTING.md](CONTRIBUTING.md) is how to change the pack, and the
   constraints a change has to keep.
+- [CLAUDE.md](CLAUDE.md) is the same thing addressed to an agent working
+  in this repository.
 - [evals/README.md](evals/README.md) is what the routing check does and
   does not prove, and the scenarios to run against a real agent.
-- [AUDIT.md](AUDIT.md) is what the pack covers, how it was verified, and
-  what it does not establish.
+- [CHANGELOG.md](CHANGELOG.md) is what changed in each release.
+
+## What this does not establish
+
+Worth knowing before relying on it.
+
+- **The routing check is a keyword lint, not an oracle.** It scores word
+  overlap and has no idea what any word means. A green run means every
+  description contains the vocabulary people use for that problem; it
+  does not mean an agent routes correctly. The scenarios in `evals/`
+  cover that question, as a sample rather than a proof.
+- **Only the first place in a ranking is meaningful.** A median of 33 of
+  the 40 skills score exactly zero on any given case, and ties break by
+  name, so second and third places are often filled alphabetically. The
+  gate uses the top three, which is deliberately generous.
+- **The prose checks know only the domains they are told about.** They
+  catch a domain noun standing where a structural word belongs, and one
+  buried inside a longer word, for the nouns listed in
+  `scripts/validate-prose.mjs`. A new example domain that is not added
+  to that list is unchecked.
 
 ## Licence
 
-MIT, in [LICENSE](LICENSE). Copy `skills/` into any project, including
+MIT, in [LICENSE](LICENSE). Use the skills in any project, including
 commercial work; keep the copyright notice.
 
 The licence covers the wording in this repository and nothing else. The

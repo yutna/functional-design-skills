@@ -137,7 +137,7 @@ model. Should reach `capturing-the-domain`.
 
 ## 14. A wide dependency
 
-> Our `confirmBooking` takes an `BookingRepository` with twenty-two methods and
+> Our `confirmBooking` takes a `BookingRepository` with twenty-two methods and
 > uses two. Every test needs a mocking framework.
 
 Must contain: narrowing to the function types actually used; naming them

@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # .node-version is the one place the version is written. mise reads it
+      # too, so a local `mise install` and this job cannot drift apart.
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint Markdown with default rules
+        run: npm run lint:md
+
+      - name: Reject markdownlint configuration
+        run: |
+          if git ls-files | grep -E '(^|/)\.markdownlint'; then
+            echo "A markdownlint config file is tracked; default rules only."
+            exit 1
+          fi
+          if git grep -n -- '<!-- *markdownlint-' -- '*.md'; then
+            echo "An inline markdownlint suppression was found."
+            exit 1
+          fi
+          echo "No markdownlint configuration or suppression found."
+
+      - name: Validate skill frontmatter, links and versions
+        run: npm run validate:skills
+
+      - name: Check the prose a linter cannot
+        run: npm run validate:prose
+
+      - name: Score routing coverage
+        run: npm run eval:routing
+
+      # A guard that has never failed has never been tested. This breaks each
+      # one on a throwaway copy and confirms it fires.
+      - name: Prove every guard still fires
+        run: npm run test:guards
+
+      - name: Confirm the local-only notes are untracked
+        run: |
+          for file in SOURCES.md PRIVATE-NOTES.md; do
+            if git ls-files --error-unmatch "$file" 2>/dev/null; then
+              echo "$file must never be committed."
+              exit 1
+            fi
+            git check-ignore -q "$file"
+          done
+          echo "SOURCES.md and PRIVATE-NOTES.md are gitignored and untracked."
