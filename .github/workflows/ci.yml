@@ -59,6 +59,24 @@ jobs:
       - name: Prove every guard still fires
         run: npm run test:guards
 
+      # The scripts are the route most people take to install the pack, and
+      # nothing else here runs them. They are written and edited on macOS, so
+      # this is the only place they meet Linux. --dry-run writes nothing; the
+      # link pair writes into .claude/skills, which is gitignored, and removes
+      # it again.
+      - name: Run the install and link scripts
+        run: |
+          ./scripts/install.sh --dry-run
+          ./scripts/link-local.sh
+          ./scripts/link-local.sh --remove
+          if command -v pwsh >/dev/null 2>&1; then
+            pwsh -NoProfile -File ./scripts/install.ps1 -DryRun
+            pwsh -NoProfile -File ./scripts/link-local.ps1
+            pwsh -NoProfile -File ./scripts/link-local.ps1 -Remove
+          else
+            echo "No pwsh on this runner; the PowerShell pair is not exercised."
+          fi
+
       - name: Confirm the local-only notes are untracked
         run: |
           for file in SOURCES.md PRIVATE-NOTES.md; do
