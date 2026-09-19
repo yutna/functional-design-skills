@@ -122,4 +122,10 @@ is my merge operation associative and does it matter -> functional-folding-over-
 how do i check an abstraction obeys the laws i claimed for it -> functional-testing-functional-code
 loading and error and data are three separate booleans -> functional-making-illegal-states-unrepresentable
 our loading flag and our error flag can both be true at once -> functional-making-illegal-states-unrepresentable
+a background task outlives the request that started it -> functional-making-effects-reliable
+we spawn work and nobody waits for it -> functional-making-effects-reliable
+the request returned but the work it started is still running -> functional-making-effects-reliable
+who cancels this background job when nobody needs it any more -> functional-making-effects-reliable
+two concurrent operations need to be cancelled together -> functional-managing-state-immutably
+we fire off parallel work and one failure leaves the others running -> functional-managing-state-immutably
 ```

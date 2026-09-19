@@ -35,6 +35,35 @@ implementations of each install script and requires them to change
 together, and there was no way to run the PowerShell half without
 already having it.
 
+### Added: who owns work that was started
+
+The one genuine content gap the audit found. `concurrency.md` covered
+the update cycle, coordination primitives, idempotency, parallelism and
+what immutability does not fix -- all of it about coordinating changes
+to a value. Nothing anywhere covered a computation that is still
+running after everyone stopped caring about it.
+
+Measured before it was written: `functional-making-effects-reliable`
+ranked 21st of 40 for "a background task outlives the request that
+started it", and the words `cancel`, `spawn`, `supervis` and `parallel`
+appeared in no skill's description at all.
+
+- **New core rule**, the eighth in `functional-making-effects-reliable`:
+  work that outlives its command has an owner or a cancel. Labelled
+  `Rule`, because work with neither cannot be drained at shutdown,
+  cannot be stopped when the request that wanted it has gone, and its
+  failures arrive with nothing to attach them to.
+- **New section in `concurrency.md`**: the four symptoms that share
+  that one cause, the scope shape that fixes all four, cancellation as
+  a value passed in rather than something done to a running
+  computation, and why a cancelled effect is not an undone effect.
+- **A scenario**, the thirty-eighth: an export endpoint whose job
+  duplicates on retry, half-writes on restart, and cannot be counted.
+  Three symptoms, one cause.
+
+Coverage went from 114 of 120 to 120 of 120, and the number placing
+their skill first from 87 to 93.
+
 ### Findable: four skills people were not reaching
 
 Measured with `scripts/eval-routing.mjs`, not guessed. Each of these

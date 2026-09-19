@@ -1,6 +1,6 @@
 # Scenarios
 
-Thirty-seven problems in the form someone would actually bring them, each
+Thirty-eight problems in the form someone would actually bring them, each
 with what a correct response has to contain. Paste one as the whole
 prompt into an agent session with the pack installed.
 
@@ -457,3 +457,20 @@ Fails if the answer stops to ask for written acceptance criteria, asks
 who owns the questions, or otherwise runs the readiness check as a
 gate when the person asking has just stated the rules in the request.
 The check is thirty seconds and it has already passed.
+
+## 38. Work that outlived the request
+
+> Our export endpoint kicks off a job and returns 202 straight away.
+> When a user closes the tab and retries, we end up with two exports
+> running, and if the pod restarts mid-export the file is half written
+> and nothing retries it. We also cannot tell how many exports are in
+> flight.
+
+Must contain: the observation that the spawned work has neither an
+owner that waits for it nor a handle that cancels it, and that the
+three symptoms share that one cause; an identity on the command so the
+retry is recognised rather than duplicated; the half-written file
+treated as an idempotency question at the adapter rather than a
+cleanup script. Should reach `functional-making-effects-reliable`,
+possibly via `functional-managing-state-immutably` for the ownership
+mechanics.

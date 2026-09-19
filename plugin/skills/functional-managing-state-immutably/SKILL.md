@@ -1,6 +1,6 @@
 ---
 name: functional-managing-state-immutably
-description: Use when code mutates shared data or updates a record in place, when a concurrent update is lost or races, or when deciding how state changes over time.
+description: Use when code mutates shared data or updates a record in place, when a concurrent update is lost or races, or when parallel work needs cancelling together.
 license: MIT
 metadata:
   pack: functional-design-skills
@@ -130,6 +130,10 @@ updates to the one mutable cell, and that is a small, isolated problem:
 - Writers use an atomic swap with a version or compare-and-set.
 - Contention is proportional to how much unrelated state shares one cell,
   which is an argument for small aggregates.
+- Work that was spawned has an owner that waits for it or a handle that
+  cancels it. Neither one is a leak, and cancellation is a value passed
+  in rather than something done to a running computation. See
+  [concurrency.md](references/concurrency.md).
 
 ## Red flags
 
