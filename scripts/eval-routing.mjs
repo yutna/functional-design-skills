@@ -26,13 +26,8 @@
 //   node scripts/eval-routing.mjs --noise          per-skill noise, worst first
 //   node scripts/eval-routing.mjs --profile full   also score "When to use"
 
-import { readdirSync, readFileSync, statSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { everySkill, routingCases } from './lib/pack.mjs'
 
-const ROOT = dirname(dirname(fileURLToPath(import.meta.url)))
-const SKILLS = join(ROOT, 'plugin', 'skills')
-const CASES = join(ROOT, 'evals', 'routing-cases.md')
 const TOP_N = 3
 
 const STOP = new Set(
@@ -72,61 +67,33 @@ function counter (words) {
   return counts
 }
 
+// A skill whose frontmatter will not parse used to be skipped in silence,
+// which is the quiet version of the failure this file exists to catch: the
+// scorer would report full coverage for a pack with a broken skill in it.
+// It is an error now, and the skills come from the same reader every other
+// script uses.
 function loadSkills (profile) {
   const skills = new Map()
-  for (const name of readdirSync(SKILLS).sort()) {
-    const path = join(SKILLS, name, 'SKILL.md')
-    let text
-    try {
-      if (!statSync(path).isFile()) continue
-      text = readFileSync(path, 'utf8')
-    } catch { continue }
-    const front = /^---\r?\n([\s\S]*?)\r?\n---\r?\n/.exec(text)
-    if (!front) continue
-    const desc = /^description:\s*(.+)$/m.exec(front[1])?.[1]?.trim() ?? ''
+  for (const skill of everySkill()) {
+    if (skill.frontmatter === null) {
+      process.stderr.write(
+        `${skill.id}: frontmatter will not parse, so it cannot be scored\n`,
+      )
+      process.exit(1)
+    }
+    const spelled = terms(skill.id.replaceAll('-', ' '))
     // What an agent sees before opening the file. The name counts twice
     // because it is the strongest signal the listing carries.
-    const words = [...terms(name.replaceAll('-', ' ')), ...terms(name.replaceAll('-', ' ')), ...terms(desc)]
+    const words = [...spelled, ...spelled, ...terms(skill.frontmatter.description ?? '')]
     if (profile === 'full') {
-      const section = /## When to use\r?\n([\s\S]*?)\r?\n## /.exec(text)
+      const section = /## When to use\n([\s\S]*?)\n## /.exec(skill.raw)
       if (section) words.push(...terms(section[1]))
     }
-    skills.set(name, counter(words))
+    skills.set(skill.id, counter(words))
   }
   return skills
 }
 
-function loadCases () {
-  const text = readFileSync(CASES, 'utf8')
-  const blocks = [...text.matchAll(/```text\r?\n([\s\S]*?)```/g)]
-  if (blocks.length === 0) {
-    process.stderr.write('no ```text case block found in evals/routing-cases.md\n')
-    process.exit(1)
-  }
-  // Only the first block was ever read. A second one would have been skipped
-  // in silence, and every case in it would have gone unscored while the
-  // total still looked healthy.
-  if (blocks.length > 1) {
-    process.stderr.write(
-      `evals/routing-cases.md has ${blocks.length} \`\`\`text blocks; only the ` +
-        'first is scored. Keep every case in one block.\n',
-    )
-    process.exit(1)
-  }
-  const block = blocks[0]
-  const cases = []
-  for (const raw of block[1].split(/\r?\n/)) {
-    const line = raw.trim()
-    if (!line || line.startsWith('#')) continue
-    const at = line.lastIndexOf(' -> ')
-    if (at === -1) {
-      process.stderr.write(`case line missing ' -> ': ${line}\n`)
-      process.exit(1)
-    }
-    cases.push([line.slice(0, at).trim(), line.slice(at + 4).trim()])
-  }
-  return cases
-}
 
 function rank (skills, idf, symptom) {
   const wanted = terms(symptom)
@@ -148,18 +115,10 @@ const report = argv.includes('--report')
 const showNoise = argv.includes('--noise')
 const profile = argv.includes('--profile') && argv.includes('full') ? 'full' : 'desc'
 
+// Both readers throw rather than return an empty result, so a run that
+// scored nothing cannot reach the summary and be reported as clean.
 const skills = loadSkills(profile)
-const cases = loadCases()
-
-// A run that scored nothing is a broken reader, not a clean sheet. Both
-// sides have to be non-empty for the number below to mean anything.
-if (skills.size === 0 || cases.length === 0) {
-  process.stderr.write(
-    `found ${skills.size} skill(s) and ${cases.length} case(s); this scored ` +
-      'nothing, which is a failure rather than a pass.\n',
-  )
-  process.exit(1)
-}
+const cases = routingCases().map(({ symptom, expected }) => [symptom, expected])
 
 const docFreq = new Map()
 for (const counts of skills.values()) {

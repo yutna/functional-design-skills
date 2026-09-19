@@ -165,6 +165,29 @@ The default rules bite in specific ways. The ones that catch people out:
   library" cannot be acted on. Name the library, and verify the name
   against its current documentation rather than from memory.
 
+## The tooling reads through one boundary
+
+`scripts/lib/markdown.mjs` is the only place a Markdown file is read, and
+`scripts/lib/pack.mjs` is the only place that says what a skill is, what
+a routing case is, and what a scenario is. Use them. A script that reads
+a file itself is how the three CRLF bugs got in: eight scripts each split
+lines their own way, so each was a separate chance to be wrong, and there
+was no single place to fix it.
+
+This is the pack's own advice applied to its own tooling, which is worth
+saying plainly because it had not been:
+
+- `functional-crossing-io-boundaries` — parse once at the edge, and let
+  everything inward hold the parsed value. Nothing downstream of
+  `readMarkdown` can see a `\r`, so no pattern downstream needs to allow
+  for one.
+- `functional-splitting-and-joining-code` — the same fact written twice
+  drifts. Five scripts listed the skills directory and two counted the
+  routing cases, with different rules, and the copies disagreed.
+- `functional-defining-errors-out-of-existence` — reading an empty pack
+  throws in the reader rather than returning a zero that every caller has
+  to remember to check. One caller forgot, and reported the zero as a pass.
+
 ## Changing a rule, or adding a check
 
 Give the pack the defect the change is meant to catch, and confirm it

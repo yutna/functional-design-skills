@@ -11,6 +11,8 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parse as parseYaml } from 'yaml'
+import { anchorsIn, readMarkdown, slugOf, stripFences } from './lib/markdown.mjs'
+import { readSkill, skillIds as everyId } from './lib/pack.mjs'
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)))
 // The plugin lives in its own directory so that package.json and the lock file
@@ -86,17 +88,12 @@ function readJson (relative) {
 const EXPECTED_VERSION = readJson('package.json').version
 
 function readSkillDirs () {
-  let entries
   try {
-    entries = readdirSync(SKILLS_DIR)
-  } catch {
-    errors.push('plugin/skills/: directory not found')
+    return everyId()
+  } catch (error) {
+    errors.push(error.message)
     return []
   }
-  return entries
-    .filter((entry) => !entry.startsWith('.'))
-    .filter((entry) => statSync(join(SKILLS_DIR, entry)).isDirectory())
-    .sort()
 }
 
 function validateName (id, frontmatter) {
@@ -229,26 +226,6 @@ function validatePack (id, frontmatter) {
   }
 }
 
-function stripFences (body) {
-  const kept = []
-  let fence = null
-  for (const line of body.split(/\r?\n/)) {
-    const marker = /^\s*(`{3,}|~{3,})/.exec(line)
-    if (fence === null && marker) {
-      fence = marker[1]
-      continue
-    }
-    if (fence !== null) {
-      if (marker && marker[1][0] === fence[0] && marker[1].length >= fence.length) {
-        fence = null
-      }
-      continue
-    }
-    kept.push(line)
-  }
-  return kept.join('\n')
-}
-
 function validateBody (id, rawBody) {
   const body = stripFences(rawBody)
   const firstLine = body.split(/\r?\n/).find((line) => line.trim().length > 0)
@@ -281,7 +258,7 @@ function validateContentsList (id, dir) {
   }
   for (const file of files) {
     if (!file.endsWith('.md')) continue
-    const text = readFileSync(join(dir, 'references', file), 'utf8')
+    const text = readMarkdown(join(dir, 'references', file))
     const lines = text.split(/\r?\n/).length
     if (lines <= CONTENTS_THRESHOLD) continue
     if (/^## Contents$/m.test(text)) continue
@@ -320,37 +297,17 @@ function validateReferences (id, dir, body) {
   }
 }
 
-// The slug a heading gets in rendered Markdown: lower-cased, with anything
-// that is not a letter, digit, space or hyphen removed, and spaces hyphenated.
-function slugOf (heading) {
-  return heading
-    .toLowerCase()
-    .replace(/`/g, '')
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .replace(/[^\w\s-]/g, '')
-    .trim()
-    .replace(/\s/g, '-')
-}
-
-function anchorsIn (text) {
-  const slugs = new Set()
-  for (const line of stripFences(text).split(/\r?\n/)) {
-    const heading = /^#{1,6}\s+(.+?)\s*$/.exec(line)
-    if (heading) slugs.add(slugOf(heading[1]))
-  }
-  return slugs
-}
-
-// Every relative link in every Markdown file must resolve, and so must every
-// anchor. Skills are copied into other people's projects, where a broken link
-// is a dead end with no repository around it to search — and the contents list
-// at the top of each long reference is written by a script, so a slug bug
-// would produce dozens of dead links at once.
+// Every relative link in every Markdown file must resolve, and so must
+// every anchor. Skills are copied into other people's projects, where a
+// broken link is a dead end with no repository around it to search, and the
+// contents list at the top of each long reference is written by hand
+// against slugs a renderer computes, so one wrong rule there produces dozens
+// of dead links at once.
 //
 // The walk covers the repository, not only plugin/skills. Until 3.0.1 it
 // stopped at the skills directory, so a broken link in README.md,
-// CONTRIBUTING.md or the evals was nobody's job to catch — and the README is
-// the first file anyone reads.
+// CONTRIBUTING.md or the evals was nobody's job to catch -- and the README
+// is the first file anyone reads.
 const LINK_SKIP_DIRS = new Set(['node_modules', '.git', '.claude'])
 const LINK_SKIP_FILES = new Set(['SOURCES.md', 'PRIVATE-NOTES.md'])
 
@@ -358,7 +315,7 @@ function validateLinks () {
   const link = /\[[^\]]*\]\(([^)\s#]*)(?:#([^)\s]*))?\)/g
   const anchors = new Map()
   const anchorsFor = (path) => {
-    if (!anchors.has(path)) anchors.set(path, anchorsIn(readFileSync(path, 'utf8')))
+    if (!anchors.has(path)) anchors.set(path, anchorsIn(readMarkdown(path)))
     return anchors.get(path)
   }
   const walk = (dir) => {
@@ -371,7 +328,7 @@ function validateLinks () {
       }
       if (!entry.endsWith('.md') || LINK_SKIP_FILES.has(entry)) continue
       const where = path.slice(ROOT.length + 1)
-      const text = readFileSync(path, 'utf8')
+      const text = readMarkdown(path)
       for (const [, href, anchor] of text.matchAll(link)) {
         if (/^(https?:|mailto:)/.test(href)) continue
         const target = href === '' ? path : join(dirname(path), href)
@@ -391,30 +348,24 @@ function validateLinks () {
 }
 
 function validateSkill (id) {
-  const dir = join(SKILLS_DIR, id)
-  let raw
+  let skill
   try {
-    raw = readFileSync(join(dir, 'SKILL.md'), 'utf8')
+    skill = readSkill(id)
   } catch {
     fail(id, 'SKILL.md not found')
     return
   }
-
-  const match = FRONTMATTER.exec(raw)
-  if (!match) {
+  const { dir, body, frontmatter, malformed } = skill
+  if (malformed === 'missing') {
     fail(id, 'SKILL.md has no YAML frontmatter block')
     return
   }
-
-  let frontmatter
-  try {
-    frontmatter = parseYaml(match[1])
-  } catch (error) {
-    fail(id, `frontmatter is not valid YAML: ${error.message}`)
+  if (malformed === 'not a mapping') {
+    fail(id, 'frontmatter must be a YAML mapping')
     return
   }
-  if (frontmatter === null || typeof frontmatter !== 'object') {
-    fail(id, 'frontmatter must be a YAML mapping')
+  if (malformed !== null) {
+    fail(id, `frontmatter is not valid YAML: ${malformed}`)
     return
   }
 
@@ -423,8 +374,8 @@ function validateSkill (id) {
   validateKeys(id, frontmatter)
   validateVersion(id, frontmatter)
   validatePack(id, frontmatter)
-  validateBody(id, match[2])
-  validateReferences(id, dir, match[2])
+  validateBody(id, body)
+  validateReferences(id, dir, body)
   validateContentsList(id, dir)
 }
 
@@ -517,7 +468,7 @@ function validateLockVersions () {
 function validateDistinctDescriptions (ids) {
   const seen = new Map()
   for (const id of ids) {
-    const raw = readFileSync(join(SKILLS_DIR, id, 'SKILL.md'), 'utf8')
+    const raw = readMarkdown(join(SKILLS_DIR, id, 'SKILL.md'))
     const match = FRONTMATTER.exec(raw)
     if (!match) continue
     const text = parseYaml(match[1])?.description ?? ''
@@ -543,7 +494,7 @@ function validateEvalNames (ids) {
     return
   }
   for (const file of files) {
-    const text = readFileSync(join(evalsDir, file), 'utf8')
+    const text = readMarkdown(join(evalsDir, file))
     const pattern = /`((?:[a-z]+-){1,4}[a-z]+)`/g
     for (const [, name] of text.matchAll(pattern)) {
       if (known.has(name)) continue
@@ -573,7 +524,7 @@ function validateParentPack (ids) {
       }
     }
     if (parent === undefined) continue
-    const body = readFileSync(join(SKILLS_DIR, id, 'SKILL.md'), 'utf8')
+    const body = readMarkdown(join(SKILLS_DIR, id, 'SKILL.md'))
     if (!body.includes(`../${parent}/SKILL.md`)) {
       fail(id, `extends "${parent}" but does not link to it`)
     }
