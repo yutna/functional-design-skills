@@ -3,7 +3,7 @@ name: capturing-the-domain
 description: Use when starting a feature or system, when code and the business use different words for the same thing, or when drawing boundaries between subsystems.
 license: MIT
 metadata:
-  version: 2.0.0
+  version: 2.0.1
 ---
 
 # Capturing the Domain

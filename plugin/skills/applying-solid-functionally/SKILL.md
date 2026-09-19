@@ -3,7 +3,7 @@ name: applying-solid-functionally
 description: Use when a function takes a whole service to use one part, when adding a variant forces edits everywhere, or when structuring module dependencies.
 license: MIT
 metadata:
-  version: 2.0.0
+  version: 2.0.1
 ---
 
 # Applying SOLID Functionally

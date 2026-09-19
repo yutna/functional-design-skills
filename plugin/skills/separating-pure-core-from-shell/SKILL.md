@@ -3,7 +3,7 @@ name: separating-pure-core-from-shell
 description: Use when business logic cannot be tested without I/O, when one call deep inside forces every caller to become async, or when deciding where a database or HTTP call belongs.
 license: MIT
 metadata:
-  version: 2.0.0
+  version: 2.0.1
 ---
 
 # Separating Pure Core From Shell

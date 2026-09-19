@@ -3,7 +3,7 @@ name: translating-gof-patterns
 description: Use when reaching for a factory, strategy, visitor or other class-based pattern, when porting object-oriented code, or when a pattern feels heavy.
 license: MIT
 metadata:
-  version: 2.0.0
+  version: 2.0.1
 ---
 
 # Translating GoF Patterns

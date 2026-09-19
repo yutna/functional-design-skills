@@ -3,7 +3,7 @@ name: functional-elixir-phoenix
 description: Use when applying functional design in Elixir or Phoenix, including structs and typespecs, ok and error tuples, Ecto changesets, contexts, and OTP.
 license: MIT
 metadata:
-  version: 2.0.0
+  version: 2.0.1
 ---
 
 # Functional Elixir and Phoenix

@@ -3,7 +3,7 @@ name: functional-react-nextjs
 description: Use when building React or Next.js interfaces functionally, deciding between derived and stored state, or placing logic across the server and client boundary.
 license: MIT
 metadata:
-  version: 2.0.0
+  version: 2.0.1
 ---
 
 # Functional React and Next.js

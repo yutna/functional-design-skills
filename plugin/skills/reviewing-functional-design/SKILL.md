@@ -3,7 +3,7 @@ name: reviewing-functional-design
 description: Use when reviewing a design, a diff, or a module, before merging a change, or when judging whether functional code meets a design standard.
 license: MIT
 metadata:
-  version: 2.0.0
+  version: 2.0.1
 ---
 
 # Reviewing Functional Design

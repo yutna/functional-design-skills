@@ -3,7 +3,7 @@ name: defining-errors-out-of-existence
 description: Use when error handling dwarfs the happy path, when the same failure is handled in many places, or when an interface forces callers to handle rare cases.
 license: MIT
 metadata:
-  version: 2.0.0
+  version: 2.0.1
 ---
 
 # Defining Errors Out of Existence

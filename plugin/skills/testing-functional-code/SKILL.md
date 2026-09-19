@@ -3,7 +3,7 @@ name: testing-functional-code
 description: Use when writing tests for functional code, when tests need heavy mocking or a database to check a rule, or when deciding what to test and how.
 license: MIT
 metadata:
-  version: 2.0.0
+  version: 2.0.1
 ---
 
 # Testing Functional Code
