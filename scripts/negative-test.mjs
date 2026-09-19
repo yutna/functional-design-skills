@@ -12,7 +12,10 @@
 //
 // Usage: node scripts/negative-test.mjs
 
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, symlinkSync,
+  unlinkSync, writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -38,6 +41,16 @@ const SCENARIO_COUNT =
   (readFileSync(join(ROOT, 'evals', 'scenarios.md'), 'utf8')
     .match(/^## \d+\. /gm) ?? []).length
 const SKILL = join('plugin', 'skills', 'functional-folding-over-data', 'SKILL.md')
+
+// Two cases below need a description to copy or to replace. Reading them
+// rather than writing them down keeps the cases working after an edit, for
+// the reason SCENARIO_CLAIM above gives.
+const descriptionOf = (id) =>
+  /^description: .*$/m.exec(
+    readFileSync(join(ROOT, 'plugin', 'skills', id, 'SKILL.md'), 'utf8'),
+  )[0]
+const OWN_DESCRIPTION = descriptionOf('functional-folding-over-data')
+const ANOTHER_DESCRIPTION = descriptionOf('functional-composing-functions')
 
 // Each case: what we break, the edit that breaks it, the text the validator
 // must produce, and which validator. The edit is [find, replace] applied to
@@ -137,24 +150,84 @@ const CASES = [
       'the parser and\nthe serialiser agree on the encoded shape, which is ' +
       'why both live in\none module and neither is exported on its own.'],
     'repeats a paragraph from', 'validate-prose.mjs'],
+  ['a skill whose body never opens a level-one heading', SKILL,
+    ['\n# Folding Over Data\n', '\n## Folding Over Data\n'],
+    'must open with a single level-one heading'],
+  ['a SKILL.md with the frontmatter block removed', SKILL,
+    ['---\nname: functional-folding-over-data', 'name: functional-folding-over-data'],
+    'has no YAML frontmatter block'],
+  ['a cross-skill link pointing at a name that does not exist', SKILL,
+    ['../functional-managing-state-immutably/SKILL.md',
+      '../functional-managing-state-immutable/SKILL.md', 'all'],
+    'broken link ->'],
+  ['two skills sharing one description, so routing cannot separate them', SKILL,
+    [OWN_DESCRIPTION, ANOTHER_DESCRIPTION],
+    'description is identical to'],
+  ['a description that no longer contains the words its own symptoms use', SKILL,
+    [OWN_DESCRIPTION,
+      'description: Use when a clinic needs an audit trail before it closes.'],
+    'Descriptions missing the words these symptoms use', 'eval-routing.mjs'],
+  ['a broken relative link in a file outside plugin/skills', 'README.md',
+    ['(CONTRIBUTING.md)', '(CONTRIBUTIONS.md)', 'all'],
+    'broken link ->'],
+  ['a routing case expecting a skill that does not exist',
+    join('evals', 'routing-cases.md'),
+    ['-> functional-folding-over-data', '-> functional-folding-over-datum'],
+    'unknown skill named in cases', 'eval-routing.mjs'],
+]
+
+// A defect that is the presence of a file cannot be written as an edit to
+// one. plugin/package.json is the case this repository cares about: a lock
+// file at the plugin root runs npm on the machine of everyone who installs.
+const CREATED = [
+  ['a package file at the plugin root',
+    join('plugin', 'package.json'), '{}\n',
+    'must not exist', 'validate-skills.mjs'],
+  ['a lock file at the plugin root',
+    join('plugin', 'package-lock.json'), '{}\n',
+    'must not exist', 'validate-skills.mjs'],
 ]
 
 const work = mkdtempSync(join(tmpdir(), 'fds-negative-'))
 for (const dir of ['scripts', 'plugin', '.claude-plugin', 'evals']) {
   cpSync(join(ROOT, dir), join(work, dir), { recursive: true })
 }
-// validate-counts.mjs checks sentences in these, so the copy needs them.
-for (const file of ['package.json', 'package-lock.json', 'README.md', 'CLAUDE.md']) {
+// validate-counts.mjs checks sentences in some of these; the rest are here
+// because validate-skills.mjs follows every relative link in the repository
+// now, and a copy missing the file a link points at fails for the wrong
+// reason. The baseline check above caught exactly that when the walk widened.
+const TOP_LEVEL = [
+  'package.json', 'package-lock.json', 'README.md', 'CLAUDE.md',
+  'CONTRIBUTING.md', 'CHANGELOG.md', 'LICENSE', 'SECURITY.md',
+  'CODE_OF_CONDUCT.md',
+]
+for (const file of TOP_LEVEL) {
   cpSync(join(ROOT, file), join(work, file))
 }
-// The validator imports `yaml`; point the copy at the real install.
-cpSync(join(ROOT, 'node_modules'), join(work, 'node_modules'), { recursive: true })
+// The validators import `yaml` and `typescript`, so a copy needs to resolve
+// them. Link rather than copy: node_modules holds symlinks of its own, and
+// copying those needs a privilege Windows does not grant by default. A
+// junction is the one link type Windows makes without it.
+function linkModules (into) {
+  const target = join(ROOT, 'node_modules')
+  try {
+    symlinkSync(target, join(into, 'node_modules'), 'junction')
+  } catch {
+    cpSync(target, join(into, 'node_modules'), { recursive: true, dereference: true })
+  }
+}
+linkModules(work)
+// Three cases search for a string that spans two lines. On a Windows
+// checkout those arrived as \r\n and matched nothing, so the guards looked
+// broken when only the harness was. The copy is normalised here; the CRLF
+// section below converts it back on purpose, after the edits have run.
+convertEndings(work, '\n')
 
 function run (script = 'validate-skills.mjs') {
   const result = spawnSync(process.execPath, [join(work, 'scripts', script)], {
     encoding: 'utf8',
   })
-  return `${result.stdout}${result.stderr}`
+  return { text: `${result.stdout}${result.stderr}`, status: result.status }
 }
 
 let failures = 0
@@ -164,10 +237,11 @@ for (const script of [
   'validate-rules.mjs',
   'validate-counts.mjs',
   'validate-prose.mjs',
+  'eval-routing.mjs',
 ]) {
   const baseline = run(script)
-  if (!baseline.startsWith('ok')) {
-    process.stderr.write(`${script} baseline is not clean, so nothing below proves anything:\n${baseline}\n`)
+  if (baseline.status !== 0) {
+    process.stderr.write(`${script} baseline is not clean, so nothing below proves anything:\n${baseline.text}\n`)
     failures++
   }
 }
@@ -190,7 +264,7 @@ for (const [label, target, [find, replace, scope], expected, script] of CASES) {
         : originals[i].replace(find, replace),
     )
   })
-  const output = run(script)
+  const output = run(script).text
   paths.forEach((path, i) => writeFileSync(path, originals[i]))
   if (output.includes(expected)) {
     process.stdout.write(`neg ok   ${label}\n`)
@@ -200,10 +274,106 @@ for (const [label, target, [find, replace, scope], expected, script] of CASES) {
   }
 }
 
+for (const [label, file, content, expected, script] of CREATED) {
+  const path = join(work, file)
+  writeFileSync(path, content)
+  const output = run(script).text
+  unlinkSync(path)
+  if (output.includes(expected)) {
+    process.stdout.write(`neg ok   ${label}\n`)
+  } else {
+    process.stderr.write(`neg FAIL ${label} -> expected "${expected}", got:\n${output}\n`)
+    failures++
+  }
+}
+
+// Two whole-tree checks. Neither is an edit to one file, and both cover a
+// way a check can stop working without failing: reading the wrong line
+// ending, and finding nothing to read.
+
+const SCRIPTS = [
+  'validate-skills.mjs',
+  'validate-examples.mjs',
+  'validate-rules.mjs',
+  'validate-counts.mjs',
+  'validate-prose.mjs',
+  'eval-routing.mjs',
+]
+
+// .gitattributes checks Markdown out with the platform's own line endings,
+// so on Windows every file carries \r\n. Three readers were anchored to a
+// bare \n. validate-rules.mjs was the worst: it matched no headings, found
+// no rules at all, printed "0 core rule(s) labelled across 0 skill(s)" and
+// exited zero, so the strictness gate was inert on Windows and green.
+function convertEndings (dir, ending) {
+  for (const entry of readdirSync(dir)) {
+    if (entry === 'node_modules' || entry === '.git') continue
+    const path = join(dir, entry)
+    if (statSync(path).isDirectory()) {
+      convertEndings(path, ending)
+      continue
+    }
+    if (!entry.endsWith('.md')) continue
+    writeFileSync(path, readFileSync(path, 'utf8').replace(/\r?\n/g, ending))
+  }
+}
+
+const lfSummary = new Map(SCRIPTS.map((script) => [script, run(script).text.trim()]))
+convertEndings(work, '\r\n')
+for (const script of SCRIPTS) {
+  const after = run(script)
+  if (after.status !== 0) {
+    process.stderr.write(`crlf FAIL ${script} exits ${after.status} on a CRLF checkout:\n${after.text}\n`)
+    failures++
+  } else if (after.text.trim() !== lfSummary.get(script)) {
+    process.stderr.write(
+      `crlf FAIL ${script} reports something different on a CRLF checkout.\n` +
+        `  lf:   ${lfSummary.get(script).split('\n')[0]}\n` +
+        `  crlf: ${after.text.trim().split('\n')[0]}\n`,
+    )
+    failures++
+  } else {
+    process.stdout.write(`crlf ok  ${script} reads a CRLF checkout the same way\n`)
+  }
+}
+
+// And the floor: with nothing to read, every one of these must fail rather
+// than report a clean zero.
+const empty = mkdtempSync(join(tmpdir(), 'fds-empty-'))
+for (const dir of ['scripts', 'plugin', '.claude-plugin', 'evals']) {
+  cpSync(join(ROOT, dir), join(empty, dir), { recursive: true })
+}
+for (const file of TOP_LEVEL) {
+  cpSync(join(ROOT, file), join(empty, file))
+}
+linkModules(empty)
+rmSync(join(empty, 'plugin', 'skills'), { recursive: true, force: true })
+cpSync(join(ROOT, 'plugin', 'skills'), join(empty, 'plugin', 'skills'), {
+  recursive: true,
+  filter: (src) => !src.endsWith('.md'),
+})
+for (const script of SCRIPTS) {
+  const result = spawnSync(process.execPath, [join(empty, 'scripts', script)], {
+    encoding: 'utf8',
+  })
+  const text = `${result.stdout}${result.stderr}`
+  if (result.status === 0) {
+    process.stderr.write(`floor FAIL ${script} passed with nothing to read:\n${text}\n`)
+    failures++
+  } else {
+    process.stdout.write(`floor ok ${script} refuses to pass on an empty pack\n`)
+  }
+}
+rmSync(empty, { recursive: true, force: true })
+
 rmSync(work, { recursive: true, force: true })
 
 if (failures > 0) {
   process.stderr.write(`\n${failures} guard(s) did not fire on their own defect\n`)
   process.exit(1)
 }
-process.stdout.write(`\n${CASES.length} guard(s) fired on the defect each was written for\n`)
+process.stdout.write(
+  `\n${CASES.length + CREATED.length} guard(s) fired on the defect each was ` +
+    `written for, ${SCRIPTS.length} read a CRLF checkout unchanged, and ` +
+    `${SCRIPTS.length} refused to pass with nothing to read\n`,
+)

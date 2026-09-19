@@ -46,8 +46,13 @@ const errors = []
 const counts = new Map(LABELS.map((label) => [label, 0]))
 const rows = []
 
+// Split on either ending. .gitattributes checks Markdown out with the
+// platform's own, so on Windows every line here arrived with a trailing \r,
+// the heading never matched, and this check reported "0 core rule(s)
+// labelled across 0 skill(s)" and exited zero. The floor below is the other
+// half of that fix: an instrument that measured nothing must not pass.
 function coreRules (body) {
-  const lines = body.split('\n')
+  const lines = body.split(/\r?\n/)
   const start = lines.findIndex((line) => line === '## Core rules')
   if (start === -1) return []
   const rest = lines.slice(start + 1)
@@ -100,6 +105,16 @@ if (errors.length > 0) {
 }
 
 const total = [...counts.values()].reduce((sum, n) => sum + n, 0)
+// A check that found nothing has not passed; it has stopped working. Every
+// release of this pack has had core rules in most of its skills, so zero is
+// a broken reader, not a clean result.
+if (total === 0 || withSection === 0) {
+  process.stderr.write(
+    `error found ${total} core rule(s) in ${withSection} skill(s). This ` +
+      'check measured nothing, which is a failure, not a pass.\n',
+  )
+  process.exit(1)
+}
 const share = LABELS.map(
   (label) =>
     `${label.toLowerCase()} ${counts.get(label)}` +

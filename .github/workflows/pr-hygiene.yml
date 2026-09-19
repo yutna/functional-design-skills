@@ -10,6 +10,16 @@ on:
 permissions:
   pull-requests: write
 
+# Opening a pull request with labels fires opened and labeled within the
+# same second, so three runs used to start together, all read an empty
+# assignee list, and all three tried to set it. Two of them lost. Keeping
+# one run per pull request removes the race rather than tolerating it; the
+# assign step below still tolerates it, because a race is not the only way
+# an assignee can already be there.
+concurrency:
+  group: pr-hygiene-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   assign:
     name: assign
@@ -21,12 +31,19 @@ jobs:
             const pr = context.payload.pull_request
             if (pr.user.type === 'Bot') return
             if (pr.assignees.length > 0) return
-            await github.rest.issues.addAssignees({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: pr.number,
-              assignees: [pr.user.login],
-            })
+            try {
+              await github.rest.issues.addAssignees({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                assignees: [pr.user.login],
+              })
+            } catch (error) {
+              // Failing the run here would mark a pull request unhealthy
+              // over a convenience. Say what happened and carry on; the
+              // labels job is the one that is allowed to fail.
+              core.warning(`could not assign ${pr.user.login}: ${error.message}`)
+            }
 
   labels:
     name: labels

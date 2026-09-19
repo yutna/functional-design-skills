@@ -419,7 +419,8 @@ function checkDeltaPacks () {
 
 if (process.argv.includes('--selftest')) selftest()
 
-for (const path of walk(ROOT)) checkFile(path)
+const files = walk(ROOT)
+for (const path of files) checkFile(path)
 checkDeltaPacks()
 
 for (const problem of problems) {
@@ -429,4 +430,18 @@ if (problems.length > 0) {
   process.stderr.write(`\n${problems.length} prose problem(s)\n`)
   process.exit(1)
 }
-process.stdout.write('ok    prose checks clean\n')
+// A check that found nothing to check has not passed; it has stopped
+// working. On a CRLF checkout one of these readers silently matched no
+// lines, reported zero, and exited clean. Every count below is a floor.
+// The floor is the skills, not the repository. Walking the root always
+// finds README.md and CLAUDE.md, so counting every file would have called
+// a run that read no skill at all a clean one.
+const fromSkills = files.filter((path) => path.startsWith(SKILLS_DIR)).length
+if (fromSkills === 0) {
+  process.stderr.write(
+    'error no Markdown was read under plugin/skills, so the prose checks ' +
+      'measured nothing\n',
+  )
+  process.exit(1)
+}
+process.stdout.write(`ok    prose checks clean across ${files.length} file(s)\n`)
