@@ -35,6 +35,37 @@ implementations of each install script and requires them to change
 together, and there was no way to run the PowerShell half without
 already having it.
 
+### Split: React and Next.js are two packs
+
+`functional-react-nextjs` covered a framework and the meta-framework
+on top of it in one place, which meant a React project read Server
+Action guidance it had no use for, and neither half could say what the
+other assumed.
+
+- **`functional-typescript-react`** is the base: components, props,
+  state against derivation, and keeping rules out of handlers.
+- **`functional-typescript-react-nextjs`** is the delta: the server and
+  client boundary, Server Actions as workflows, what may cross and in
+  what shape, and where a cache is invalidated. Seven core rules, none
+  of which repeat the base.
+
+The long name is deliberate. The check that a pack links to the one it
+extends derives the parent from the name, and
+`functional-typescript-nextjs` would have derived `functional-typescript`
+— skipping React, which is the pack it actually builds on and the one
+it could most easily duplicate.
+
+**The duplicate-paragraph check became transitive** as a result. It
+compared a pack against its immediate parent only, which would have
+left `functional-typescript-react-nextjs` free to repeat anything from
+`functional-typescript`. It now walks every ancestor, and a
+twenty-seventh guard covers the grandparent case the old one missed.
+
+Adding a forty-first skill moved every routing score, because inverse
+document frequency depends on how many documents there are. Two
+unrelated cases fell out of the top three and were repaired; coverage
+is 127 of 127 with 98 placing first, up from 120 of 120 with 93.
+
 ### Added: who owns work that was started
 
 The one genuine content gap the audit found. `concurrency.md` covered

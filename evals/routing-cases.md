@@ -98,7 +98,7 @@ we have no type checker, plain javascript, how do tagged unions work -> function
 how do i make a nominal type in typescript -> functional-typescript
 we use the effect library, how do i declare a service and a layer -> functional-typescript-effect
 we use ts-pattern, how do i make the match exhaustive -> functional-typescript-ts-pattern
-should this be react state or should i derive it during render -> functional-react-nextjs
+should this be react state or should i derive it during render -> functional-typescript-react
 how do i do this in elixir with ecto changesets -> functional-elixir-phoenix
 this function had to become async just because one thing it calls is -> functional-separating-pure-core-from-shell
 adding one lookup deep inside made every caller asynchronous -> functional-separating-pure-core-from-shell
@@ -128,4 +128,11 @@ the request returned but the work it started is still running -> functional-maki
 who cancels this background job when nobody needs it any more -> functional-making-effects-reliable
 two concurrent operations need to be cancelled together -> functional-managing-state-immutably
 we fire off parallel work and one failure leaves the others running -> functional-managing-state-immutably
+should this be a server component or a client component -> functional-typescript-react-nextjs
+marking one component use client pulled the whole page across -> functional-typescript-react-nextjs
+we passed a domain object to a client component and lost its guarantees -> functional-typescript-react-nextjs
+our server action throws instead of returning the failure to the form -> functional-typescript-react-nextjs
+where should the cache be invalidated after a mutation -> functional-typescript-react-nextjs
+a useeffect that computes state from other state -> functional-typescript-react
+this component takes twenty props and hides nothing -> functional-typescript-react
 ```

@@ -1,13 +1,13 @@
 ---
-name: functional-react-nextjs
-description: Use when building React or Next.js interfaces functionally, deciding between derived and stored state, or placing logic across the server and client boundary.
+name: functional-typescript-react
+description: Use when a React component's props grow, when deciding if a value belongs in state or is derived during render, or when an effect computes what render could.
 license: MIT
 metadata:
   pack: functional-design-skills
   version: 2.0.1
 ---
 
-# Functional React and Next.js
+# Functional React
 
 ## Overview
 
@@ -18,18 +18,21 @@ directly, and the common React problems are the same problems they
 describe: state that duplicates a fact, effects tangled with decisions,
 and components whose interface is as complicated as their body.
 
-Next.js adds a second boundary, between server and client, which maps
-onto the pure core and shell split almost exactly.
+This pack covers React itself. The TypeScript it is written in is in
+[functional-typescript](../functional-typescript/SKILL.md), and the
+server and client split a meta-framework adds is in
+[functional-typescript-react-nextjs](../functional-typescript-react-nextjs/SKILL.md).
 
 ## When to use
 
-- Designing a component, a hook, or a page
-- Deciding whether a value belongs in state
-- Placing logic across server and client components
-- Writing a Server Action or a form
+- Designing a component, a hook, or a custom hook's interface
+- Deciding whether a value belongs in state or is derived
+- Modelling what a screen can be showing
+- Keeping a business rule out of an event handler
 - Reviewing React code against the design rules
 
-Not for: visual design, or framework configuration.
+Not for: visual design, framework configuration, or the server and
+client boundary.
 
 ## Core rules
 
@@ -44,8 +47,8 @@ Not for: visual design, or framework configuration.
    `isLoading`, `error`, and `data` together permit states no screen has.
 5. Default. **Keep the decision pure and let the framework act.** A reducer, or
    a plain function, decides; the component or the action performs.
-6. Default. **Push data fetching to the edge**: server components, loaders, or a
-   query layer, not into the middle of a component tree.
+6. Default. **Push data fetching to the edge**: a loader, a route, or a query
+   layer, not into the middle of a component tree.
 7. Judgement. **A component's props are its interface.** Deep components take
    few props and hide a lot; shallow ones take twenty and hide nothing.
 
@@ -108,46 +111,6 @@ correctness argument comes first, and the performance argument rarely
 does. See
 [state-and-derivation.md](references/state-and-derivation.md).
 
-## The server boundary
-
-In Next.js the server and client split is the pure core and shell split
-with a network in between.
-
-| Belongs on the server      | Belongs on the client       |
-| -------------------------- | --------------------------- |
-| Data access and secrets    | Interaction state           |
-| Business rules and pricing | Optimistic updates          |
-| Authorisation decisions    | Animation and focus         |
-| Composing the page's data  | Local, ephemeral form state |
-
-A Server Action is a workflow: a command arrives, the pure core decides,
-the shell performs, and the result is returned as data.
-
-```tsx
-"use server";
-
-export async function confirmBooking(
-  _prev: FormState,
-  formData: FormData,
-): Promise<FormState> {
-  const parsed = parseBookingForm(formData);
-  if (!parsed.ok) return { tag: "Invalid", errors: parsed.error };
-
-  const result = await runConfirmBooking(deps)(parsed.value);
-  return result.ok
-    ? { tag: "Placed", ref: result.value.reference }
-    : { tag: "Rejected", reason: result.error };
-}
-```
-
-Parse at the boundary, decide purely, return a value the form can render.
-The `(prevState, formData)` signature is what React 19's
-`useActionState` calls, so the client side reads
-`useActionState(confirmBooking, { tag: "Idle" })` and returns the state,
-the form action, and a pending flag together — no second piece of state
-that can disagree with the first. See
-[server-boundary.md](references/server-boundary.md).
-
 ## Red flags
 
 - `useEffect` that sets state derived from other state
@@ -171,8 +134,6 @@ that can disagree with the first. See
   [functional-hiding-information](../functional-hiding-information/SKILL.md).
 - **Putting rules in handlers.** A discount calculated in `onClick`
   cannot be tested or reused. Move it to a pure function.
-- **Client components by default.** Marking a component as client-side
-  pulls its whole subtree across the boundary.
 - **Reaching for a global store first.** Most state is either server data
   or local to one subtree.
 
@@ -182,12 +143,10 @@ that can disagree with the first. See
 - [functional-separating-pure-core-from-shell](../functional-separating-pure-core-from-shell/SKILL.md)
 - [functional-designing-deep-modules](../functional-designing-deep-modules/SKILL.md)
 - [functional-typescript](../functional-typescript/SKILL.md)
+- [functional-typescript-react-nextjs](../functional-typescript-react-nextjs/SKILL.md)
 
 ## Further reading
 
 - [state-and-derivation.md](references/state-and-derivation.md) covers
   what to store, reducers as state machines, where a query library
   belongs, and when an effect is right.
-- [server-boundary.md](references/server-boundary.md) covers server
-  components, actions and the hook that calls them, forms, and where
-  each kind of logic belongs.

@@ -275,7 +275,7 @@ the list of tags. Should reach `functional-javascript`.
 
 Must contain: one state union instead of three booleans; not deriving
 state inside an effect; moving the fetch to the edge. Should reach
-`functional-react-nextjs`.
+`functional-typescript-react`.
 
 ## 29. Ecto schemas as the domain
 
