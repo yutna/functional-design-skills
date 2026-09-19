@@ -1,6 +1,6 @@
 ---
 name: functional-testing-functional-code
-description: Use when writing tests for functional code, when tests need heavy mocking or a database to check a rule, or when deciding what to test and how.
+description: Use when writing tests for functional code, when tests need heavy mocking or a database to check a rule, when deciding what to test, or turning a claimed law into a property.
 license: MIT
 metadata:
   pack: functional-design-skills
@@ -116,6 +116,15 @@ outcome, return it as an event and assert on the event.
 | Monoid laws       | Identity and associativity             |
 | Model equivalence | Matches a slow obvious implementation  |
 | Reachability      | Every state is reachable               |
+
+Each row is a law: a claim that holds for every value, not for the three
+anyone thought of. That is what makes it worth a property rather than an
+example, and it is also where properties come from. When an operation
+claims something -- that order does not matter, that applying it twice
+is the same as once, that one function undoes another -- write the claim
+as an equation over arbitrary values before writing any test. If the
+equation will not come out, the operation does not mean what you thought
+it meant, and that is the finding rather than the test.
 
 See
 [property-testing.md](references/property-testing.md).

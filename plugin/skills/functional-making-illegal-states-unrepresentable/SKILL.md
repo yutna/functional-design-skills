@@ -1,6 +1,6 @@
 ---
 name: functional-making-illegal-states-unrepresentable
-description: Use when a type can hold combinations the business forbids, when booleans and nullable fields encode state, or when code guards impossible values.
+description: Use when a type can hold combinations the business forbids, when booleans, flags, or nullable fields encode state like loading and failed, or when code guards impossible values.
 license: MIT
 metadata:
   pack: functional-design-skills

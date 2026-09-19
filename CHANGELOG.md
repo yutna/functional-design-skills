@@ -35,6 +35,34 @@ implementations of each install script and requires them to change
 together, and there was no way to run the PowerShell half without
 already having it.
 
+### Findable: four skills people were not reaching
+
+Measured with `scripts/eval-routing.mjs`, not guessed. Each of these
+had the right answer already written down and no way to reach it.
+
+- **Whether an effect system is worth adopting.**
+  `functional-parameterizing-dependencies` ranked 30th of 40 for "should
+  we adopt an effect system or just return a result". What surfaced
+  instead was `functional-typescript-effect`, which teaches how to use
+  one. Someone asking whether reached the pack that answers how. The
+  answer was already core rule 1 -- prefer rejection, then
+  parameterization, then interpretation -- and the description now
+  carries the words for it.
+- **Three separate booleans.** The flagship symptom of
+  `functional-making-illegal-states-unrepresentable` put it fifth,
+  behind three error-handling skills, because "loading" and "error"
+  read as error vocabulary.
+- **A law as the source of a property.**
+  `functional-folding-over-data` ranked 15th for "what law should this
+  combining operation obey", and `functional-testing-functional-code`
+  18th for checking one. Both descriptions now say so, and the table of
+  properties gained the sentence that was missing: each row is a law,
+  and a law is where a property comes from.
+
+Nine routing cases were added first and watched to fail, then the
+descriptions were changed. Coverage went from 106 of 114 to 114 of 114,
+and the number placing their skill first from 81 to 87.
+
 ### The rest
 
 Mechanism, not guidance. Nothing about what the pack recommends has
