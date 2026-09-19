@@ -1,6 +1,6 @@
 ---
 name: functional-choosing-types-or-plain-data
-description: Use when deciding whether a shape belongs in a type or stays generic data, when fields vary by tenant, config, or request, or when wrapper types feel heavy.
+description: Use when deciding whether a shape belongs in a type or stays generic data, when fields or columns vary by tenant, config, or what a user picked, or when wrappers feel heavy.
 license: MIT
 metadata:
   pack: functional-design-skills

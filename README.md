@@ -15,7 +15,7 @@ They cover:
 - Refactoring imperative or object-oriented code toward all of the above
 
 The rules are language-agnostic. An index and thirty-three core skills
-describe designs in a neutral notation; eight language packs translate
+describe designs in a neutral notation; nine language packs translate
 them into JavaScript, TypeScript, React and Next.js, and Elixir and
 Phoenix.
 
@@ -170,11 +170,11 @@ complexity and module boundaries; domain modelling and types; workflows,
 composition and errors; effects, state and reliability; naming,
 comments, testing, review and refactoring.
 
-Eight language packs give the concrete syntax: `functional-javascript`,
+Nine language packs give the concrete syntax: `functional-javascript`,
 `functional-typescript`, `functional-typescript-effect`,
-`functional-typescript-ts-pattern`, `functional-typescript-react`,
-`functional-typescript-react-nextjs`, `functional-elixir`,
-`functional-elixir-phoenix`.
+`functional-typescript-ts-pattern`, `functional-typescript-xstate`,
+`functional-typescript-react`, `functional-typescript-react-nextjs`,
+`functional-elixir`, `functional-elixir-phoenix`.
 
 Each skill's `description` states the situations that should trigger it,
 and only those; the body is read when the skill is selected. Reference
@@ -214,8 +214,8 @@ Worth knowing before relying on it.
   description contains the vocabulary people use for that problem; it
   does not mean an agent routes correctly. The scenarios in `evals/`
   cover that question, as a sample rather than a proof.
-- **Only the first place in a ranking is meaningful.** A median of 35 of
-  the 42 skills score exactly zero on any given case, and ties break by
+- **Only the first place in a ranking is meaningful.** A median of 36 of
+  the 43 skills score exactly zero on any given case, and ties break by
   name, so second and third places are often filled alphabetically. The
   gate uses the top three, which is deliberately generous.
 - **The prose checks know only the domains they are told about.** They

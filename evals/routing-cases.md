@@ -143,4 +143,11 @@ we wrapped a value in a genserver and now everything queues behind it -> functio
 how do i enforce that a struct cannot be built half filled in elixir -> functional-elixir
 our liveview assigns have four booleans describing one screen -> functional-elixir-phoenix
 business rules ended up inside our phoenix controller -> functional-elixir-phoenix
+our state machine needs states inside states -> functional-typescript-xstate
+two parts of this lifecycle are active at the same time -> functional-typescript-xstate
+a transition should fire after a timeout rather than an event -> functional-typescript-xstate
+we need one machine per row each with its own lifetime -> functional-typescript-xstate
+is a statechart worth it or is a reducer enough -> functional-typescript-xstate
+what belongs in the global store and what does not -> functional-typescript-react
+our selectors recompute on every dispatch -> functional-typescript-react
 ```

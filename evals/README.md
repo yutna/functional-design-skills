@@ -58,13 +58,13 @@ failure, not a separate one.
 
 Two things came out of building it anyway, both worth knowing:
 
-- **Places below the first are often alphabetical.** A median of 35 of
-  the 42 skills score exactly zero on any given case, and `rank` breaks
+- **Places below the first are often alphabetical.** A median of 36 of
+  the 43 skills score exactly zero on any given case, and `rank` breaks
   ties by name. So the second and third places are frequently filled by
   whichever zero-scoring skill sorts earliest. The first measurement of
   noise reproduced alphabetical order almost exactly before it was
   restricted to skills that actually matched a word.
-- **Coverage is not inflated by that.** Checked directly: zero of the 135
+- **Coverage is not inflated by that.** Checked directly: zero of the 142
   cases place their expected skill in the top three with a score of zero.
   Every pass is earned on shared vocabulary. The gate is sound.
 

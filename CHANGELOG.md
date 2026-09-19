@@ -35,6 +35,42 @@ implementations of each install script and requires them to change
 together, and there was no way to run the PowerShell half without
 already having it.
 
+### Added: statecharts, and a store's boundaries
+
+The plan called for three library additions. Measuring them first
+turned three into two, and shrank one of those.
+
+- **`functional-typescript-xstate`** is new. Hierarchy, parallel
+  regions, delayed transitions and actors with lifetimes appeared
+  nowhere in the pack, and they cannot go in
+  `functional-modeling-state-machines`, which uses neutral notation
+  by design. Seven core rules, one of which is when not to reach for
+  it: the states become strings in a config rather than cases of a
+  type, so an exhaustiveness check is traded for features that may
+  not be in use.
+- **`stores.md`** in the React pack covers what belongs in a global
+  store and what does not, selectors that compute rather than store,
+  normalising as one owner per fact, and writing nested updates
+  through a draft.
+- **`immer` got nothing**, because measuring showed it did not need
+  anything. The real symptom — "updating deeply nested state is
+  unreadable" — already reaches
+  `functional-managing-state-immutably` first, and
+  `persistent-structures.md` already names the library, says what it
+  does, and says when to reach for it. The case that failed was one
+  this author wrote as a keyword probe rather than something anyone
+  would say.
+
+Verified against the current XState documentation rather than from
+memory, which changed the example: v5 computes a transition purely
+with `transition(machine, state, event)`, not a method on the machine.
+
+The example parser caught a fragment: a `reducers` object written
+without the `createSlice` call around it is not standalone
+TypeScript, which is exactly the defect class it exists for.
+
+Coverage 142 of 142, 108 placing first.
+
 ### Split: Elixir and Phoenix are two packs, and OTP grew
 
 The largest gap the audit found, and the largest piece of work in this
