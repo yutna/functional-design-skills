@@ -223,6 +223,14 @@ and the number placing their skill first from 81 to 87.
 
 ### Also
 
+- **Three symptoms in a data-first vocabulary now reach the skill that
+  answers them.** A typed record against a map, a schema as a runtime
+  value, and a type per concept blocking generic code all reached
+  `functional-choosing-types-or-plain-data` at ranks six to eight.
+  The description carries those words now. The skill's content did not
+  change: the whole data-first position was already there, with the
+  two direct contradictions named and traded off rather than waved at.
+
 - **Three scenarios**, including a pair that tests a rule in both
   directions: one lifecycle that must adopt a statechart and one that
   must refuse it. Testing only the permissive direction would not

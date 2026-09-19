@@ -64,7 +64,7 @@ Two things came out of building it anyway, both worth knowing:
   whichever zero-scoring skill sorts earliest. The first measurement of
   noise reproduced alphabetical order almost exactly before it was
   restricted to skills that actually matched a word.
-- **Coverage is not inflated by that.** Checked directly: zero of the 142
+- **Coverage is not inflated by that.** Checked directly: zero of the 145
   cases place their expected skill in the top three with a score of zero.
   Every pass is earned on shared vocabulary. The gate is sound.
 
