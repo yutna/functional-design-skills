@@ -1,137 +1,60 @@
 ---
 name: functional-elixir-phoenix
-description: Use when applying functional design in Elixir or Phoenix, including structs and typespecs, ok and error tuples, Ecto changesets, contexts, and OTP.
+description: Use when designing a Phoenix context, an Ecto schema or changeset, a LiveView's assigns, or deciding what belongs in the domain rather than in the web layer.
 license: MIT
 metadata:
   pack: functional-design-skills
   version: 2.0.1
 ---
 
-# Functional Elixir and Phoenix
+# Functional Phoenix
 
 ## Overview
 
-Elixir gives immutability, pattern matching, and pipelines by default, so
-much of this pack is already the idiom. What it does not give is a
-compiler that rejects an illegal state, so the enforcement lives in
-structs with enforced keys, constructor functions, changesets, and
-Dialyzer.
-
 Phoenix contributes a boundary that maps cleanly onto the core and shell
 split: contexts hold the domain, controllers and LiveViews hold the
-shell, and OTP holds whatever must be stateful.
+shell. Ecto contributes a parser at the edge that most projects mistake
+for a domain model.
+
+The language itself, and OTP, are unchanged and live in
+[functional-elixir](../functional-elixir/SKILL.md). This pack is only
+what Phoenix and Ecto add.
 
 ## When to use
 
-- An Elixir or Phoenix project
 - Designing a context, a schema, or a changeset
-- Deciding what belongs in a GenServer
-- Reviewing Elixir against the core design rules
+- Deciding whether a rule belongs in a changeset or in the domain
+- Structuring a LiveView's assigns and events
+- Publishing something other parts of the system react to
+- Reviewing a controller or LiveView that has grown rules
 
-Not for: Erlang-specific runtime tuning or release configuration.
-
-## Notation mapping
-
-| Neutral notation    | Elixir                                   |
-| ------------------- | ---------------------------------------- |
-| Record type         | `defstruct` with `@enforce_keys`         |
-| Choice type         | Tagged tuple, or a struct per case       |
-| Single-case wrapper | A struct with one field, plus `new/1`    |
-| `Result<T, E>`      | `{:ok, term}` or `{:error, term}`        |
-| `Option<T>`         | `{:ok, term}` or `:error`, or `nil`      |
-| `>=>` composition   | `with` expression                        |
-| `>>` composition    | The pipe operator                        |
-| Exhaustive match    | Function clauses with no catch-all       |
-| Boundary parse      | An Ecto changeset, or a `new/1` function |
+Not for: the Elixir language, OTP, routing, or deployment.
 
 ## Core rules
 
-1. Rule. **`@enforce_keys` on every domain struct.** A struct with optional keys
-   is a record of maybes.
-2. Rule. **Construct through `new/1`**, returning `{:ok, struct}` or `{:error,
-   reason}`. Never build a domain struct with a literal outside its module.
-3. Default. **Tagged tuples for choices**, matched by function clauses rather
-   than by `case` inside one clause.
-4. Rule. **No catch-all clause on a domain function.** An unmatched value should
-   raise `FunctionClauseError`, which is a loud, findable bug.
-5. Default. **`with` for pipelines that can fail**, and an `else` that names
-   each failure rather than one catch-all.
-6. Rule. **Contexts are bounded contexts**, not folders. Each owns its structs
-   and exposes functions; none reaches into another's schemas.
-7. Default. **`@spec` on every public function, and run Dialyzer in CI.**
-   Without it the specs are comments.
+1. Rule. **Contexts are bounded contexts**, not folders. Each owns its
+   structs and exposes functions; none reaches into another's schemas.
+2. Rule. **An Ecto schema is a boundary artefact, not the domain type.**
+   It carries nullable columns, associations and `__meta__`. Map it into
+   a domain struct and work with that.
+3. Rule. **A changeset parses; it does not decide.** Format, presence and
+   length belong there. "A discount over twenty per cent needs approval"
+   belongs in the domain, where it can be tested without Ecto.
+4. Default. **One assign for the screen state**, as a tagged tuple.
+   Several booleans permit screens that cannot exist.
+5. Rule. **No business rules in a controller or a LiveView.** They parse
+   the request or event, call the context, and store the outcome.
+6. Default. **Return events; let the shell broadcast them.** Broadcasting
+   from inside a context couples the decision to every subscriber and
+   makes it untestable.
+7. Default. **`Ecto.Multi` once a transaction has more than two steps**,
+   so the sequence and its failure cases are a value rather than nested
+   control flow.
 
 ## Pattern
 
-```elixir
-defmodule Clinic.Scheduling.Appointment do
-  alias Clinic.Scheduling.{Doctor, Patient, Slot}
-
-  @enforce_keys [:id, :patient, :doctor, :slot, :status]
-  defstruct [:id, :patient, :doctor, :slot, :status]
-
-  @type status ::
-          {:held, DateTime.t()}
-          | {:confirmed, DateTime.t()}
-          | {:cancelled, String.t(), DateTime.t()}
-
-  @type t :: %__MODULE__{
-          id: __MODULE__.Id.t(),
-          patient: Patient.Id.t(),
-          doctor: Doctor.Id.t(),
-          slot: Slot.Id.t(),
-          status: status()
-        }
-
-  @spec confirm(t(), DateTime.t()) ::
-          {:ok, t()} | {:error, :not_held | :hold_expired}
-  def confirm(%__MODULE__{status: {:held, held_at}} = appt, now) do
-    if DateTime.diff(now, held_at) <= 120 do
-      {:ok, %{appt | status: {:confirmed, now}}}
-    else
-      {:error, :hold_expired}
-    end
-  end
-
-  def confirm(%__MODULE__{}, _now), do: {:error, :not_held}
-end
-```
-
-The first clause matches only a held appointment, so an illegal
-transition cannot reach the body. The status tuple carries the timestamp
-that belongs to each state, which removes the nullable
-`confirmed_at`, `cancelled_at` columns from the domain type. See
-[functional-modeling-state-machines](../functional-modeling-state-machines/SKILL.md).
-
-## Pipelines with `with`
-
-```elixir
-@spec book(map(), deps()) ::
-        {:ok, Appointment.t()} | {:error, booking_error()}
-def book(params, deps) do
-  with {:ok, command} <- BookCommand.new(params),
-       {:ok, patient} <- deps.find_patient.(command.patient),
-       {:ok, hold} <- deps.hold_slot.(command.slot),
-       {:ok, appt} <- Appointment.new(command, patient, hold) do
-    {:ok, appt}
-  else
-    {:error, :patient_not_found} = e -> e
-    {:error, :slot_unavailable} = e -> e
-    {:error, %Ecto.Changeset{} = cs} -> {:error, {:invalid, cs}}
-  end
-end
-```
-
-`with` is the railway composition of
-[functional-handling-errors-with-results](../functional-handling-errors-with-results/SKILL.md).
-Name each failure in `else`; a single `_ -> {:error, :failed}` throws
-away everything the error channel was carrying.
-
-## Contexts and Ecto
-
-A context is a bounded context: its own structs, its own vocabulary, and
-a public surface other contexts call. Schemas and changesets are
-boundary artefacts, not the domain model.
+The changeset parses untrusted input; the domain receives values whose
+invariants already hold.
 
 ```elixir
 # boundary: parses and validates untrusted input
@@ -143,70 +66,66 @@ def changeset(params) do
 end
 
 # domain: receives values that are already valid
-def book(%BookCommand{} = command, deps), do: ...
+def book(%BookCommand{} = command, deps), do: :ok
 ```
 
 A changeset accumulates every error at once, which is what a form needs.
-Past the changeset, the domain works with structs whose invariants hold.
-See [contexts-and-ecto.md](references/contexts-and-ecto.md).
+That is applicative validation with an Ecto name; see
+[functional-handling-errors-with-results](../functional-handling-errors-with-results/SKILL.md).
 
-## Structs or plain maps
+## Where each layer stops
 
-Elixir idiom sits closer to plain maps than most of this pack assumes,
-and that is often right — but decide it per value, not by habit.
+- **Controller or LiveView.** Parses the request or the event, calls one
+  context function, renders the outcome. No rules, no queries.
+- **Context.** The public surface of a bounded context. Takes commands,
+  returns `{:ok, value}` or `{:error, reason}`, and returns the events
+  that happened.
+- **Schema and changeset.** The parser between the database or the form
+  and the domain. Nothing depends on it inward.
+- **Domain struct.** Invariants, transitions, decisions. Knows nothing
+  about Ecto, Plug, or the socket.
 
-A struct is the modelled route: it gives the value a name, makes
-`%Booking{}` pattern matches fail loudly on the wrong type, and gives
-Dialyzer something to check. A bare map is the generic route, and it is
-correct when the keys come from config, from a tenant, or from an admin,
-or when the map is only stored and forwarded.
-
-The usual answer is a struct whose one field is a map: the envelope
-modelled, the varying part generic. See
-[functional-choosing-types-or-plain-data](../functional-choosing-types-or-plain-data/SKILL.md).
-Note that Ecto's `:map` column and embedded schemas are exactly this
-split expressed in the database.
+The test that this holds: a context function should be callable from
+`iex` with plain values and no connection, and a domain function should
+be testable with Ecto uninstalled.
 
 ## Red flags
 
-- A struct with no `@enforce_keys`
-- A domain function with a catch-all `_` clause
-- `with ... else _ -> {:error, :error}`
 - Ecto schemas passed into business logic as the domain model
 - Business rules inside a controller, a LiveView, or a query
-- A GenServer holding state that a database or a caller could hold
-- `nil` used to mean three different things
-- `@spec` absent, or Dialyzer not run
+- A context calling another context's schema module
+- A changeset containing a rule a domain expert would recognise
+- `Repo` called from anywhere but a context
+- A LiveView assign per boolean instead of one state tuple
+- `Phoenix.PubSub.broadcast` inside a context function
 
 ## Common mistakes
 
-- **Treating the Ecto schema as the domain type.** It carries nullable
-  columns, associations, and `__meta__`. Map it into a domain struct.
-- **Contexts as folders.** A context that exposes another's schema is one
-  context with two names.
-- **Rules in the changeset.** Format and presence belong there; "a
-  discount over 20% needs approval" belongs in the domain, where it can
-  be tested without Ecto.
-- **A GenServer per entity by default.** Use one when the state has a
-  lifecycle, a mailbox, or supervision needs. Otherwise it is a mutable
-  variable with a process around it.
-- **Catch-all clauses.** They convert a missing case into a wrong answer.
-- **`{:error, :error}`.** An error atom with no information forces the
-  caller to guess.
+- **Treating the Ecto schema as the domain type.** It is shaped by the
+  table, and the table is shaped by storage compromises.
+- **Contexts as folders.** A context that exposes another's schema is
+  one context with two names.
+- **Preloading to make the domain work.** If a domain function needs an
+  association loaded, it is taking a schema where it should take a
+  value.
+- **A LiveView that queries.** The context composes what the screen
+  needs; the LiveView asks for it once.
+- **Broadcasting from the domain.** Return the event. Delivery,
+  ordering and failure belong where they can be handled.
 
 ## Related skills
 
-- [functional-modeling-state-machines](../functional-modeling-state-machines/SKILL.md)
-- [functional-handling-errors-with-results](../functional-handling-errors-with-results/SKILL.md)
-- [functional-crossing-io-boundaries](../functional-crossing-io-boundaries/SKILL.md)
+- [functional-elixir](../functional-elixir/SKILL.md)
 - [functional-capturing-the-domain](../functional-capturing-the-domain/SKILL.md)
+- [functional-crossing-io-boundaries](../functional-crossing-io-boundaries/SKILL.md)
+- [functional-enforcing-consistency-boundaries](../functional-enforcing-consistency-boundaries/SKILL.md)
+- [functional-designing-workflow-pipelines](../functional-designing-workflow-pipelines/SKILL.md)
 
 ## Further reading
 
-- [types-and-structs.md](references/types-and-structs.md) covers structs,
-  wrappers, tagged tuples, typespecs, and Dialyzer.
 - [contexts-and-ecto.md](references/contexts-and-ecto.md) covers
   contexts as bounded contexts, changesets as boundary parsers, and
   `Ecto.Multi` for a transaction with more than two steps.
-- [otp-and-liveview.md](references/otp-and-liveview.md) covers where
-  stateful processes belong and how LiveView maps onto the split.
+- [liveview.md](references/liveview.md) covers assigns as one state
+  value, where events are handled, and returning events for the shell
+  to broadcast.

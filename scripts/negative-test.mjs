@@ -19,6 +19,24 @@ import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)))
+
+// Two cases below break a count, and a count changes whenever a scenario is
+// added. Pinning the number here meant editing this file every time, which
+// is how a test ends up commented out, so the current wording is read rather
+// than written down.
+const EVALS_README = readFileSync(join(ROOT, 'evals', 'README.md'), 'utf8')
+const SCENARIO_CLAIM = /holds ([a-z-]+) fuller problems/.exec(EVALS_README)
+if (SCENARIO_CLAIM === null) {
+  process.stderr.write(
+    'evals/README.md no longer claims a scenario count, so two cases below ' +
+      'cannot break one. Update them.\n',
+  )
+  process.exit(1)
+}
+const SCENARIO_SENTENCE = SCENARIO_CLAIM[0]
+const SCENARIO_COUNT =
+  (readFileSync(join(ROOT, 'evals', 'scenarios.md'), 'utf8')
+    .match(/^## \d+\. /gm) ?? []).length
 const SKILL = join('plugin', 'skills', 'functional-folding-over-data', 'SKILL.md')
 
 // Each case: what we break, the edit that breaks it, the text the validator
@@ -90,11 +108,11 @@ const CASES = [
     'not one of Rule, Default, Judgement', 'validate-rules.mjs'],
   ['a documented count that no longer matches reality',
     join('evals', 'README.md'),
-    ['holds thirty-eight fuller problems', 'holds thirty-five fuller problems'],
-    'but there are 38', 'validate-counts.mjs'],
+    [SCENARIO_SENTENCE, 'holds nine fuller problems'],
+    `but there are ${SCENARIO_COUNT}`, 'validate-counts.mjs'],
   ['a claim whose sentence was rewritten, so nothing checks it',
     join('evals', 'README.md'),
-    ['holds thirty-eight fuller problems', 'holds a good number of problems'],
+    [SCENARIO_SENTENCE, 'holds a good number of problems'],
     'was rewritten', 'validate-counts.mjs'],
   ['a bibliographic reference in a tracked file', SKILL,
     ['## Pattern', '## Pattern\n\nStated in Chapter 7 of the other book.'],

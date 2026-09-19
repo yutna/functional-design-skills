@@ -192,7 +192,7 @@ not arise. Two things still need care:
 - **Process state.** A GenServer's state is a value replaced on each
   message, but the process itself is a mutable cell. Keep it in one
   place and treat updates as transitions. See
-  [otp-and-liveview.md](otp-and-liveview.md).
+  [otp.md](otp.md).
 - **ETS and the database.** Both are shared mutable state with their own
   concurrency semantics. Wrap them behind functions and keep the domain
   unaware.

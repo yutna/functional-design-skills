@@ -15,10 +15,10 @@ Everything the plugin ships lives under `plugin/`. The repository's own
 tooling stays outside it, for the reason given under "Files you should
 not create".
 
-There are forty-one skills, and every one is named `functional-something`.
+There are forty-two skills, and every one is named `functional-something`.
 The prefix is not decoration: skills install flat into
 `~/.claude/skills`, where a name like `hiding-information` is one any
-pack might claim, and the second pack to claim it loses. Seven are
+pack might claim, and the second pack to claim it loses. Eight are
 language packs, named for the stack; `functional-design` is the index
 that routes between everything else; the remaining thirty-three carry
 one design rule each. Their `SKILL.md` frontmatter describes when each
