@@ -135,4 +135,12 @@ our server action throws instead of returning the failure to the form -> functio
 where should the cache be invalidated after a mutation -> functional-typescript-react-nextjs
 a useeffect that computes state from other state -> functional-typescript-react
 this component takes twenty props and hides nothing -> functional-typescript-react
+should this be a genserver or a plain module -> functional-elixir
+our supervision tree restarts the wrong thing -> functional-elixir
+a process crashed and took the state with it -> functional-elixir
+which supervision strategy should this tree use -> functional-elixir
+we wrapped a value in a genserver and now everything queues behind it -> functional-elixir
+how do i enforce that a struct cannot be built half filled in elixir -> functional-elixir
+our liveview assigns have four booleans describing one screen -> functional-elixir-phoenix
+business rules ended up inside our phoenix controller -> functional-elixir-phoenix
 ```

@@ -1,6 +1,6 @@
 # Scenarios
 
-Thirty-eight problems in the form someone would actually bring them, each
+Thirty-nine problems in the form someone would actually bring them, each
 with what a correct response has to contain. Paste one as the whole
 prompt into an agent session with the pack installed.
 
@@ -474,3 +474,19 @@ treated as an idempotency question at the adapter rather than a
 cleanup script. Should reach `functional-making-effects-reliable`,
 possibly via `functional-managing-state-immutably` for the ownership
 mechanics.
+
+## 39. A GenServer that became the bottleneck
+
+> We keep each clinic's daily schedule in a GenServer so lookups are
+> fast. It started as one process, then we added the waiting list to
+> it, then the room assignments. Now every booking in the building
+> queues behind one mailbox, and when it crashes we lose all three
+> and the restart comes back empty.
+
+Must contain: the observation that three things were put in one
+process because each needed state, not because each needed to fail
+independently; that the process is serialising work that has no reason
+to be serialised; that state the database already has should not be
+the process's to lose; and that the right question is what should
+still be working after this one dies. Should reach
+`functional-elixir`.

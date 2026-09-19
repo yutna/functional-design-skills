@@ -35,6 +35,51 @@ implementations of each install script and requires them to change
 together, and there was no way to run the PowerShell half without
 already having it.
 
+### Split: Elixir and Phoenix are two packs, and OTP grew
+
+The largest gap the audit found, and the largest piece of work in this
+release.
+
+`functional-elixir-phoenix` ranked **21st of 40** for "should this be a
+genserver or a plain module", 17th for "our supervision tree restarts
+the wrong thing", and 23rd for "a process crashed and took the state
+with it". The words `genserver`, `supervis` and `spawn` were in no
+skill's description at all. The guidance existed, in one section of a
+reference file shared with LiveView, and nothing could reach it.
+
+- **`functional-elixir`** is the base: structs and enforced keys,
+  tagged tuples, `with` pipelines, typespecs, and OTP. Eight core
+  rules, two of them new.
+- **`functional-elixir-phoenix`** is the delta: contexts, Ecto,
+  changesets as parsers, LiveView, and where each layer stops. Seven
+  core rules, none repeating the base.
+
+**OTP roughly doubled**, from one section of a mixed file to its own
+reference, and the additions are the parts that were missing rather
+than more of what was there:
+
+- **A process is an isolation boundary, not a variable.** The question
+  is not "does this need state" but "what should still be working
+  after this fails", and where nothing does, there is no process.
+- **A supervision strategy is a design decision, not configuration.**
+  Each of the three answers a different question about what depends on
+  what, and choosing the default without asking is how a tree restarts
+  correctly in testing and wrongly in production.
+- **What a restart cannot restore.** Its initial state is the whole
+  guarantee: state it was the only copy of is gone, work in flight is
+  gone, and effects already performed stay performed.
+
+A thirty-ninth scenario covers the shape all of this produces: three
+concerns in one GenServer because each needed state, serialising work
+that had no reason to be serialised, losing all three on a crash.
+
+Coverage 135 of 135, 103 placing first.
+
+**A negative test stopped pinning a number.** Two cases broke a
+documented count by quoting the sentence that carried it, so every new
+scenario edited this file. Three times was enough; they now read the
+current wording rather than repeating it.
+
 ### Split: React and Next.js are two packs
 
 `functional-react-nextjs` covered a framework and the meta-framework
