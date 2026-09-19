@@ -76,6 +76,10 @@ const CASES = [
     ['"version": "', '"version": "0.'], 'plugin.json: "version"'],
   ['a marketplace entry left behind', join('.claude-plugin', 'marketplace.json'),
     ['"version": "', '"version": "0.'], 'marketplace.json:'],
+  ['a lock file whose version disagrees with what it resolves to',
+    'package-lock.json',
+    ['"version": "2.9.1"', '"version": "3.0.0"'],
+    'but resolves to'],
   ['a caret range instead of an exact pin', 'package.json',
     ['"yaml": "', '"yaml": "^'], 'pinned to an exact version'],
   ['an ellipsis where the language expects code',
@@ -140,7 +144,7 @@ for (const dir of ['scripts', 'plugin', '.claude-plugin', 'evals']) {
   cpSync(join(ROOT, dir), join(work, dir), { recursive: true })
 }
 // validate-counts.mjs checks sentences in these, so the copy needs them.
-for (const file of ['package.json', 'README.md', 'CLAUDE.md']) {
+for (const file of ['package.json', 'package-lock.json', 'README.md', 'CLAUDE.md']) {
   cpSync(join(ROOT, file), join(work, file))
 }
 // The validator imports `yaml`; point the copy at the real install.

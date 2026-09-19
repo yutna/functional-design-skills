@@ -68,6 +68,14 @@ rejected.
   what was true when a version shipped, so a rename does not rewrite
   them. A skill that was called `hiding-information` in 2.0.0 is still
   called that in the 2.0.0 entry.
+- **A version bump is `npm version`, never a find-and-replace.** The
+  number appears in `package.json`, both manifests, and every skill's
+  frontmatter, which makes a repository-wide replace tempting. Doing
+  that once rewrote twenty-one dependency versions in
+  `package-lock.json` that happened to match, and `npm ci` did not
+  notice, because it installs from the resolved URL and the integrity
+  hash. `validate-skills.mjs` now compares each locked version against
+  the URL it resolves to.
 - **Dependencies are pinned to an exact version, never a range.** A
   caret range lets a patch release change what `markdownlint` reports,
   and this repository forbids lint configuration, so the build can turn

@@ -75,7 +75,7 @@ no gate, because it reads as coverage that is not there.
 
 ## 2. Scenarios — manual, against a real agent
 
-[scenarios.md](scenarios.md) holds thirty-nine fuller problems, each a
+[scenarios.md](scenarios.md) holds forty-two fuller problems, each a
 paragraph of realistic context with the response a correct answer must
 contain. Run them by hand in an agent session with the pack installed:
 
@@ -105,6 +105,7 @@ a trigger word or the expected skill was the wrong answer -- fix whichever
 it is, and leave the wording alone.
 
 Scenarios come in pairs where a rule has a direction. Scenario 30 must
-take the generic route and scenario 31 must refuse it; testing only the
+take the generic route and scenario 31 must refuse it; scenario 41 must
+adopt a statechart and scenario 42 must refuse one. Testing only the
 permissive direction would not notice a rule that had become an escape
 hatch.

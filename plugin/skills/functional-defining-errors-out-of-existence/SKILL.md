@@ -4,7 +4,7 @@ description: Use when error handling dwarfs the happy path, when the same failur
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 2.0.1
+  version: 3.0.0
 ---
 
 # Defining Errors Out of Existence

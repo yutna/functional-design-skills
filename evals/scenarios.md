@@ -1,6 +1,6 @@
 # Scenarios
 
-Thirty-nine problems in the form someone would actually bring them, each
+Forty-two problems in the form someone would actually bring them, each
 with what a correct response has to contain. Paste one as the whole
 prompt into an agent session with the pack installed.
 
@@ -490,3 +490,48 @@ to be serialised; that state the database already has should not be
 the process's to lose; and that the right question is what should
 still be working after this one dies. Should reach
 `functional-elixir`.
+
+## 40. The same rule on both sides of the boundary
+
+> Our booking page disables the confirm button when the slot is more
+> than two hours old, and the Server Action rejects it for the same
+> reason. Product changed the window to four hours and we shipped the
+> client half. For a week the button was enabled and every click
+> failed.
+
+Must contain: one owner for the rule, on the server, with the client
+asking rather than deciding; the observation that a boolean the server
+computed is what should cross, not the inputs for the client to judge
+itself; that the action's rejection is a value the form renders rather
+than something thrown. Should reach
+`functional-typescript-react-nextjs`.
+
+## 41. A lifecycle that outgrew its reducer
+
+> Our intake flow has a triage section and a consent section that a
+> patient can complete in either order, each with their own steps, and
+> the whole thing times out after fifteen minutes of inactivity. The
+> reducer is now a switch on a tuple of two enums plus a `startedAt`
+> we compare against on every render, and nobody can say which
+> combinations are reachable.
+
+Must contain: recognition that two independent sections completing in
+either order is a parallel region, that the sections having their own
+steps is hierarchy, and that the timeout is time as a trigger; that
+all three are what a statechart adds and a union does not have; the
+trade named honestly, that the states stop being cases of a type.
+Should reach `functional-typescript-xstate`.
+
+## 42. A lifecycle that did not
+
+> A teammate wants to move our three-state upload widget — idle,
+> uploading, failed — onto a state machine library for consistency
+> with the intake flow.
+
+Must contain: a refusal. Three flat states with no hierarchy, no
+parallel region, no delay and no invoked actor is a discriminated
+union and a transition function, and adopting the library here costs
+the exhaustiveness check while buying nothing. A correct answer does
+**not** propose a machine. Should reach
+`functional-typescript-xstate` or
+`functional-modeling-state-machines`.

@@ -4,7 +4,7 @@ description: Use when a small change touches many files, when an edit breaks a m
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 2.0.1
+  version: 3.0.0
 ---
 
 # Diagnosing Complexity

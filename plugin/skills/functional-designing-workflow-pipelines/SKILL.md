@@ -4,7 +4,7 @@ description: Use when implementing a use case, command handler, or business proc
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 2.0.1
+  version: 3.0.0
 ---
 
 # Designing Workflow Pipelines

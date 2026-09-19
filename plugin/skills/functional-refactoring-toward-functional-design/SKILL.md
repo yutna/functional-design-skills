@@ -4,7 +4,7 @@ description: Use when moving imperative or object-oriented code to functional de
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 2.0.1
+  version: 3.0.0
 ---
 
 # Refactoring Toward Functional Design
