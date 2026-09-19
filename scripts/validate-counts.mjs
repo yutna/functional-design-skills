@@ -152,6 +152,10 @@ const CLAIMS = [
   // not re-typed.
   ['evals/README.md', 'routingCases', /zero of the (\d+)\n  cases place/],
   ['evals/scenarios.md', 'scenarios', /^([A-Za-z-]+) problems in the form/m],
+  // The record of an agent run, tied to the suite it was taken on for the
+  // same reason as the one above: add a scenario and the run has to happen
+  // again, not have its number retyped.
+  ['evals/README.md', 'scenarios', /The ([a-z-]+) scenarios were run this way/],
 ]
 
 const errors = []
