@@ -84,6 +84,36 @@ Properties this gives you:
 The cost is a table, a relay process, and ordering that is per-stream
 rather than global. That is the honest price of not losing events.
 
+**Do not write the relay by hand.** A durable job queue backed by the
+same database is the same mechanism with the retry budget, the backoff,
+the uniqueness key and the dead-letter state already built and already
+operated by somebody else.
+
+| Stack                  | Queue                                    |
+| ---------------------- | ---------------------------------------- |
+| Elixir                 | `oban`, inserted inside `Ecto.Multi`     |
+| Elixir, heavy streams  | `broadway`, on the consumer side         |
+| JavaScript, TypeScript | `pg-boss` on Postgres, `bullmq` on Redis |
+
+The Elixir row is the one worth reading twice: `Oban.insert/3` puts the
+job into an `Ecto.Multi`, so the job row and the state change commit
+together and the outbox table is the jobs table.
+
+```elixir
+Ecto.Multi.new()
+|> Ecto.Multi.update(:booking, changeset)
+|> Oban.insert(:notify, NotifyWorker.new(%{booking_id: id}))
+|> Repo.transaction()
+```
+
+Nothing extra to build, and the guarantee is the same one this section
+argues for.
+
+A Redis-backed queue does not give you that. The job and the state
+change are then in two systems, which is the two-transaction failure
+this whole section exists to remove — so on Redis you still need an
+outbox table, and the queue only carries the relay's work.
+
 **When the outbox is overkill.** If losing the event is genuinely
 acceptable — a cache warm-up, a nice-to-have notification — publish
 directly and say in a comment that loss is tolerated. Make it a decision,
@@ -110,13 +140,13 @@ Prefer naturally idempotent handlers where the domain allows it.
 
 ## Ordering
 
-At-least-once says nothing about booking. If a consumer needs it:
+At-least-once says nothing about order. If a consumer needs it:
 
 - **One writer per stream.** Partition by the entity's identifier so all
   events for one booking are handled in sequence.
 - **A sequence number per stream.** The consumer ignores anything it has
   already passed, and requests a replay if it sees a gap.
-- **Or make handlers booking-independent**, which is usually cheaper.
+- **Or make handlers order-independent**, which is usually cheaper.
   A handler that folds an event into state by identity does not care.
 
 ## Dead letters

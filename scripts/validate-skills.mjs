@@ -277,7 +277,9 @@ function validateReferences (id, dir, body) {
 // into other people's projects, where a broken link is a dead end with no
 // repository around it to search.
 function validateLinks () {
-  const link = /\[[^\]]*\]\(([^)\s]+?)(?:#[^)]*)?\)/g
+  // The capture is the path; a trailing #anchor is dropped, and a link that
+  // is only an anchor points within the same file and has nothing to resolve.
+  const link = /\[[^\]]*\]\(([^)\s#]*)(?:#[^)\s]*)?\)/g
   const walk = (dir) => {
     for (const entry of readdirSync(dir)) {
       const path = join(dir, entry)
@@ -288,6 +290,7 @@ function validateLinks () {
       if (!entry.endsWith('.md')) continue
       const text = readFileSync(path, 'utf8')
       for (const [, href] of text.matchAll(link)) {
+        if (href === '') continue
         if (/^(https?:|mailto:)/.test(href)) continue
         if (!existsSync(join(dirname(path), href))) {
           errors.push(`${path.slice(ROOT.length + 1)}: broken link -> ${href}`)

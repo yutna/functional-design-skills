@@ -54,6 +54,9 @@ const IDIOMS = [
   [String.raw`(?:record|layer|copy|instance) per (NOUN)\b`, 'per service'],
   [String.raw`call (NOUN)\b`, 'call order'],
   [String.raw`\|\s*(NOUN)\s*\|\s*Move`, 'a numbered "Order" column'],
+  [String.raw`nothing about (NOUN)\b`, 'nothing about order'],
+  [String.raw`(NOUN)-independent`, 'order-independent'],
+  [String.raw`(NOUN) (?:is|was) (?:not )?(?:preserved|guaranteed)`, 'order is preserved'],
 ]
 
 // Whether a word opens with a vowel *sound*, which is what chooses the
@@ -255,6 +258,8 @@ function selftest () {
     ['idiom', 'Modules named parse, enrich, send follow the booking things happen.', checkIdioms, 'prose'],
     ['idiom', '- Booking of calls that the types do not enforce', checkIdioms, 'prose'],
     ['idiom', '| Booking | Move |', checkIdioms, 'prose'],
+    ['idiom', 'At-least-once says nothing about booking.', checkIdioms, 'prose'],
+    ['idiom', 'Or make handlers booking-independent, which is cheaper.', checkIdioms, 'prose'],
     ['article', 'A draft with an `bookingId` is representable.', checkArticles, 'prose'],
     ['article-wrapped', 'Write each rule as a sentence. "An\nbooking\'s total equals the sum."', checkArticles, 'prose'],
     ['coined', 'A limit the developer invented becomes a treatmention incident.', checkCoinedWords, 'prose'],

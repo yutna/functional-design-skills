@@ -71,6 +71,26 @@ export async function confirmBookingAction(
 }
 ```
 
+The `(previousState, formData)` signature is not arbitrary: it is what
+React 19's `useActionState` calls, and it is why the action reads as a
+reducer whose effect happens on the server.
+
+```tsx
+"use client";
+
+const [state, formAction, isPending] = useActionState(confirmBookingAction, {
+  tag: "Idle",
+});
+```
+
+`state` is the `FormState` the action returned, `formAction` goes
+straight on `<form action={...}>`, and `isPending` is the loading flag
+nobody then has to hold in a `useState` that can disagree with it.
+Three of the four cases the skill warns about — loading beside data,
+error beside success, an empty state that never resolves — stop being
+representable, because the state is one value and the action is the only
+thing that writes it.
+
 Four rules for actions:
 
 1. **Never trust the client.** An action is a public endpoint. Parse

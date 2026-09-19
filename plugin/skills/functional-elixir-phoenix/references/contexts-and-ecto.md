@@ -139,6 +139,38 @@ For concurrent updates, use `Ecto.Changeset.optimistic_lock/2` rather
 than a database lock: read with a version, apply the pure transition,
 write conditionally, and re-read on conflict.
 
+Past two steps, `Ecto.Multi` says the same thing with the failure
+handling built in. Each step is named, each step sees what the earlier
+ones produced, and the first failure rolls the rest back.
+
+```elixir
+Ecto.Multi.new()
+|> Ecto.Multi.run(:appointment, fn _repo, _ -> load(id) end)
+|> Ecto.Multi.run(:confirmed, fn _repo, %{appointment: appt} ->
+  Appointment.confirm(appt, now)
+end)
+|> Ecto.Multi.update(:saved, &changeset_for(&1.confirmed))
+|> Ecto.Multi.insert(:outbox, &event_for(&1.confirmed))
+|> Repo.transaction()
+```
+
+`Repo.transaction/1` on a multi returns `{:ok, changes}` with every
+step's result under its name, or
+`{:error, failed_step, value, changes_so_far}` — so the caller learns
+which step failed rather than only that something did.
+
+The `:outbox` step is the point. The state change and the record of the
+event are written in one transaction, which is the only way a consumer
+cannot see one without the other; a relay reads that table afterwards
+and publishes. See
+[making-effects-reliable](../../making-effects-reliable/SKILL.md).
+
+Two cautions. A multi is still one aggregate's transaction — reaching
+for a second aggregate because the multi makes it easy is the boundary
+mistake, not a convenience. And keep the pure transition inside
+`Ecto.Multi.run/3` as it is above: the function stays a function of
+values, and the multi only sequences it.
+
 ## Dependencies
 
 Pass capabilities as functions, not modules, so tests need no mocking
@@ -152,9 +184,9 @@ library and no global configuration.
       }
 ```
 
-A behaviour with a mock library is the common Elixir alternative. It
-works, and it is heavier: a behaviour is an interface with several
-members, which is the wide-dependency smell from
+A behaviour plus `mox` is the common Elixir alternative. It works, and
+it is heavier: a behaviour is an interface with several members, which
+is the wide-dependency smell from
 [applying-solid-functionally](../../applying-solid-functionally/SKILL.md).
 Prefer function values for one or two capabilities, and reserve
 behaviours for genuinely swappable adapters.

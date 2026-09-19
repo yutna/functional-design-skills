@@ -9,6 +9,30 @@ one for another's job is the most common waste.
 | Trace  | Where did this request spend | Span volume    |
 | Log    | What exactly happened, once  | Bytes retained |
 
+## Where the projection is written
+
+The core returns events; something in the shell turns each one into the
+three signals above. That something is one function per signal, and the
+instrumentation library decides only how it is delivered.
+
+| Stack                  | What the shell calls                        |
+| ---------------------- | ------------------------------------------- |
+| Elixir, Erlang         | `:telemetry.execute/3`, `:telemetry.span/3` |
+| JavaScript, TypeScript | `@opentelemetry/api`                        |
+
+In Elixir the split is already the language's: `:telemetry.execute/3`
+emits a named event with measurements and metadata and knows nothing
+about where it goes, and handlers attached at boot decide that. Phoenix,
+Ecto, and Oban all emit their own events the same way, so the
+application's events sit beside the framework's under one attach point.
+`:telemetry.span/3` wraps a piece of work and emits start, stop and
+exception events, which is what a trace span needs.
+
+The rule that outlives whichever library you use: the emit call belongs
+in the shell, keyed by the domain event the core returned. A
+`:telemetry.execute/3` inside a pure function is the same defect as a
+log line there.
+
 ## Correlation
 
 One identifier per unit of work, created at the edge, carried as a value.

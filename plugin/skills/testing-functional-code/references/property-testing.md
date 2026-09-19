@@ -5,6 +5,40 @@ the framework searches for a counterexample. It complements example
 tests: examples pin down the cases people care about, properties cover
 the space nobody thought of.
 
+## Contents
+
+- [Which library](#which-library)
+- [Finding a property](#finding-a-property)
+- [Generators](#generators)
+- [Shrinking](#shrinking)
+- [Where properties beat examples](#where-properties-beat-examples)
+- [Where examples beat properties](#where-examples-beat-properties)
+- [Stateful property testing](#stateful-property-testing)
+
+## Which library
+
+Guidance that says "the framework" cannot be acted on. These are the
+ones the language packs in this pack assume.
+
+| Stack            | Library                                 |
+| ---------------- | --------------------------------------- |
+| JavaScript       | `fast-check`                            |
+| TypeScript       | `fast-check`, with `@fast-check/vitest` |
+| Elixir           | `stream_data`                           |
+| Erlang or Elixir | `propcheck`, for stateful models        |
+
+`fast-check` supplies `fc.assert`, `fc.property`, and the `fc.*`
+arbitraries; `@fast-check/vitest` adds `test.prop` so a property reads
+like any other test. `stream_data` supplies `check all` inside
+`ExUnit`, and ships `ExUnitProperties` for the generators.
+`propcheck` wraps PropEr and is the one of the two with a
+command-sequence model built in, which is what the last section here
+needs.
+
+Pin whichever you choose to an exact version. A generator library that
+changes its shrinking between patch releases changes which
+counterexample a failure reports.
+
 ## Finding a property
 
 Ask what is true regardless of the input. The recurring answers:
@@ -101,15 +135,67 @@ function to check it passes always, and tests nothing.
 
 ## Stateful property testing
 
-For a state machine, generate a sequence of commands, apply them, and
-assert the invariants after each step.
+Every property above takes one input. A lifecycle takes a history, and
+the bugs live in the histories nobody thought to write down: cancel
+after expiry, two accepts in a row, a refund before the payment settled.
+Generating the sequence is what finds those.
+
+Four pieces, and the whole technique is getting them separate.
+
+**The commands.** A choice type, one case per thing a user or another
+system can ask for, each carrying its arguments. This is the same type
+the transition table in
+[modeling-state-machines](../../modeling-state-machines/SKILL.md)
+already names, so it is usually already written.
 
 ```text
-forAll (listOf genCommand) $ \commands ->
-  let states = scan applyCommand initial commands
-  in all invariantsHold states
+type Command =
+  | Send of Instant
+  | Accept of { by: CustomerId, at: Instant }
+  | Cancel of { reason: Reason, at: Instant }
 ```
 
-This finds ordering bugs that no example test would, and it is the best
-available check that a lifecycle model is right. See
-[modeling-state-machines](../../modeling-state-machines/SKILL.md).
+**The model.** A deliberately stupid version of the state, holding only
+what the properties need to talk about. Its job is to be obviously
+right, not efficient. For a quote, that is often a single tag plus one
+timestamp.
+
+**The precondition.** Given the model, may this command be issued at
+all? Without one, most generated sequences stop at the first illegal
+command and the rest of the sequence is never exercised. With one, the
+generator keeps producing sequences that go somewhere.
+
+**The postcondition.** After running the command against the real
+implementation, does the result agree with what the model says, and do
+the invariants still hold?
+
+```text
+-- one step: model and implementation must stay in step
+runCommand (state, model) command =
+  let next      = apply command state
+      nextModel = applyToModel command model
+  in agrees next nextModel && invariantsHold next
+```
+
+The property is then: for any sequence of commands whose preconditions
+hold in turn, every step agrees.
+
+Three things to get right, because each one silently weakens the test:
+
+1. **Shrink the sequence, not only the values.** A failure reported as
+   forty commands is a rumour. The libraries that support this remove
+   commands from the middle and re-check, which usually reduces a
+   failure to two or three. `propcheck` does it out of the box;
+   `fast-check` needs `fc.commands`, which shrinks the command list.
+2. **Let the model disagree about performance, never about outcomes.**
+   If the model needs the implementation's data structure to answer, it
+   is no longer independent and the test compares the code to itself.
+3. **Generate illegal commands on purpose too**, in a second property,
+   and assert they are refused rather than silently applied. The
+   precondition keeps them out of the first property; nothing else would
+   check the refusals.
+
+What this finds that examples do not: a transition that is legal twice
+when it should be legal once, a guard that reads the wrong timestamp, a
+terminal state that is not terminal, and any invariant that holds after
+each command in isolation but not after a particular pair.

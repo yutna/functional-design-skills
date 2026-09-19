@@ -140,7 +140,12 @@ export async function confirmBooking(
 ```
 
 Parse at the boundary, decide purely, return a value the form can render.
-See [server-boundary.md](references/server-boundary.md).
+The `(prevState, formData)` signature is what React 19's
+`useActionState` calls, so the client side reads
+`useActionState(confirmBooking, { tag: "Idle" })` and returns the state,
+the form action, and a pending flag together — no second piece of state
+that can disagree with the first. See
+[server-boundary.md](references/server-boundary.md).
 
 ## Red flags
 

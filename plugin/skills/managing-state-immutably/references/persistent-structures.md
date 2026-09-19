@@ -37,9 +37,37 @@ The consequences that matter in practice:
 | Membership only            | Persistent set            |
 | A queue                    | Two lists, front and back |
 
-Use the language's own implementations. Hand-rolled persistent
-structures are a source of subtle bugs, and every major functional
-ecosystem ships good ones.
+Do not hand-roll these; they are a source of subtle bugs. Where to get
+them differs more than the design does, and this is the one place the
+neutral advice would be wrong:
+
+| Stack                    | Where the structures come from          |
+| ------------------------ | --------------------------------------- |
+| Elixir, Erlang           | The language: lists, maps, `MapSet`     |
+| Clojure                  | The language: every core collection     |
+| Haskell, F#, Scala       | The standard library                    |
+| JavaScript, TypeScript   | Nothing built in; add `immutable`       |
+
+The last row is why the table exists. JavaScript's `Object.freeze`,
+spread, and the `toSorted` family produce a new value by copying, not by
+sharing structure, so "immutable" there costs linear time and memory on
+every change. That is fine for a record with six fields and wrong for a
+map with fifty thousand entries updated per request.
+
+Two ways out, and they are not the same thing:
+
+- **`immutable`** gives real persistent collections — `Map`, `List`,
+  `Set` — with structural sharing. Its values are not plain objects, so
+  keep them inside the module that owns the data and convert at that
+  module's edge.
+- **`immer`** does not. It gives you a mutable-looking draft and
+  produces a frozen plain object, sharing the parts you did not touch.
+  That removes the nested-spread problem and keeps plain objects, which
+  is usually what a domain type wants; it does not make a large map
+  cheap to update in a loop.
+
+Reach for the first when a profile shows copying costs, and the second
+when the pain is nested updates rather than size.
 
 ## Cost model
 

@@ -57,13 +57,34 @@ const updated = {
 };
 ```
 
-Two better options:
+Three better options, in order of what they cost:
 
 1. **Flatten the model.** Deep nesting in a domain type is usually a
    sign that an inner part should be its own value with its own module
-   and its own update functions.
-2. **Use a persistent collection library** for genuinely deep or large
-   structures, and keep its types inside one module.
+   and its own update functions. Free, and it usually improves the
+   design rather than only the syntax.
+2. **Write the update function beside the type it updates.**
+   `Address.withCity`, `Customer.withAddress`, one spread each, composed
+   at the call site. Three small named functions read better than one
+   nested literal and cost nothing to test.
+3. **Use `immer`.** Its `produce` takes a mutable-looking draft and
+   returns a new frozen value, sharing everything untouched.
+
+```js
+import { produce } from "immer";
+
+const withCity = (booking, city) =>
+  produce(booking, (draft) => {
+    draft.customer.address.city = city;
+  });
+```
+
+The draft is only valid inside the callback, and what comes out is a
+plain frozen object, so nothing about `immer` escapes into the domain
+types. That is what makes it a different choice from `immutable`, whose
+`Map` and `List` are their own types and must be confined to one
+module. See
+[persistent-structures.md](../../managing-state-immutably/references/persistent-structures.md).
 
 ## Maps and sets
 
@@ -74,8 +95,12 @@ const withEntry = (map, key, value) => new Map(map).set(key, value);
 ```
 
 For large collections updated frequently, that copying is linear per
-change and will show up in a profile. Use a persistent map
-implementation, and confine it to the module that owns the data. See
+change and will show up in a profile. Reach for `immutable`'s `Map`,
+which shares structure, and confine it to the module that owns the
+data: its values are not plain objects, so everything crossing that
+module's boundary should be converted. Measure first — the copy is
+cheaper than the conversion until the collection is genuinely large.
+See
 [persistent-structures.md](../../managing-state-immutably/references/persistent-structures.md).
 
 ## Local mutation that is invisible

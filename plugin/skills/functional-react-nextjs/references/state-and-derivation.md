@@ -66,6 +66,14 @@ Keep the reducer free of effects. When a transition should cause one,
 return a state the component reacts to, or return commands alongside the
 state and let the shell run them.
 
+`useReducer` takes this as it stands, and that is the default: the
+reducer is a plain function and needs nothing else. Reach for `xstate`
+only when the machine has features a plain reducer genuinely lacks —
+hierarchical or parallel states, delayed transitions, an actor per
+row — and accept in exchange that the machine is now a library value
+rather than a function you can call from a test with two arguments.
+Most screens never get there.
+
 ## When an effect is right
 
 `useEffect` synchronises React with something outside it. Legitimate
@@ -96,8 +104,20 @@ Fetch at the edge, not in the middle of the tree:
 
 - **Next.js**: fetch in server components, or in a route handler, and
   pass data down as props.
-- **Client-only apps**: a query library at a route or page boundary, with
-  its cache as the single source of server state.
+- **Client-only apps**: `@tanstack/react-query` or `swr` at a route or
+  page boundary, with its cache as the single source of server state.
+
+Naming those matters more than it looks. "Use a query library" reads as
+optional; the point is that server data has a cache whether you write
+one or not, and the choice is between one you configured and one made
+of scattered `useState` and `useEffect` pairs. Either library gives you
+that cache, request de-duplication, and a loading state you did not
+hand-roll.
+
+What none of them decide for you is the screen's own state. A cache
+entry is `pending | success | error`; the four-case `ScreenState` in
+the skill is still yours to write, and still the thing that stops a
+screen rendering a spinner over stale data.
 
 A component several levels deep that fetches is the temporal
 decomposition smell: it couples a leaf to the network and makes the
