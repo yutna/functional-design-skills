@@ -37,7 +37,7 @@ Not for: judging whether a module is worth its interface, which is
    "this module is the only place that knows X". If two modules claim the
    same X, that is leakage, and one of them must stop.
 2. **Decompose by knowledge, not by time.** Modules named `parse`,
-   `enrich`, `send` follow the booking things happen. Booking changes;
+   `enrich`, `send` follow the order things happen. Order changes;
    knowledge does not. See
    [temporal-decomposition.md](references/temporal-decomposition.md).
 3. **Export the least that still serves callers.** Every exported name is

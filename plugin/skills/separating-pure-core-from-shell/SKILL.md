@@ -38,10 +38,10 @@ Not for: choosing how to supply a specific dependency, which is
 +-------------------------------------------+
 | shell: transport, storage, clock, queues  |
 |  +-------------------------------------+  |
-|  | workflows: pipelines of pure steps   |  |
-|  |  +-------------------------------+   |  |
-|  |  | domain: types and rules        |   |  |
-|  |  +-------------------------------+   |  |
+|  | workflows: pipelines of pure steps  |  |
+|  |  +-------------------------------+  |  |
+|  |  | domain: types and rules       |  |  |
+|  |  +-------------------------------+  |  |
 |  +-------------------------------------+  |
 +-------------------------------------------+
 ```

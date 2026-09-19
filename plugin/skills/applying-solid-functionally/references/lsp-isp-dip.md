@@ -34,7 +34,7 @@ is written against it.
 ### Substitutability for choice types
 
 The same rule applies to the cases of a sum type. If callers assume that
-every `Booking` has at least one treatment, then every case that constructs an
+every `Booking` has at least one treatment, then every case that constructs a
 `Booking` must guarantee it, or the assumption belongs in the type.
 
 ```text

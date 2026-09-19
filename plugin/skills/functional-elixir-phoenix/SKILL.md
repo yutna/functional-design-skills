@@ -38,7 +38,7 @@ Not for: Erlang-specific runtime tuning or release configuration.
 | Single-case wrapper | A struct with one field, plus `new/1`    |
 | `Result<T, E>`      | `{:ok, term}` or `{:error, term}`        |
 | `Option<T>`         | `{:ok, term}` or `:error`, or `nil`      |
-| `>=/>` composition  | `with` expression                        |
+| `>=>` composition   | `with` expression                        |
 | `>>` composition    | The pipe operator                        |
 | Exhaustive match    | Function clauses with no catch-all       |
 | Boundary parse      | An Ecto changeset, or a `new/1` function |

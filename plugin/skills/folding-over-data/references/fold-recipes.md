@@ -108,7 +108,7 @@ a new event type is one new case.
 
 ## Building a structure
 
-To build a list in original booking without repeated appending:
+To build a list in original order without repeated appending:
 
 ```text
 -- prepend then reverse: two linear passes, no quadratic append

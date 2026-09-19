@@ -60,7 +60,7 @@ for line in lines:
     count = count + 1
 ```
 
-Three mutable variables, an implicit booking, and a shape that cannot be
+Three mutable variables, an implicit order, and a shape that cannot be
 reused or run in parallel.
 
 Fold:

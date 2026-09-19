@@ -114,7 +114,7 @@ module BookingApi
 ```
 
 If two boundaries need different shapes, they get different modules and
-different DTOs. An `BookingDto` shared between the public API and the
+different DTOs. A `BookingDto` shared between the public API and the
 storage layer will end up satisfying neither.
 
 ## Versioning

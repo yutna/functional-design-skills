@@ -24,7 +24,7 @@ The test for which one you are looking at:
 > Would a domain expert, describing the requirement in their own words,
 > mention this?
 
-If the answer is no, it is accidental. A cache is accidental. A
+If the answer is no, it is accidental. A cache is accidental. An
 `isProcessing` flag is accidental. A three-stage initialisation order is
 accidental. None of them appear in any conversation about the business.
 
@@ -72,13 +72,13 @@ Most state in most systems is accidental. That is where to look first.
 
 Control is the specification of _order_: what runs, when, in what
 sequence. Some order is essential — you cannot ship before you pack. Most
-is not: it is the booking our implementation happens to need.
+is not: it is the order our implementation happens to need.
 
 Accidental control shows up as an initialisation sequence, a setup call
 that must precede a use, a flag consulted to decide whether an earlier
 step already ran. The problem never mentioned any of it.
 
-The functional answer is to make the booking either **irrelevant** (pure
+The functional answer is to make the order either **irrelevant** (pure
 functions over values, composed) or **explicit in the types** (a state
 machine, where the previous step's output type is the next step's input).
 See

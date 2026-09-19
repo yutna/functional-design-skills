@@ -52,7 +52,7 @@ module RowEnrichment
 ```
 
 The workflow that runs them in order is one small function, and it is the
-only thing that knows the booking:
+only thing that knows the order:
 
 ```text
 importFile = RowFile.read >=> traverse RowRules.validate
@@ -60,7 +60,7 @@ importFile = RowFile.read >=> traverse RowRules.validate
                >=> RowFile.write outPath
 ```
 
-Change the booking, add a step, or run two steps concurrently, and only
+Change the order, add a step, or run two steps concurrently, and only
 this function changes.
 
 ## Where the pipeline shape still applies

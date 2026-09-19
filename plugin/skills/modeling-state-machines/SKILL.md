@@ -67,7 +67,7 @@ accept q =
 ```
 
 Every function repeats the guard, and the compiler helps with none of it.
-A draft with an `bookingId` is representable, and one will appear.
+A draft with a `bookingId` is representable, and one will appear.
 
 States as cases, transitions as functions:
 

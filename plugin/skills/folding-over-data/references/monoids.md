@@ -67,10 +67,28 @@ really "apply an update", which is a fold's step function rather than a
 monoid.
 
 ```text
--- not associative: later values overwrite earlier ones asymmetrically
-combine a b = if a.updatedAt > b.updatedAt then a else b
--- this one IS associative, and is a valid monoid with a minimal identity
+-- not associative: averaging two values at a time
+combine a b = (a + b) / 2
+-- combine (combine 1 2) 3 == 2.25
+-- combine 1 (combine 2 3) == 1.75
 ```
+
+The repair is almost always the same: accumulate what the operation
+needs and derive the answer at the end. A running total and a count are
+each a monoid, so the pair is one too, and the average comes out of the
+final value.
+
+```text
+type Running = { total: Number, count: Integer }
+combine a b = { total: a.total + b.total, count: a.count + b.count }
+identity   = { total: 0, count: 0 }
+average r  = if r.count == 0 then None else Some (r.total / r.count)
+```
+
+Last-write-wins is the case people expect to fail and it does not:
+`if a.updatedAt > b.updatedAt then a else b` is a maximum, so it is
+associative, and it is a valid semigroup. It becomes a monoid as soon as
+there is a value older than every real one to act as the identity.
 
 ## Semigroups
 

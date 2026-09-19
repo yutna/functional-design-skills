@@ -129,7 +129,7 @@ that the test layer implements the service completely. That is the
 payoff described in
 [testing-functional-code](../../testing-functional-code/SKILL.md).
 
-Keep one shared test layer per treatment, maintained as real code, and
+Keep one shared test layer per service, maintained as real code, and
 consider a contract test that runs the same assertions against both the
 test layer and the live one. See
 [testing-the-shell.md](../../testing-functional-code/references/testing-the-shell.md).

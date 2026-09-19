@@ -63,7 +63,7 @@ Not for: designing something new, which starts at
 
 Apply in this order. Each one makes the next easier.
 
-| Booking | Move                                         |
+| Order   | Move                                         |
 | ------- | -------------------------------------------- |
 | 1       | Wrap primitives in domain types              |
 | 2       | Replace status strings with choice types     |
@@ -207,3 +207,5 @@ See
   here at all.
 - [keeping-design-clean.md](references/keeping-design-clean.md) covers
   absorbing new requirements without decay.
+- [worked-refactor.md](references/worked-refactor.md) moves one legacy
+  service through ten commits, with the verification at each step.

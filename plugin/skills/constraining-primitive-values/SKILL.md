@@ -127,7 +127,7 @@ for which side of that line a value falls on.
 - **Unwrapping early for convenience.** Once a raw string escapes into
   the domain, everything downstream is back to primitives.
 - **Encoding constraints nobody asked for.** A maximum length invented by
-  the developer becomes a treatmention incident when the business changes.
+  the developer becomes a production incident when the business changes.
 - **Making equality do too much.** If `EmailAddress` compares
   case-insensitively, normalise at construction instead, so equality
   stays obvious.

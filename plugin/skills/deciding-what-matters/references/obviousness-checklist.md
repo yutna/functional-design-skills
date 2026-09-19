@@ -39,7 +39,7 @@ continuing; obscurity compounds.
 
 3. **Is the order of these calls enforced by something?**
    Failure: `validate(o); price(o)` where the second silently misbehaves
-   alone. Fix: chain the types so the booking is the only thing that
+   alone. Fix: chain the types so the order is the only thing that
    compiles.
 
 ## Inside the implementation

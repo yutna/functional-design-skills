@@ -78,7 +78,7 @@ where that payoff is real.
    Reach for the heaviest only when the lighter ones do not fit.
 2. **Declare the function type in the domain**, in the domain's words.
    `GetTreatmentPrice`, not `ITreatmentRepository`.
-3. **One function type per capability used**, not one record per treatment.
+3. **One function type per capability used**, not one record per service.
    See
    [applying-solid-functionally](../applying-solid-functionally/SKILL.md).
 4. **Dependencies first, data last**, so partial application produces the

@@ -36,7 +36,7 @@ Not for: designing the union itself, which is
 1. **End every match with `.exhaustive()`.** That is the whole point;
    `.otherwise()` throws the guarantee away.
 2. **Match on the discriminant first**, then on nested structure, so the
-   patterns read in the booking a person would ask the questions.
+   patterns read in the order a person would ask the questions.
 3. **Use `P.when` for guards**, not for business rules that deserve a
    name. A guard should fit on a line.
 4. **Select what you use.** `P.select()` names the parts a handler needs
@@ -84,7 +84,7 @@ const routing = (booking: Booking) =>
     .exhaustive();
 ```
 
-Booking matters: patterns are tried top to bottom, so the more specific
+Order matters: patterns are tried top to bottom, so the more specific
 case goes first.
 
 ## State transitions
@@ -166,7 +166,7 @@ at the edge, with the compiler proving every case is covered.
   than the code it replaces; destructure and match on the part.
 - **Using `P.when` for the main dispatch.** Guards are for conditions,
   not for the primary branch; the structure should carry that.
-- **Forgetting pattern booking.** A general pattern above a specific one
+- **Forgetting pattern order.** A general pattern above a specific one
   silently shadows it.
 
 ## Related skills

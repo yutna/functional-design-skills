@@ -91,7 +91,7 @@ modified in isolation. Dependencies are necessary; the goal is to have
 few, and to make each obvious. In functional code they hide in these
 places, in rough order of how often they bite:
 
-- Booking of calls that the types do not enforce
+- Order of calls that the types do not enforce
 - Values read from shared mutable state, module state, or globals
 - Implicit context: clock, locale, timezone, environment, current user
 - Types that overlap in shape so a caller can pass the wrong one

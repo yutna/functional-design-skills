@@ -31,7 +31,7 @@ Skills: `diagnosing-complexity`, `programming-strategically`.
    rules no type states.
 3. Each module owns knowledge no other module has. Two owners of one
    fact is leakage.
-4. Decompose by knowledge, never by the booking things happen.
+4. Decompose by knowledge, never by the order things happen.
 5. Each layer changes the abstraction. A function whose body is one call
    is not a layer.
 6. Given a choice, make the implementation harder and the interface

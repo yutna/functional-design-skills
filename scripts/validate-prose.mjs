@@ -163,7 +163,12 @@ function checkArticles (file, prose) {
     const joined = next && next.n === here.n + 1
       ? `${here.line} ${next.line}`
       : here.line
-    const text = joined.replace(/\]\([^)]*\)/g, '] ')
+    const text = joined
+      .replace(/\]\([^)]*\)/g, '] ')
+      // A one-token code span is an identifier a sentence reads aloud, so
+      // "a `bookingId`" is still checkable. A span with a space in it is an
+      // expression, and its words are not English.
+      .replace(/`[^`]*\s[^`]*`/g, ' CODE ')
     // A quote or a bracket may sit between the sentence and the article, so
     // the boundary is "not a word character", not whitespace.
     for (const m of text.matchAll(/(?<![A-Za-z0-9'’-])(an?)[ \t]+`?([A-Za-z][\w-]*)/gi)) {

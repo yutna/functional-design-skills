@@ -63,7 +63,7 @@ network. Everything hard about the process becomes data.
    its own dead-end state, which is a human's problem and must be
    visible.
 5. **Some steps cannot be undone.** An email that has been sent is sent.
-   Booking the steps so irreversible ones come last, and if that is
+   Order the steps so irreversible ones come last, and if that is
    impossible, say so where the process is defined.
 6. **The terminal states are business outcomes.** `Issued`, `Failed`,
    `Refunded` — each with its data, each meaningful to somebody outside

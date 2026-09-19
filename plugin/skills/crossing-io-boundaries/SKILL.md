@@ -173,3 +173,6 @@ More in
   kind of domain type, plus versioning and evolution.
 - [persistence-patterns.md](references/persistence-patterns.md) covers
   transactions, concurrency, queries, and event storage.
+- [worked-read-model.md](references/worked-read-model.md) builds one
+  screen end to end, where the aggregate rules deliberately do not apply
+  and a query returns its own view type.

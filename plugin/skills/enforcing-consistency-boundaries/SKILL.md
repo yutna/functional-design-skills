@@ -53,7 +53,7 @@ Consequences worth acting on:
 
 ## Core rules
 
-1. **List the invariants first.** Write each rule as a sentence. "An
+1. **List the invariants first.** Write each rule as a sentence. "A
    booking's total equals the sum of its treatments."
 2. **Group by invariant, not by relationship.** Data that must be
    consistent together lives in the same aggregate. A foreign key is not
