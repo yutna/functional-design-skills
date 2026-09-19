@@ -213,6 +213,17 @@ Worth knowing before relying on it.
   buried inside a longer word, for the nouns listed in
   `scripts/validate-prose.mjs`. A new example domain that is not added
   to that list is unchecked.
+- **The example check is a parser, not a type checker.** Every fenced
+  example in a real language is handed to that language's compiler, so
+  one that cannot be pasted fails the build. An example that parses can
+  still be wrong: nothing here type-checks it, runs it, or knows
+  whether the library it names behaves as shown. Elixir needs the
+  Elixir toolchain, which continuous integration has not got, so those
+  fences are checked only by whoever runs `--with-elixir` locally.
+- **The neutral notation is checked by nobody.** Around three quarters
+  of the code blocks in the pack are `text`, the notation the core
+  skills share, and no parser exists for it. Those blocks are held to
+  the same standard by review alone.
 
 ## Licence
 
