@@ -31,6 +31,7 @@
     "validate:rules": "node scripts/validate-rules.mjs",
     "validate:counts": "node scripts/validate-counts.mjs",
     "eval:routing": "node scripts/eval-routing.mjs",
+    "eval:scenarios": "node scripts/eval-scenarios.mjs",
     "test": "npm run lint:md && npm run validate:skills && npm run validate:prose && npm run validate:examples && npm run validate:rules && npm run validate:counts && npm run eval:routing",
     "test:guards": "node scripts/validate-prose.mjs --selftest && node scripts/validate-examples.mjs --selftest && node scripts/negative-test.mjs"
   },

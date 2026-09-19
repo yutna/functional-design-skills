@@ -1,7 +1,7 @@
 # Evals
 
-Two checks on whether the pack routes a problem to the right skill. They
-prove different things, and neither proves what the other does.
+Three checks on whether the pack routes a problem to the right skill. They
+prove different things, and none proves what the others do.
 
 ## 1. Routing keyword coverage — automated
 
@@ -73,11 +73,56 @@ check, give the pack the defect the check is meant to catch and confirm
 the check fires. A gate that cannot fail on a real defect is worse than
 no gate, because it reads as coverage that is not there.
 
-## 2. Scenarios — manual, against a real agent
+## 2. Scenarios — against real agent sessions
 
 [scenarios.md](scenarios.md) holds forty-two fuller problems, each a
 paragraph of realistic context with the response a correct answer must
-contain. Run them by hand in an agent session with the pack installed:
+contain.
+
+```sh
+node scripts/eval-scenarios.mjs              # all of them
+node scripts/eval-scenarios.mjs --only 1,30  # just these
+```
+
+Each scenario runs as the whole prompt in its own session, and the script
+reports which skill the agent loaded first. It is not in `npm test`: it
+costs money, it needs the `claude` CLI signed in, and the result moves
+with the model, so it is a measurement rather than a gate.
+
+Two details decide whether the number means anything, and both were
+learned by getting them wrong first.
+
+- **The session must contain this pack and nothing else.** The script
+  passes `--setting-sources ''` and loads the plugin from disk. Without
+  that, whatever else the operator has installed competes: on the first
+  run a skill from an unrelated plugin answered a scenario before this
+  pack saw it.
+- **The session must have code to look at.** Several scenarios open with
+  "review this" or "I have three nested loops", written to be pasted where
+  the code is already open. Run against an empty directory the agent
+  correctly asks for the file instead of answering, and three scenarios
+  scored as routing failures that were nothing of the kind. Sessions run
+  inside a copy of [fixture](fixture), a small project with the shapes
+  those scenarios describe.
+
+**What it proves:** that a real agent, given this pack and nothing else,
+loads the skill the scenario was written for.
+
+**What it does not prove:** anything stable. Re-running moves the result by
+a scenario or two in either direction, so a mis-route is a question to look
+into rather than a defect. Roughly half of them turn out to be a
+neighbouring skill giving a defensible answer: a nullable status with
+correlated fields is a state machine as fairly as it is an illegal state,
+and "capabilities passed as parameters" is in the scenario's own list of
+things a correct answer contains.
+
+Reading the answer is the point, not the score. Each session leaves its
+transcript beside the fixture it ran against.
+
+### Running them by hand
+
+The script automates what this section used to ask for, and the manual
+route still works when you want to watch one:
 
 1. Install the pack into a scratch project, per the main README.
 2. Start a session there and paste one scenario as the whole prompt.
@@ -86,12 +131,20 @@ contain. Run them by hand in an agent session with the pack installed:
 4. Note anything the agent did instead, which is usually more
    informative than a pass.
 
-**What it proves:** the pack works end to end for that scenario, with
-that agent, on that day.
+## 3. What the first automated run found
 
-**What it does not prove:** anything stable. Results move with the model
-and with the rest of the session's context, so this is a spot check, not
-a regression test. Do not record a score from it as though it were one.
+The forty-two scenarios were run this way for the first time in 3.0.1, on
+Sonnet, one session each. Recorded because the method is repeatable, not
+because the number is:
+
+- every scenario loaded a skill once the session had a project to look at;
+- the expected skill was the first one loaded in about three quarters of
+  them, and was loaded at all in a few more;
+- the rest went to a neighbour, and reading the transcripts is what
+  separates a mis-route from a second right answer.
+
+Nothing in the pack was changed because of it. A description tuned to make
+one sampled run go green is a description fitted to noise.
 
 ## Adding cases
 
