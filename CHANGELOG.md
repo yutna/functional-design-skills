@@ -6,6 +6,85 @@ skills or guidance, a patch one corrects what is already there.
 
 [semantic versioning]: https://semver.org
 
+## 3.0.1
+
+A pass over everything that is not a skill. No skill content changed
+except one word, and every bug found was in a script.
+
+The theme, found on the first CRLF checkout anyone had run: three
+readers were anchored to a bare `\n`, and one of them matched no
+headings, found no rules, printed `0 core rule(s) labelled across 0
+skill(s)` and exited zero. The strictness gate had been inert on
+Windows since the day it shipped, and green the whole time.
+
+### Checks that could report nothing and call it a pass
+
+- Every validator counts what it read and refuses to print `ok` on a
+  zero. Reading an empty pack now throws in the reader rather than
+  returning a zero each caller has to remember to check.
+- The Windows job runs `npm test` and `npm run test:guards`. It ran
+  the PowerShell scripts and nothing else, which is why none of this
+  was caught.
+- `eval-routing.mjs` had no negative test, so the headline number was
+  the one instrument never proved able to fail. It has four now.
+- `eval-routing.mjs` read only the first fenced case block. A second
+  would have been skipped in silence with every case in it unscored.
+- The link check walks the repository. It stopped at `plugin/skills`,
+  so a broken link in the README was nobody's job.
+- The scorer no longer skips a skill whose frontmatter will not parse.
+
+### The installer could delete a skill it did not own
+
+- `--force` removed a directory that claims no pack. `metadata.pack`
+  is this pack's own convention, so unmarked is more likely to be
+  someone else's work than an old copy of this one. Unmarked names are
+  reported and left alone now, `--force` included.
+- The shell installer was unusable from Git Bash or WSL: a CRLF
+  checkout made the pack name `functional-design-skills\r`, and all
+  forty-three of this pack's own skills came back as conflicts.
+- Both are exercised for real against a temporary home. Continuous
+  integration only ever passed `--dry-run`, which writes nothing.
+
+### The tooling follows this pack's own rules now
+
+Every bug above was the same bug wearing different clothes, and the
+pack has a skill for it.
+
+- `scripts/lib/markdown.mjs` is the only place a Markdown file is read.
+  Eight scripts each split lines their own way, twenty-one times, so
+  each was a separate chance to be wrong. Nothing downstream can see a
+  `\r` now, which makes that class unrepresentable rather than caught.
+- `scripts/lib/pack.mjs` holds one definition each of a skill, a
+  routing case and a scenario. Five scripts listed the skills
+  directory; two counted the cases with regexes that disagreed.
+- 254 lines deleted, 80 added, with every guard still firing.
+
+### Scenarios run against real agents
+
+`scripts/eval-scenarios.mjs` runs all forty-two as whole prompts in
+isolated sessions and reports which skill each one loaded. Not in
+`npm test`: it costs money and moves with the model. Two attempts
+measured the wrong thing first -- the operator's other plugins, then
+an empty directory -- and both fixes are in the script.
+
+### Smaller
+
+- One rule relabelled. "Two type families, always. Even when they look
+  identical today" forecloses its own exception, so it is a `Rule`,
+  not a `Default`. Four other candidates were false positives.
+- The routing scorer's name weighting is measured rather than assumed,
+  and the numbers are in the file: only counting the name twice reaches
+  145/145.
+- A file under `scripts/` has a shebang and is executable, or neither.
+- `scripts/bump-version.mjs` carries the version to the forty-five
+  places that repeat it, without going near the lock file.
+- The `assign` job no longer fails on a race with its own `labeled`
+  event.
+
+Guards: twenty-eight to thirty-eight, plus six that read a CRLF
+checkout, six that run against an emptied pack, and six that drive the
+real installer.
+
 ## 3.0.0
 
 Every skill was renamed, so every install needs attention; see

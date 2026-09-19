@@ -4,7 +4,7 @@ description: Use when a type can hold combinations the business forbids, when bo
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.0.0
+  version: 3.0.1
 ---
 
 # Making Illegal States Unrepresentable
