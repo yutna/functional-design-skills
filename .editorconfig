@@ -1,0 +1,20 @@
+# Matches what the linters and the scripts in this repository already expect.
+# See CLAUDE.md for the rules these settings serve.
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+[*.md]
+# markdownlint runs with default rules, which cap lines at 80 characters and
+# forbid trailing whitespace, so no hard-break exception is needed here.
+max_line_length = 80
+
+[*.{sh,ps1}]
+indent_size = 2
