@@ -26,6 +26,7 @@
 //   node scripts/validate-examples.mjs                 js, ts, tsx, json
 //   node scripts/validate-examples.mjs --with-elixir   also elixir
 //   node scripts/validate-examples.mjs --list          every fence and its language
+//   node scripts/validate-examples.mjs --selftest      prove the checks still fire
 
 import { readdirSync, readFileSync, statSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -43,7 +44,18 @@ const KIND = {
   js: ts.ScriptKind.JS,
 }
 
-const FENCE = /^```(\w+)[ \t]*\r?\n([\s\S]*?)^```[ \t]*$/gm
+// House style indents a fence inside a numbered list to the item's content
+// column, so the indent is captured, required again on the closing fence, and
+// stripped from every line before parsing.
+const FENCE = /^([ \t]*)```(\w+)[ \t]*\r?\n([\s\S]*?)^\1```[ \t]*$/gm
+
+function outdent (code, indent) {
+  if (indent === '') return code
+  return code
+    .split('\n')
+    .map((line) => (line.startsWith(indent) ? line.slice(indent.length) : line))
+    .join('\n')
+}
 
 function markdownFiles (dir) {
   const out = []
@@ -55,6 +67,19 @@ function markdownFiles (dir) {
   return out
 }
 
+function fencesIn (text, file) {
+  const found = []
+  for (const match of text.matchAll(FENCE)) {
+    found.push({
+      file,
+      line: text.slice(0, match.index).split('\n').length,
+      lang: match[2],
+      code: outdent(match[3], match[1]),
+    })
+  }
+  return found
+}
+
 function fences () {
   const found = []
   for (const path of markdownFiles(SKILLS)) {
@@ -63,8 +88,8 @@ function fences () {
       found.push({
         file: path.slice(ROOT.length + 1),
         line: text.slice(0, match.index).split('\n').length,
-        lang: match[1],
-        code: match[2],
+        lang: match[2],
+        code: outdent(match[3], match[1]),
       })
     }
   }
@@ -136,8 +161,54 @@ function elixirErrors (list) {
   }
 }
 
+// Each case is a whole Markdown document, because the indent handling is
+// part of what is being tested and a bare fence would not exercise it.
+const SELFTEST = [
+  ['a top-level fence that does not parse', true,
+    '# T\n\n```ts\nconst f = (): number => ...;\n```\n'],
+  ['a fence indented into a list item', true,
+    '# T\n\n1. Step\n\n   ```ts\n   const f = (): number => ...;\n   ```\n'],
+  ['an indented fence that is valid', false,
+    '# T\n\n1. Step\n\n   ```ts\n   const f = (): number => 1;\n   ```\n'],
+  ['an ellipsis inside an Elixir struct', true,
+    '# T\n\n```elixir\n%Appointment{...status: at}\n```\n', 'elixir'],
+  ['malformed JSON', true, '# T\n\n```json\n{ "a": }\n```\n'],
+  ['a language nothing here can parse', false,
+    '# T\n\n```text\nthis is notation, not code\n```\n'],
+  ['prose with no fence at all', false, '# T\n\nJust a sentence.\n'],
+]
+
+function selftest () {
+  let failures = 0
+  for (const [label, shouldFail, doc, lang] of SELFTEST) {
+    const list = fencesIn(doc, 'selftest.md')
+    let caught = false
+    if (lang === 'elixir') {
+      caught = elixirErrors(list.filter((f) => f.lang === 'elixir')).length > 0
+    } else {
+      caught = list.some((fence) => syntaxError(fence) !== null)
+    }
+    if (caught === shouldFail) {
+      process.stdout.write(`selftest ok: ${label}\n`)
+    } else {
+      process.stderr.write(
+        `selftest FAIL: ${label} -> expected ${shouldFail ? 'a failure' : 'silence'}\n`,
+      )
+      failures++
+    }
+  }
+  if (failures > 0) {
+    process.stderr.write(`\n${failures} selftest case(s) wrong\n`)
+    process.exit(1)
+  }
+}
+
 const argv = process.argv.slice(2)
 const withElixir = argv.includes('--with-elixir')
+if (argv.includes('--selftest')) {
+  selftest()
+  process.exit(0)
+}
 const all = fences()
 
 if (argv.includes('--list')) {

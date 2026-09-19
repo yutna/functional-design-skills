@@ -111,9 +111,10 @@ The default rules bite in specific ways. The ones that catch people out:
 Give the pack the defect the change is meant to catch, and confirm it
 fires, before trusting it. A rule written from reasoning alone has an
 even chance of being the wrong shape. `scripts/negative-test.mjs` is
-where that lives for `validate-skills.mjs`, and
-`node scripts/validate-prose.mjs --selftest` for the prose checks; a new
-guard adds a case to one of them in the same commit.
+where that lives for `validate-skills.mjs` and `validate-examples.mjs`,
+and `--selftest` on `validate-prose.mjs` or `validate-examples.mjs` for
+the checks each makes in memory; a new guard adds a case to one of them
+in the same commit.
 
 The same applies to guidance. Over-application is not a discipline
 failure, so a prohibition does not fix it. State the rule as a positive

@@ -99,7 +99,7 @@ repository has two standing examples in each direction:
   shipped, was audited, and was reported clean.
 
 A new guard adds its case to `scripts/negative-test.mjs`, or to the
-prose self-test, in the same commit.
+self-test of the script it belongs to, in the same commit.
 
 The same applies to the form of the guidance. Over-application is not a
 discipline failure, so a prohibition does not fix it. State the rule as

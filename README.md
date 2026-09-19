@@ -14,9 +14,10 @@ They cover:
   process boundary
 - Refactoring imperative or object-oriented code toward all of the above
 
-The rules are language-agnostic. Thirty-four core skills describe
-designs in a neutral notation; six language packs translate them into
-JavaScript, TypeScript, React and Next.js, and Elixir and Phoenix.
+The rules are language-agnostic. An index and thirty-three core skills
+describe designs in a neutral notation; six language packs translate
+them into JavaScript, TypeScript, React and Next.js, and Elixir and
+Phoenix.
 
 ## What it changes
 
