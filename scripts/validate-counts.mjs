@@ -22,15 +22,11 @@
 //
 // Usage: node scripts/validate-counts.mjs
 
-import { readFileSync, readdirSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import {
+  readRepoFile, routingCases, scenarios, skillIds,
+} from './lib/pack.mjs'
 
-const ROOT = dirname(dirname(fileURLToPath(import.meta.url)))
-
-const skillIds = readdirSync(join(ROOT, 'plugin', 'skills'), {
-  withFileTypes: true,
-}).filter((entry) => entry.isDirectory()).map((entry) => entry.name)
+const ids = skillIds()
 
 // Since 3.0.0 every skill is named functional-something, so the name no
 // longer says whether a skill is a core rule or a language pack. The index
@@ -39,8 +35,8 @@ const skillIds = readdirSync(join(ROOT, 'plugin', 'skills'), {
 const INDEX = 'functional-design'
 
 function declaredLanguagePacks () {
-  const body = read(`plugin/skills/${INDEX}/SKILL.md`)
-  const section = /^## Language packs\r?\n([\s\S]*?)^## /m.exec(body)
+  const body = readRepoFile(`plugin/skills/${INDEX}/SKILL.md`)
+  const section = /^## Language packs\n([\s\S]*?)^## /m.exec(body)
   if (section === null) {
     throw new Error(
       `plugin/skills/${INDEX}/SKILL.md: no "## Language packs" section, so ` +
@@ -52,10 +48,10 @@ function declaredLanguagePacks () {
 
 const languagePacks = declaredLanguagePacks()
 const packSet = new Set([...languagePacks, INDEX])
-const coreSkills = skillIds.filter((id) => !packSet.has(id))
+const coreSkills = ids.filter((id) => !packSet.has(id))
 
 for (const pack of languagePacks) {
-  if (!skillIds.includes(pack)) {
+  if (!ids.includes(pack)) {
     throw new Error(
       `plugin/skills/${INDEX}/SKILL.md lists "${pack}" as a language pack, ` +
         'but no such skill exists',
@@ -63,58 +59,21 @@ for (const pack of languagePacks) {
   }
 }
 
-// Line endings are normalised on the way in. Every pattern below is written
-// against \n, and .gitattributes checks Markdown out with the platform's own
-// endings, so on Windows a pattern anchored to \n matched nothing: the case
-// block was "missing" and two claims read as "rewritten". Normalising here
-// fixes all of them at once and cannot mask anything this script is for.
-function read (relative) {
-  return readFileSync(join(ROOT, relative), 'utf8').replace(/\r\n/g, '\n')
-}
-
-// Counted the way eval-routing.mjs counts them: inside the fenced block, so
-// the arrow in the prose that explains the format is not a case, and
-// skipping comments, so the two scripts cannot disagree about the total.
-//
-// Both regexes tolerate CRLF. .gitattributes checks Markdown out with the
-// platform's endings, so on Windows every line here ends \r\n; a pattern
-// anchored to a bare \n found no block, returned zero, and reported that
-// the documentation over-counted. Nothing caught it because the Windows job
-// did not run this suite. It does now.
-function routingCases () {
-  const block = /```text\r?\n([\s\S]*?)```/.exec(read('evals/routing-cases.md'))
-  if (block === null) {
-    throw new Error(
-      'evals/routing-cases.md: no fenced case block, so the case count ' +
-        'cannot be computed. A zero here would read as a documentation error.',
-    )
-  }
-  return block[1]
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line && !line.startsWith('#') && line.includes(' -> '))
-    .length
-}
-
+// Every count here comes from lib/pack.mjs, which is also what the scorer
+// and the scenario runner read. Two of these used to be computed here with
+// a regex of their own, and the copies did not agree: one tolerated CRLF
+// and one did not, so on Windows this script called the documentation
+// wrong about a number the scorer was perfectly happy with. Reading
+// nothing throws there rather than returning a zero that every caller has
+// to remember to check.
 const FACTS = {
-  skills: skillIds.length,
+  skills: ids.length,
   languagePacks: languagePacks.length,
   coreSkills: coreSkills.length,
-  scenarios: (read('evals/scenarios.md').match(/^## \d+\. /gm) ?? []).length,
-  routingCases: routingCases(),
+  scenarios: scenarios().length,
+  routingCases: routingCases().length,
 }
 
-// Every fact here is a count of something this pack has always had. A zero
-// means the reader broke, not that the pack emptied, and reporting "ok" on
-// a zero is how a check stops working without anyone noticing.
-for (const [name, value] of Object.entries(FACTS)) {
-  if (value === 0) {
-    process.stderr.write(
-      `error counted zero ${name}, so this check measured nothing\n`,
-    )
-    process.exit(1)
-  }
-}
 
 const ONES = [
   'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight',
@@ -160,7 +119,7 @@ const CLAIMS = [
 
 const errors = []
 for (const [file, fact, pattern] of CLAIMS) {
-  const match = pattern.exec(read(file))
+  const match = pattern.exec(readRepoFile(file))
   if (match === null) {
     errors.push(
       `${file}: the sentence claiming "${fact}" was rewritten, so nothing ` +

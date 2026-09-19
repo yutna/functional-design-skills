@@ -34,11 +34,12 @@
 //   node scripts/eval-scenarios.mjs --model opus    another model
 //   node scripts/eval-scenarios.mjs --jobs 2        fewer at once
 
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { cpSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawn } from 'node:child_process'
+import { scenarios } from './lib/pack.mjs'
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)))
 const FIXTURE = join(ROOT, 'evals', 'fixture')
@@ -51,37 +52,6 @@ const flag = (name, fallback) => {
 const only = flag('only') ? new Set(flag('only').split(',')) : null
 const model = flag('model', 'sonnet')
 const jobs = Math.max(1, Number(flag('jobs', '4')))
-
-// A scenario is a numbered heading, a block quote holding the prompt as
-// someone would say it, and prose ending in "Should reach `skill-name`".
-// The prose is wrapped at eighty characters, so the sentence is matched
-// against whitespace-flattened text: reading the raw block missed six of
-// them, whose "Should" and "reach" had landed on different lines.
-function scenarios () {
-  const text = readFileSync(join(ROOT, 'evals', 'scenarios.md'), 'utf8')
-  const out = []
-  for (const block of text.split(/\n## /).slice(1)) {
-    const flat = block.replace(/\s+/g, ' ')
-    const number = /^(\d+)\./.exec(flat)
-    if (number === null) continue
-    const prompt = block
-      .split(/\r?\n/)
-      .filter((line) => line.startsWith('>'))
-      .map((line) => line.replace(/^>\s?/, ''))
-      .join('\n')
-      .trim()
-    const reach = /Should reach ([^.]*)/.exec(flat)
-    out.push({
-      id: number[1],
-      title: /^\d+\.\s+(.*?)\s+>/.exec(flat)?.[1] ?? '',
-      prompt,
-      expected: reach
-        ? [...reach[1].matchAll(/`([\w-]+)`/g)].map((m) => m[1])
-        : [],
-    })
-  }
-  return out
-}
 
 function runOne (scenario, work) {
   return new Promise((resolve) => {

@@ -15,7 +15,9 @@
 //   node scripts/validate-prose.mjs            check every file
 //   node scripts/validate-prose.mjs --selftest break each check, watch it fire
 
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { readdirSync, statSync } from 'node:fs'
+import { readMarkdown } from './lib/markdown.mjs'
+import { skillIds } from './lib/pack.mjs'
 import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -277,7 +279,7 @@ function checkCoinedWords (file, prose) {
 
 function checkFile (path) {
   const file = relative(ROOT, path)
-  const { prose, fenced } = partition(readFileSync(path, 'utf8'))
+  const { prose, fenced } = partition(readMarkdown(path))
   checkIdioms(file, prose)
   checkArticles(file, prose)
   checkCoinedWords(file, prose)
@@ -360,7 +362,7 @@ function paragraphsOf (dir) {
   for (const file of files) {
     let text
     try {
-      text = readFileSync(file, 'utf8')
+      text = readMarkdown(file)
     } catch { continue }
     // Fenced code is excluded: two packs showing the same neutral-notation
     // snippet is the point of a shared notation, not a duplication.
@@ -391,9 +393,7 @@ function ancestorsOf (id, known) {
 function checkDeltaPacks () {
   let ids
   try {
-    ids = readdirSync(SKILLS_DIR, { withFileTypes: true })
-      .filter((entry) => entry.isDirectory())
-      .map((entry) => entry.name)
+    ids = skillIds()
   } catch { return }
   const known = new Set(ids)
   for (const id of ids) {

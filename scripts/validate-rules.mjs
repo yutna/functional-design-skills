@@ -28,12 +28,8 @@
 //   node scripts/validate-rules.mjs
 //   node scripts/validate-rules.mjs --report   every rule and its label
 
-import { readdirSync, readFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
-
-const ROOT = dirname(dirname(fileURLToPath(import.meta.url)))
-const SKILLS_DIR = join(ROOT, 'plugin', 'skills')
+import { linesOf } from './lib/markdown.mjs'
+import { everySkill } from './lib/pack.mjs'
 
 const LABELS = ['Rule', 'Default', 'Judgement']
 // A numbered list item that opens a core rule. The label is captured
@@ -46,13 +42,8 @@ const errors = []
 const counts = new Map(LABELS.map((label) => [label, 0]))
 const rows = []
 
-// Split on either ending. .gitattributes checks Markdown out with the
-// platform's own, so on Windows every line here arrived with a trailing \r,
-// the heading never matched, and this check reported "0 core rule(s)
-// labelled across 0 skill(s)" and exited zero. The floor below is the other
-// half of that fix: an instrument that measured nothing must not pass.
 function coreRules (body) {
-  const lines = body.split(/\r?\n/)
+  const lines = linesOf(body)
   const start = lines.findIndex((line) => line === '## Core rules')
   if (start === -1) return []
   const rest = lines.slice(start + 1)
@@ -60,15 +51,9 @@ function coreRules (body) {
   return end === -1 ? rest : rest.slice(0, end)
 }
 
-const ids = readdirSync(SKILLS_DIR, { withFileTypes: true })
-  .filter((entry) => entry.isDirectory())
-  .map((entry) => entry.name)
-  .sort()
-
 let withSection = 0
-for (const id of ids) {
-  const body = readFileSync(join(SKILLS_DIR, id, 'SKILL.md'), 'utf8')
-  const lines = coreRules(body)
+for (const { id, raw } of everySkill()) {
+  const lines = coreRules(raw)
   if (lines.length === 0) continue
   withSection++
   for (const line of lines) {
@@ -105,9 +90,9 @@ if (errors.length > 0) {
 }
 
 const total = [...counts.values()].reduce((sum, n) => sum + n, 0)
-// A check that found nothing has not passed; it has stopped working. Every
-// release of this pack has had core rules in most of its skills, so zero is
-// a broken reader, not a clean result.
+// everySkill() refuses to return an empty pack, so this floor is only
+// about the section: the skills are there and none of them has core rules,
+// which means the heading stopped matching.
 if (total === 0 || withSection === 0) {
   process.stderr.write(
     `error found ${total} core rule(s) in ${withSection} skill(s). This ` +

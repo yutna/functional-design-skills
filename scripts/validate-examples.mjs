@@ -29,6 +29,7 @@
 //   node scripts/validate-examples.mjs --selftest      prove the checks still fire
 
 import { readdirSync, readFileSync, statSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { readMarkdown } from './lib/markdown.mjs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -83,7 +84,7 @@ function fencesIn (text, file) {
 function fences () {
   const found = []
   for (const path of markdownFiles(SKILLS)) {
-    const text = readFileSync(path, 'utf8')
+    const text = readMarkdown(path)
     for (const match of text.matchAll(FENCE)) {
       found.push({
         file: path.slice(ROOT.length + 1),
