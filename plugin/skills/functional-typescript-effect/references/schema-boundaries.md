@@ -130,7 +130,9 @@ const BookingV2 = Schema.Struct({ /* ... */ });
 
 const fromV1 = (
   dto: Schema.Schema.Encoded<typeof BookingV1>,
-): Booking => toBooking(dto);
+): Booking => {
+  /* ... */
+};
 ```
 
 Add a schema and a mapping per wire version; keep the domain type stable.
