@@ -13,8 +13,8 @@
 // Usage: node scripts/negative-test.mjs
 
 import {
-  cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync,
-  symlinkSync, unlinkSync, writeFileSync,
+  chmodSync, cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync,
+  statSync, symlinkSync, unlinkSync, writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
@@ -231,6 +231,10 @@ function run (script = 'validate-skills.mjs') {
 }
 
 let failures = 0
+// Counted rather than computed from CASES.length: not every defect is an
+// edit to a file, and a summary that only counts the ones that are will
+// quietly under-report the day someone adds another kind.
+let proved = 0
 for (const script of [
   'validate-skills.mjs',
   'validate-examples.mjs',
@@ -268,6 +272,7 @@ for (const [label, target, [find, replace, scope], expected, script] of CASES) {
   paths.forEach((path, i) => writeFileSync(path, originals[i]))
   if (output.includes(expected)) {
     process.stdout.write(`neg ok   ${label}\n`)
+    proved++
   } else {
     process.stderr.write(`neg FAIL ${label} -> expected "${expected}", got:\n${output}\n`)
     failures++
@@ -281,8 +286,28 @@ for (const [label, file, content, expected, script] of CREATED) {
   unlinkSync(path)
   if (output.includes(expected)) {
     process.stdout.write(`neg ok   ${label}\n`)
+    proved++
   } else {
     process.stderr.write(`neg FAIL ${label} -> expected "${expected}", got:\n${output}\n`)
+    failures++
+  }
+}
+
+// A shebang says "run me", and three scripts had one without the bit that
+// makes it true. The defect is a mode, not a string, so it gets its own
+// case rather than an edit. Windows has no such bit and the check there
+// returns early, so neither does this.
+if (process.platform !== 'win32') {
+  const script = join(work, 'scripts', 'validate-rules.mjs')
+  const original = statSync(script).mode
+  chmodSync(script, original & ~0o111)
+  const output = run().text
+  chmodSync(script, original)
+  if (output.includes('has a shebang but is not executable')) {
+    process.stdout.write('neg ok   a script that says run me but cannot be run\n')
+    proved++
+  } else {
+    process.stderr.write(`neg FAIL a script that says run me but cannot be run:\n${output}\n`)
     failures++
   }
 }
@@ -452,7 +477,7 @@ if (failures > 0) {
   process.exit(1)
 }
 process.stdout.write(
-  `\n${CASES.length + CREATED.length} guard(s) fired on the defect each was ` +
+  `\n${proved} guard(s) fired on the defect each was ` +
     `written for, ${SCRIPTS.length} read a CRLF checkout unchanged, ` +
     `${SCRIPTS.length} refused to pass with nothing to read, and the ` +
     `installer did the right thing with a name it does not own\n`,

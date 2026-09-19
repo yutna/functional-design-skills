@@ -417,6 +417,36 @@ function validateNoPackageFilesInPlugin () {
 // content change. .npmrc sets save-exact; this catches a hand-edited range.
 const EXACT_VERSION = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/
 
+// A shebang says "run me". Three scripts had one and no executable bit, so
+// ./scripts/validate-rules.mjs was a permission error while its neighbour
+// worked, and nothing said which was intended. The rule is the file's own
+// first line: a shebang means executable, no shebang means a module nobody
+// runs directly. Skipped on Windows, where the bit does not exist.
+function validateScriptModes () {
+  if (process.platform === 'win32') return
+  const dir = join(ROOT, 'scripts')
+  const walk = (at) => {
+    for (const entry of readdirSync(at)) {
+      const path = join(at, entry)
+      const info = statSync(path)
+      if (info.isDirectory()) {
+        walk(path)
+        continue
+      }
+      const where = path.slice(ROOT.length + 1)
+      const runnable = readMarkdown(path).startsWith('#!')
+      const executable = (info.mode & 0o111) !== 0
+      if (runnable && !executable) {
+        errors.push(`${where}: has a shebang but is not executable`)
+      }
+      if (!runnable && executable) {
+        errors.push(`${where}: is executable but has no shebang`)
+      }
+    }
+  }
+  walk(dir)
+}
+
 function validateExactDependencies () {
   const pkg = readJson('package.json')
   for (const field of ['dependencies', 'devDependencies', 'overrides']) {
@@ -543,6 +573,7 @@ validateManifestVersions()
 validateNoPackageFilesInPlugin()
 validateExactDependencies()
 validateLockVersions()
+validateScriptModes()
 validateEvalNames(skillIds)
 validateParentPack(skillIds)
 if (errors.length === 0) {

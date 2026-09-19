@@ -66,13 +66,19 @@ node scripts/eval-routing.mjs --profile full  # also score the "When to use" sec
   this unless a stated condition holds; `Judgement` means two answers
   are defensible.
 - Every skill carries `metadata.pack`, which the installer reads to tell
-  "already installed" from "another pack owns this name".
+  "already installed" from "another pack owns this name". A name held by
+  something that claims no pack is left alone too, `--force` included.
 - A skill whose name extends another's links to it and repeats no
   paragraph from it.
 - A count written in prose is registered in
   `scripts/validate-counts.mjs`, so it cannot drift from the thing it
   counts.
 - Scripts are JavaScript, shell, or PowerShell, and nothing else.
+- Markdown is read through `scripts/lib/markdown.mjs`, and what a skill,
+  a routing case and a scenario are is settled in `scripts/lib/pack.mjs`.
+  A script that reads a file itself is how three line-ending bugs got in.
+- A file under `scripts/` has a shebang and is executable, or has
+  neither.
 
 ## Adding a skill
 

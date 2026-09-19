@@ -84,6 +84,21 @@ function loadSkills (profile) {
     const spelled = terms(skill.id.replaceAll('-', ' '))
     // What an agent sees before opening the file. The name counts twice
     // because it is the strongest signal the listing carries.
+    //
+    // Twice is not a guess. Measured at 0, 1, 2 and 3 on the current 145
+    // cases, only 2 reaches 145/145 on the gate:
+    //
+    //   0x  top-1 112  top-3 144      1x  top-1 112  top-3 144
+    //   2x  top-1 108  top-3 145      3x  top-1 107  top-3 144
+    //
+    // Weighting the name less wins four first places and loses the gate,
+    // which is the wrong trade: first place is a diagnostic and top three
+    // is the promise. Most of the first places it would win back are
+    // single-word collisions with a skill's own name -- "does it matter"
+    // reaching functional-deciding-what-matters, "a plain module" reaching
+    // functional-choosing-types-or-plain-data -- and those come from the
+    // name itself, so only a rename would fix them. 3.0.0 renamed every
+    // skill once already; it is not worth doing again for a diagnostic.
     const words = [...spelled, ...spelled, ...terms(skill.frontmatter.description ?? '')]
     if (profile === 'full') {
       const section = /## When to use\n([\s\S]*?)\n## /.exec(skill.raw)
