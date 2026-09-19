@@ -1,5 +1,14 @@
 # Contexts and Ecto
 
+## Contents
+
+- [A context is a bounded context](#a-context-is-a-bounded-context)
+- [Schemas are boundary artefacts](#schemas-are-boundary-artefacts)
+- [Changesets as boundary parsers](#changesets-as-boundary-parsers)
+- [Commands and queries](#commands-and-queries)
+- [Transactions](#transactions)
+- [Dependencies](#dependencies)
+
 ## A context is a bounded context
 
 ```text

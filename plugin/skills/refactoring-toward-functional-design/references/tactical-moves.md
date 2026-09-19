@@ -8,6 +8,15 @@ they are mechanical, and each should take a couple of minutes.
 Use them after the strategic moves have decided the shape, or on their
 own when the shape is already right and the code is merely awkward.
 
+## Contents
+
+- [Shaping a function's body](#shaping-a-functions-body)
+- [Removing intermediate state](#removing-intermediate-state)
+- [Shaping a signature](#shaping-a-signature)
+- [Shaping a conditional](#shaping-a-conditional)
+- [The discipline](#the-discipline)
+- [Choosing a tier](#choosing-a-tier)
+
 ## Shaping a function's body
 
 ### Extract Function

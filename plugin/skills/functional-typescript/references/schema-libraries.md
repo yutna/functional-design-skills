@@ -9,6 +9,16 @@ rules.
 quickly and several of the details below changed at a major boundary.
 Check `package.json` before following any example.
 
+## Contents
+
+- [The four questions](#the-four-questions)
+- [The comparison](#the-comparison)
+- [Branding at the boundary](#branding-at-the-boundary)
+- [Accumulating errors](#accumulating-errors)
+- [Do not let the inferred type become the domain type](#do-not-let-the-inferred-type-become-the-domain-type)
+- [Depending on the interface, not the library](#depending-on-the-interface-not-the-library)
+- [What not to do](#what-not-to-do)
+
 ## The four questions
 
 1. **Can the parsed type be branded?** Without it, the boundary produces

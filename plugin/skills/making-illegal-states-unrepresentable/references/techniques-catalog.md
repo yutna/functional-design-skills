@@ -3,6 +3,20 @@
 Each entry: the illegal thing, the type that permits it, and the type
 that does not.
 
+## Contents
+
+- [Correlated optional fields](#correlated-optional-fields)
+- [Empty collection where one is required](#empty-collection-where-one-is-required)
+- [Out-of-range numbers](#out-of-range-numbers)
+- [Wrong string format](#wrong-string-format)
+- [Two identifiers swapped](#two-identifiers-swapped)
+- [Wrong pipeline phase](#wrong-pipeline-phase)
+- [Missing required field filled by a default](#missing-required-field-filled-by-a-default)
+- [Two fields that must agree](#two-fields-that-must-agree)
+- [A state that carries no data](#a-state-that-carries-no-data)
+- [Money in mixed currencies](#money-in-mixed-currencies)
+- [Optional that means two different things](#optional-that-means-two-different-things)
+
 ## Correlated optional fields
 
 Permits a cancelled booking with no reason, and a live booking with one.

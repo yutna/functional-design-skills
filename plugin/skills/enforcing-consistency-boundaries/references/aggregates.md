@@ -1,5 +1,14 @@
 # Finding and Sizing Aggregates
 
+## Contents
+
+- [Procedure](#procedure)
+- [Worked example](#worked-example)
+- [Sizing](#sizing)
+- [Mechanisms for rules that cross](#mechanisms-for-rules-that-cross)
+- [Aggregates in functional code](#aggregates-in-functional-code)
+- [Concurrency, concretely](#concurrency-concretely)
+
 ## Procedure
 
 1. **Write the invariants as sentences.** Each one names the data it

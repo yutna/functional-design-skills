@@ -1,5 +1,11 @@
 # LSP, ISP and DIP in Functional Code
 
+## Contents
+
+- [Liskov substitution: the contract of a function type](#liskov-substitution-the-contract-of-a-function-type)
+- [Interface segregation: narrow the dependency](#interface-segregation-narrow-the-dependency)
+- [Dependency inversion: which way the arrows point](#dependency-inversion-which-way-the-arrows-point)
+
 ## Liskov substitution: the contract of a function type
 
 A function type is a promise. Any function used where that type is

@@ -4,6 +4,18 @@ Not every feature is a decision. This one is a screen, and applying the
 aggregate rules to it makes everything worse. The example shows where the
 write-path discipline stops and what replaces it.
 
+## Contents
+
+- [The request](#the-request)
+- [The wrong first answer](#the-wrong-first-answer)
+- [Why the rules do not apply here](#why-the-rules-do-not-apply-here)
+- [The view type](#the-view-type)
+- [The query](#the-query)
+- [Tolerating imperfect data](#tolerating-imperfect-data)
+- [Where the read model lives](#where-the-read-model-lives)
+- [When to go further](#when-to-go-further)
+- [What this bought](#what-this-bought)
+
 ## The request
 
 > The clinic's front desk needs a board of today's appointments: patient

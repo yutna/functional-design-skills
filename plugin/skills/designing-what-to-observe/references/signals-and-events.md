@@ -1,5 +1,15 @@
 # From Domain Events to Indicators
 
+## Contents
+
+- [The events are already there](#the-events-are-already-there)
+- [Counting](#counting)
+- [Timing](#timing)
+- [Indicators worth having](#indicators-worth-having)
+- [Alerting](#alerting)
+- [Cardinality](#cardinality)
+- [Adding a new event](#adding-a-new-event)
+
 ## The events are already there
 
 A workflow designed as a pipeline returns events, in the domain's words,

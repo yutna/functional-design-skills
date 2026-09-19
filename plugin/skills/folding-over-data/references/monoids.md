@@ -17,6 +17,14 @@ combine a (combine b c) == combine (combine a b) c
 Nothing about this is abstract nonsense; it is the precise condition
 under which a fold can be split, reordered, and run in parallel.
 
+## Contents
+
+- [Familiar examples](#familiar-examples)
+- [What it buys](#what-it-buys)
+- [Checking your own](#checking-your-own)
+- [Semigroups](#semigroups)
+- [Where it shows up in domain code](#where-it-shows-up-in-domain-code)
+
 ## Familiar examples
 
 | Type        | Combine           | Identity |

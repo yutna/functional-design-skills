@@ -3,6 +3,19 @@
 One process built from discovery to composed code: **booking a clinic
 appointment**. Every skill in the pack appears somewhere here.
 
+## Contents
+
+- [1. What the experts said](#1-what-the-experts-said)
+- [2. Types from the vocabulary](#2-types-from-the-vocabulary)
+- [3. The workflow's signature](#3-the-workflows-signature)
+- [4. Stage types](#4-stage-types)
+- [5. Dependencies, in the domain's words](#5-dependencies-in-the-domains-words)
+- [6. The steps](#6-the-steps)
+- [7. Composition](#7-composition)
+- [8. What the shell does](#8-what-the-shell-does)
+- [9. What each decision bought](#9-what-each-decision-bought)
+- [10. Testing it](#10-testing-it)
+
 ## 1. What the experts said
 
 > A patient picks a doctor and a time. We check they're registered and

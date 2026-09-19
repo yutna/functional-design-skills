@@ -3,6 +3,18 @@
 Each entry: what leaks, how to detect it, and how to repair it. Detection
 tests are mechanical; run them on a codebase to find real instances.
 
+## Contents
+
+- [Shared format knowledge](#shared-format-knowledge)
+- [Exposed storage or wire shape](#exposed-storage-or-wire-shape)
+- [Status strings](#status-strings)
+- [Leaked error types](#leaked-error-types)
+- [Pass-through variables](#pass-through-variables)
+- [Exported helpers](#exported-helpers)
+- [Duplicated business rules](#duplicated-business-rules)
+- [Configuration sprawl](#configuration-sprawl)
+- [Temporal module names](#temporal-module-names)
+
 ## Shared format knowledge
 
 **Leak.** Two or more modules parse, build, or validate the same textual

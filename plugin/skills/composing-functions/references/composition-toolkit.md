@@ -4,6 +4,14 @@ Every problem of "these two functions do not fit" is one of a small set
 of shape mismatches. This is the operator for each. Names vary between
 languages; the shapes do not.
 
+## Contents
+
+- [The operators](#the-operators)
+- [The four you will use constantly](#the-four-you-will-use-constantly)
+- [Combining independent results](#combining-independent-results)
+- [Parameter order, precisely](#parameter-order-precisely)
+- [When to stop composing](#when-to-stop-composing)
+
 ## The operators
 
 | You have                               | You want             | Operator    |

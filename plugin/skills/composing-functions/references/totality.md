@@ -4,6 +4,16 @@ A total function returns a value of its declared output type for every
 value of its declared input type. Every deviation is a promise the
 signature makes and the body breaks.
 
+## Contents
+
+- [Find the partiality](#find-the-partiality)
+- [Two repairs](#two-repairs)
+- [Choosing between them](#choosing-between-them)
+- [Totality and the type's honesty](#totality-and-the-types-honesty)
+- [Effects break totality too](#effects-break-totality-too)
+- [Where partial functions are tolerable](#where-partial-functions-are-tolerable)
+- [Verifying totality](#verifying-totality)
+
 ## Find the partiality
 
 Ask four questions of any function:

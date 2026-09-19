@@ -1,5 +1,15 @@
 # Types and Structs in Elixir
 
+## Contents
+
+- [Structs with enforced keys](#structs-with-enforced-keys)
+- [Single-case wrappers](#single-case-wrappers)
+- [Tagged tuples for choices](#tagged-tuples-for-choices)
+- [Guards as constraints](#guards-as-constraints)
+- [Typespecs and Dialyzer](#typespecs-and-dialyzer)
+- [Immutability caveats](#immutability-caveats)
+- [Testing](#testing)
+
 ## Structs with enforced keys
 
 ```elixir

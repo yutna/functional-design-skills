@@ -7,6 +7,14 @@ Knowing exactly where the conflict sits is what lets you decide per value
 instead of per doctrine. The conflict is narrower than the rhetoric on
 either side suggests.
 
+## Contents
+
+- [What each side is optimising for](#what-each-side-is-optimising-for)
+- [Where they agree](#where-they-agree)
+- [Where they conflict](#where-they-conflict)
+- [The disagreement is mostly about tooling](#the-disagreement-is-mostly-about-tooling)
+- [What both agree most codebases get wrong](#what-both-agree-most-codebases-get-wrong)
+
 ## What each side is optimising for
 
 **Type-first** optimises for the mistake that cannot be made. Give every

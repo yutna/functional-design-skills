@@ -3,6 +3,15 @@
 Designing states away is the default, not an absolute. These are the
 cases where a runtime check is correct, and how to keep it contained.
 
+## Contents
+
+- [At the boundary, always](#at-the-boundary-always)
+- [Drafts and work in progress](#drafts-and-work-in-progress)
+- [Rules that depend on the outside world](#rules-that-depend-on-the-outside-world)
+- [Rules that change more often than the code](#rules-that-change-more-often-than-the-code)
+- [Rules that would make the type unreadable](#rules-that-would-make-the-type-unreadable)
+- [Keeping checks contained](#keeping-checks-contained)
+
 ## At the boundary, always
 
 Data from outside arrives in whatever shape the sender chose. There is

@@ -1,5 +1,14 @@
 # Idempotency and Delivery
 
+## Contents
+
+- [Command identity](#command-identity)
+- [Idempotent adapters](#idempotent-adapters)
+- [Writing state and publishing events](#writing-state-and-publishing-events)
+- [De-duplicating on receipt](#de-duplicating-on-receipt)
+- [Ordering](#ordering)
+- [Dead letters](#dead-letters)
+
 ## Command identity
 
 De-duplication is impossible without something to de-duplicate on. That

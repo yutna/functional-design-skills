@@ -12,6 +12,14 @@ what turns "this looks wrong" into something worth acting on.
 
 Read the last two sections before using the list.
 
+## Contents
+
+- [Symptoms that multiply one change](#symptoms-that-multiply-one-change)
+- [Symptoms that raise what a reader must hold](#symptoms-that-raise-what-a-reader-must-hold)
+- [Symptoms that hide what a reader must know](#symptoms-that-hide-what-a-reader-must-know)
+- [Symptoms that only look like symptoms here](#symptoms-that-only-look-like-symptoms-here)
+- [Using a symptom](#using-a-symptom)
+
 ## Symptoms that multiply one change
 
 | Symptom                           | Go to                           |

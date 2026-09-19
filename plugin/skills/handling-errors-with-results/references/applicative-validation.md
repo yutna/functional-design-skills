@@ -5,6 +5,16 @@ wrong for a form, where a person should see every problem at once.
 Accumulation is the alternative: run every independent check, collect all
 the failures, and return them together.
 
+## Contents
+
+- [The shape](#the-shape)
+- [When to accumulate](#when-to-accumulate)
+- [Mixing both in one workflow](#mixing-both-in-one-workflow)
+- [Carrying the field name](#carrying-the-field-name)
+- [Errors that depend on several fields](#errors-that-depend-on-several-fields)
+- [Ordering the output](#ordering-the-output)
+- [Cost](#cost)
+
 ## The shape
 
 ```text

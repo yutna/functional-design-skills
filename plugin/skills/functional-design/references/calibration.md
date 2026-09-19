@@ -6,6 +6,15 @@ comes first, because applying the whole pack to a small task produces
 exactly the thing the pack exists to remove: structure the problem did
 not ask for.
 
+## Contents
+
+- [The rule](#the-rule)
+- [The four sizes](#the-four-sizes)
+- [Over-applying: what it looks like](#over-applying-what-it-looks-like)
+- [Under-applying: what it looks like](#under-applying-what-it-looks-like)
+- [Deciding in the moment](#deciding-in-the-moment)
+- [Re-classifying](#re-classifying)
+
 ## The rule
 
 **Design effort is chosen from what the change will be depended on by,

@@ -2,6 +2,19 @@
 
 The accumulator type for each common shape, and the combining function.
 
+## Contents
+
+- [Sum, count, average](#sum-count-average)
+- [Maximum by a key](#maximum-by-a-key)
+- [Grouping](#grouping)
+- [Deduplicating while preserving order](#deduplicating-while-preserving-order)
+- [Folding with failure](#folding-with-failure)
+- [Accumulating every failure](#accumulating-every-failure)
+- [Early exit](#early-exit)
+- [Folding events into state](#folding-events-into-state)
+- [Building a structure](#building-a-structure)
+- [Folding a map or a tree](#folding-a-map-or-a-tree)
+
 ## Sum, count, average
 
 ```text

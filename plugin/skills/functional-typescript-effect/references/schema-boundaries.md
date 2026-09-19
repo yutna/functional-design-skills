@@ -5,6 +5,17 @@ what crosses the boundary, and a decoded type, which is what the domain
 uses. That is exactly the two type families the core skill asks for, with
 the mapping generated rather than hand-written.
 
+## Contents
+
+- [A schema with branding and constraints](#a-schema-with-branding-and-constraints)
+- [Decoding](#decoding)
+- [Encoding](#encoding)
+- [Unions](#unions)
+- [Custom transformations](#custom-transformations)
+- [Versioning](#versioning)
+- [What not to do](#what-not-to-do)
+- [Testing](#testing)
+
 ## A schema with branding and constraints
 
 ```ts

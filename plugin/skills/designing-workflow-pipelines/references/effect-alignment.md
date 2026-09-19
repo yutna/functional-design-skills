@@ -5,6 +5,16 @@ asynchronous. They do not compose directly, and the fix is to lift each
 one into the pipeline's common shape rather than to give up and use
 imperative glue.
 
+## Contents
+
+- [The three shapes](#the-three-shapes)
+- [Lifting](#lifting)
+- [Keep steps at their natural shape](#keep-steps-at-their-natural-shape)
+- [Aligning error types](#aligning-error-types)
+- [Lists inside a pipeline](#lists-inside-a-pipeline)
+- [Parallel steps](#parallel-steps)
+- [Where the effects actually run](#where-the-effects-actually-run)
+
 ## The three shapes
 
 ```text

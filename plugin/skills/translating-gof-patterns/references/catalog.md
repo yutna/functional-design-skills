@@ -3,6 +3,28 @@
 For each: what it solves, the functional form, and when it is still worth
 naming.
 
+## Contents
+
+- [Strategy](#strategy)
+- [Command](#command)
+- [Factory and Abstract Factory](#factory-and-abstract-factory)
+- [Template Method](#template-method)
+- [Decorator](#decorator)
+- [Adapter](#adapter)
+- [Facade](#facade)
+- [Observer](#observer)
+- [Iterator](#iterator)
+- [State](#state)
+- [Composite](#composite)
+- [Visitor](#visitor)
+- [Singleton](#singleton)
+- [Builder](#builder)
+- [Chain of Responsibility](#chain-of-responsibility)
+- [Memento](#memento)
+- [Flyweight](#flyweight)
+- [Interpreter](#interpreter)
+- [Mediator](#mediator)
+
 ## Strategy
 
 **Solves:** letting one step of an algorithm vary.

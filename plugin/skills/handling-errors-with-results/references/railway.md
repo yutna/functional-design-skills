@@ -12,6 +12,16 @@ input --------|               |            |
               +--------- error track ---------------------> Error
 ```
 
+## Contents
+
+- [Adapting functions to the tracks](#adapting-functions-to-the-tracks)
+- [Composing switches](#composing-switches)
+- [Aligning error types](#aligning-error-types)
+- [Working with collections](#working-with-collections)
+- [Recovering onto the success track](#recovering-onto-the-success-track)
+- [Effects on the tracks](#effects-on-the-tracks)
+- [What the model does not solve](#what-the-model-does-not-solve)
+
 ## Adapting functions to the tracks
 
 Functions come in four shapes. Each needs a different adapter to join a

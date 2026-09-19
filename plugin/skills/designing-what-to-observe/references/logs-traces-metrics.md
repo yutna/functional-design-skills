@@ -9,6 +9,16 @@ one for another's job is the most common waste.
 | Trace  | Where did this request spend | Span volume    |
 | Log    | What exactly happened, once  | Bytes retained |
 
+## Contents
+
+- [Where the projection is written](#where-the-projection-is-written)
+- [Correlation](#correlation)
+- [Log records](#log-records)
+- [Traces](#traces)
+- [Sampling](#sampling)
+- [What must never be recorded](#what-must-never-be-recorded)
+- [Retention](#retention)
+
 ## Where the projection is written
 
 The core returns events; something in the shell turns each one into the

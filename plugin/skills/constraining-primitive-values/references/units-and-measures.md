@@ -4,6 +4,15 @@ Numbers with units are where primitive obsession does the most visible
 damage: the failures are silent, and they are wrong by a factor rather
 than being obviously broken.
 
+## Contents
+
+- [Put the unit in the type](#put-the-unit-in-the-type)
+- [Money](#money)
+- [Quantities and rates](#quantities-and-rates)
+- [Percentages](#percentages)
+- [Time](#time)
+- [What arithmetic to expose](#what-arithmetic-to-expose)
+
 ## Put the unit in the type
 
 ```text

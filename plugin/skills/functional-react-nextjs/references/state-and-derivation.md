@@ -1,5 +1,15 @@
 # State and Derivation
 
+## Contents
+
+- [What to store](#what-to-store)
+- [Reducers as pure state machines](#reducers-as-pure-state-machines)
+- [When an effect is right](#when-an-effect-is-right)
+- [Fetching](#fetching)
+- [Keeping rules out of components](#keeping-rules-out-of-components)
+- [Components as deep modules](#components-as-deep-modules)
+- [Immutability](#immutability)
+
 ## What to store
 
 Store the smallest set of facts from which everything on screen follows.

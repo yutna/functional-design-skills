@@ -6,6 +6,16 @@ the innermost layer is pure. In functional code the rule needs no
 container, no interface hierarchy, and no framework, because a function
 type is already the port and a function is already the adapter.
 
+## Contents
+
+- [The mapping](#the-mapping)
+- [The shell is not one thing](#the-shell-is-not-one-thing)
+- [Where events go](#where-events-go)
+- [Where transactions go](#where-transactions-go)
+- [Long-running processes](#long-running-processes)
+- [Frontend applications](#frontend-applications)
+- [When the shell grows rules](#when-the-shell-grows-rules)
+
 ## The mapping
 
 | Term in the literature | In functional code                    |

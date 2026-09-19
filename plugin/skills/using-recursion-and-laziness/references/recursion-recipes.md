@@ -1,5 +1,15 @@
 # Recursion Recipes
 
+## Contents
+
+- [Turning a non-tail call into a tail call](#turning-a-non-tail-call-into-a-tail-call)
+- [When the recursion is not linear](#when-the-recursion-is-not-linear)
+- [Trampolines](#trampolines)
+- [Mutual recursion](#mutual-recursion)
+- [Unfold: recursion that builds](#unfold-recursion-that-builds)
+- [Structural recursion and termination](#structural-recursion-and-termination)
+- [Testing recursive functions](#testing-recursive-functions)
+
 ## Turning a non-tail call into a tail call
 
 Move the work that happens after the call into an accumulator passed

@@ -1,5 +1,13 @@
 # The Four Techniques, Worked
 
+## Contents
+
+- [1. Define the error out of existence](#1-define-the-error-out-of-existence)
+- [2. Mask it](#2-mask-it)
+- [3. Aggregate the handling](#3-aggregate-the-handling)
+- [4. Crash](#4-crash)
+- [Applying the four in order](#applying-the-four-in-order)
+
 ## 1. Define the error out of existence
 
 Change what the operation means so the awkward case becomes ordinary.

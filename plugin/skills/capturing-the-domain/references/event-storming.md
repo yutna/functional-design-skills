@@ -4,6 +4,18 @@ A discovery session that produces a model in hours instead of weeks. It
 works because events are concrete: people who cannot describe a process
 in the abstract can always say what happened.
 
+## Contents
+
+- [Setup](#setup)
+- [Step 1: events, past tense](#step-1-events-past-tense)
+- [Step 2: order them, and find the gaps](#step-2-order-them-and-find-the-gaps)
+- [Step 3: what caused each event](#step-3-what-caused-each-event)
+- [Step 4: group into workflows](#step-4-group-into-workflows)
+- [Step 5: mine the disagreements](#step-5-mine-the-disagreements)
+- [Step 6: turn it into types](#step-6-turn-it-into-types)
+- [What to do with the output](#what-to-do-with-the-output)
+- [Running it alone](#running-it-alone)
+
 ## Setup
 
 Everyone who knows part of the process in one place, with one shared

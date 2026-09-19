@@ -1,5 +1,16 @@
 # Result in TypeScript
 
+## Contents
+
+- [The type and its helpers](#the-type-and-its-helpers)
+- [Piping](#piping)
+- [Early return, the TypeScript idiom](#early-return-the-typescript-idiom)
+- [Collections](#collections)
+- [Async](#async)
+- [Converting at the boundary](#converting-at-the-boundary)
+- [Error types](#error-types)
+- [Should a library be used instead?](#should-a-library-be-used-instead)
+
 ## The type and its helpers
 
 ```ts

@@ -4,6 +4,20 @@ A transfer type, or DTO, exists to cross a boundary. It is built from
 whatever primitives the format supports, has no invariants, and is never
 used to make a decision.
 
+## Contents
+
+- [Single-case wrappers](#single-case-wrappers)
+- [Choice types](#choice-types)
+- [Collections with constraints](#collections-with-constraints)
+- [Optional values](#optional-values)
+- [Money](#money)
+- [Timestamps](#timestamps)
+- [Aggregates](#aggregates)
+- [Where the mapping lives](#where-the-mapping-lives)
+- [Versioning](#versioning)
+- [Tolerant reading](#tolerant-reading)
+- [Testing the mapping](#testing-the-mapping)
+
 ## Single-case wrappers
 
 ```text

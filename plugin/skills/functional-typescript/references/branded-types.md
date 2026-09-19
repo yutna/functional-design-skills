@@ -4,6 +4,17 @@ TypeScript is structurally typed: two types with the same shape are
 interchangeable. A brand adds a phantom property that exists only at
 compile time, making the type nominal.
 
+## Contents
+
+- [The brand helper](#the-brand-helper)
+- [A branded type with a parser](#a-branded-type-with-a-parser)
+- [Normalise before validating](#normalise-before-validating)
+- [Branding numbers and dates](#branding-numbers-and-dates)
+- [Identifiers](#identifiers)
+- [Rehydrating from a trusted store](#rehydrating-from-a-trusted-store)
+- [Where brands do not help](#where-brands-do-not-help)
+- [Testing a branded type](#testing-a-branded-type)
+
 ## The brand helper
 
 ```ts

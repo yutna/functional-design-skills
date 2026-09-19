@@ -8,6 +8,15 @@ this complexity in the problem, or did we add it? The necessity question
 comes first, because complexity you added should be deleted, and no
 amount of refactoring deletes it.
 
+## Contents
+
+- [The distinction](#the-distinction)
+- [The three sources of accidental complexity](#the-three-sources-of-accidental-complexity)
+- [Diagnosing with this axis](#diagnosing-with-this-axis)
+- [A worked example](#a-worked-example)
+- [Taking the distinction into the architecture](#taking-the-distinction-into-the-architecture)
+- [The trap](#the-trap)
+
 ## The distinction
 
 **Essential complexity** is inherent in the problem, as stated by the

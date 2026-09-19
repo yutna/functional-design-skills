@@ -6,6 +6,16 @@ serialisation across it. Treat it exactly as
 describes: two type families, an explicit mapping, and validation on the
 way in.
 
+## Contents
+
+- [What goes where](#what-goes-where)
+- [Passing data across](#passing-data-across)
+- [Server Actions as workflows](#server-actions-as-workflows)
+- [Forms and accumulated errors](#forms-and-accumulated-errors)
+- [Optimistic updates](#optimistic-updates)
+- [Caching and revalidation](#caching-and-revalidation)
+- [Testing across the boundary](#testing-across-the-boundary)
+
 ## What goes where
 
 | Concern                    | Side   |

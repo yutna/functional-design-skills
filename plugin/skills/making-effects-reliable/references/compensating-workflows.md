@@ -5,6 +5,15 @@ them. The alternative is to make each step separately committable, and to
 define an explicit undo for each one that has already run when a later
 step fails.
 
+## Contents
+
+- [The shape](#the-shape)
+- [The process manager](#the-process-manager)
+- [Rules](#rules)
+- [When a process manager is the wrong answer](#when-a-process-manager-is-the-wrong-answer)
+- [Timeouts as events](#timeouts-as-events)
+- [Testing](#testing)
+
 ## The shape
 
 ```text

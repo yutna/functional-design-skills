@@ -4,6 +4,20 @@ Targets Effect 3. Verify against the installed version before writing
 code; the type parameter order and several module names changed at the
 3.0 boundary.
 
+## Contents
+
+- [The type](#the-type)
+- [Keep pure things pure](#keep-pure-things-pure)
+- [Composition](#composition)
+- [Tagged errors](#tagged-errors)
+- [Converting foreign failures](#converting-foreign-failures)
+- [Failures and defects](#failures-and-defects)
+- [Retry, timeout, concurrency](#retry-timeout-concurrency)
+- [Resources](#resources)
+- [Running](#running)
+- [Option and Either](#option-and-either)
+- [Matching](#matching)
+
 ## The type
 
 ```ts

@@ -4,6 +4,16 @@ Core skills in this pack describe designs in the notation below. It is
 deliberately not any real language: the point is that the rule survives
 translation. Language packs show the same shapes in real syntax.
 
+## Contents
+
+- [Type declarations](#type-declarations)
+- [Function signatures](#function-signatures)
+- [Composition and pipelines](#composition-and-pipelines)
+- [Standard types](#standard-types)
+- [Matching](#matching)
+- [Effects](#effects)
+- [Translating to a real language](#translating-to-a-real-language)
+
 ## Type declarations
 
 ```text

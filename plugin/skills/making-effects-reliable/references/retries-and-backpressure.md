@@ -1,5 +1,15 @@
 # Retries and Backpressure
 
+## Contents
+
+- [Where retries belong](#where-retries-belong)
+- [Retry only what is worth retrying](#retry-only-what-is-worth-retrying)
+- [Budgets, not attempt counts](#budgets-not-attempt-counts)
+- [Backoff and jitter](#backoff-and-jitter)
+- [Circuit breaking](#circuit-breaking)
+- [Backpressure](#backpressure)
+- [Timeouts](#timeouts)
+
 ## Where retries belong
 
 At the shell, wrapping the adapter, never inside a domain step. A domain

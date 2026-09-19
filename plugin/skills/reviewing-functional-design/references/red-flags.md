@@ -2,6 +2,13 @@
 
 Each flag: how to detect it, what it costs, and the repair.
 
+## Contents
+
+- [Structural flags](#structural-flags)
+- [Modelling flags](#modelling-flags)
+- [Contract flags](#contract-flags)
+- [Communication flags](#communication-flags)
+
 ## Structural flags
 
 ### Shallow module

@@ -4,6 +4,21 @@ Every rule in this pack, compressed. Use it as a checklist when there is
 no time to read a skill, and follow the link when a line needs its
 reasoning.
 
+## Contents
+
+- [Complexity](#complexity)
+- [Modules and interfaces](#modules-and-interfaces)
+- [Types and the domain](#types-and-the-domain)
+- [Representation](#representation)
+- [Functions and workflows](#functions-and-workflows)
+- [Errors](#errors)
+- [Effects and state](#effects-and-state)
+- [Mechanics](#mechanics)
+- [Reliability, once effects cross a process](#reliability-once-effects-cross-a-process)
+- [Observability, as a design decision](#observability-as-a-design-decision)
+- [Communication](#communication)
+- [Verification](#verification)
+
 ## Complexity
 
 1. Complexity is what makes a system hard to change, not what makes it

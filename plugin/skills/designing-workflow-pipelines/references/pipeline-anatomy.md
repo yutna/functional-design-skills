@@ -1,5 +1,17 @@
 # Pipeline Anatomy
 
+## Contents
+
+- [The signature comes first](#the-signature-comes-first)
+- [Input: the command](#input-the-command)
+- [Stage types](#stage-types)
+- [Dependencies](#dependencies)
+- [One error type per workflow](#one-error-type-per-workflow)
+- [Output: events, not actions](#output-events-not-actions)
+- [Sizing the steps](#sizing-the-steps)
+- [Sub-steps](#sub-steps)
+- [Reading the pipeline back](#reading-the-pipeline-back)
+
 ## The signature comes first
 
 Write this before any step exists. It is the contract, and getting it

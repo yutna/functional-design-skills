@@ -244,6 +244,32 @@ function validateBody (id, rawBody) {
   }
 }
 
+// A reference long enough to scroll needs a way in. Without one the reader
+// either reads all of it or gives up, and a skill that points at a section
+// of it has made a promise the file does not keep. Two sections do not make
+// a list worth reading, so the rule wants length and breadth together.
+const CONTENTS_THRESHOLD = 100
+const CONTENTS_MIN_SECTIONS = 3
+
+function validateContentsList (id, dir) {
+  let files
+  try {
+    files = readdirSync(join(dir, 'references'))
+  } catch {
+    return
+  }
+  for (const file of files) {
+    if (!file.endsWith('.md')) continue
+    const text = readFileSync(join(dir, 'references', file), 'utf8')
+    const lines = text.split(/\r?\n/).length
+    if (lines <= CONTENTS_THRESHOLD) continue
+    if (/^## Contents$/m.test(text)) continue
+    const sections = (stripFences(text).match(/^## .+$/gm) ?? []).length
+    if (sections < CONTENTS_MIN_SECTIONS) continue
+    fail(id, `references/${file} is ${lines} lines and has no contents list`)
+  }
+}
+
 // A reference linked only from the index is unreachable from the skill that
 // owns it: a reader inside that skill never learns it exists. Both
 // worked-read-model.md and worked-refactor.md were in that state.
@@ -273,13 +299,39 @@ function validateReferences (id, dir, body) {
   }
 }
 
-// Every relative link in every shipped file must resolve. Skills are copied
-// into other people's projects, where a broken link is a dead end with no
-// repository around it to search.
+// The slug a heading gets in rendered Markdown: lower-cased, with anything
+// that is not a letter, digit, space or hyphen removed, and spaces hyphenated.
+function slugOf (heading) {
+  return heading
+    .toLowerCase()
+    .replace(/`/g, '')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/[^\w\s-]/g, '')
+    .trim()
+    .replace(/\s/g, '-')
+}
+
+function anchorsIn (text) {
+  const slugs = new Set()
+  for (const line of stripFences(text).split(/\r?\n/)) {
+    const heading = /^#{1,6}\s+(.+?)\s*$/.exec(line)
+    if (heading) slugs.add(slugOf(heading[1]))
+  }
+  return slugs
+}
+
+// Every relative link in every shipped file must resolve, and so must every
+// anchor. Skills are copied into other people's projects, where a broken link
+// is a dead end with no repository around it to search — and the contents list
+// at the top of each long reference is written by a script, so a slug bug
+// would produce dozens of dead links at once.
 function validateLinks () {
-  // The capture is the path; a trailing #anchor is dropped, and a link that
-  // is only an anchor points within the same file and has nothing to resolve.
-  const link = /\[[^\]]*\]\(([^)\s#]*)(?:#[^)\s]*)?\)/g
+  const link = /\[[^\]]*\]\(([^)\s#]*)(?:#([^)\s]*))?\)/g
+  const anchors = new Map()
+  const anchorsFor = (path) => {
+    if (!anchors.has(path)) anchors.set(path, anchorsIn(readFileSync(path, 'utf8')))
+    return anchors.get(path)
+  }
   const walk = (dir) => {
     for (const entry of readdirSync(dir)) {
       const path = join(dir, entry)
@@ -288,12 +340,19 @@ function validateLinks () {
         continue
       }
       if (!entry.endsWith('.md')) continue
+      const where = path.slice(ROOT.length + 1)
       const text = readFileSync(path, 'utf8')
-      for (const [, href] of text.matchAll(link)) {
-        if (href === '') continue
+      for (const [, href, anchor] of text.matchAll(link)) {
         if (/^(https?:|mailto:)/.test(href)) continue
-        if (!existsSync(join(dirname(path), href))) {
-          errors.push(`${path.slice(ROOT.length + 1)}: broken link -> ${href}`)
+        const target = href === '' ? path : join(dirname(path), href)
+        if (!existsSync(target)) {
+          errors.push(`${where}: broken link -> ${href}`)
+          continue
+        }
+        if (anchor === undefined || anchor === '') continue
+        if (!target.endsWith('.md')) continue
+        if (!anchorsFor(target).has(anchor)) {
+          errors.push(`${where}: no heading matches the anchor #${anchor}`)
         }
       }
     }
@@ -335,6 +394,7 @@ function validateSkill (id) {
   validateVersion(id, frontmatter)
   validateBody(id, match[2])
   validateReferences(id, dir, match[2])
+  validateContentsList(id, dir)
 }
 
 function validateManifestVersions () {

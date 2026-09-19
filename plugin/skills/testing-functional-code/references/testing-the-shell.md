@@ -3,6 +3,16 @@
 The shell is where tests are expensive, so the goal is few of them, each
 proving something the core tests cannot.
 
+## Contents
+
+- [What the shell tests must prove](#what-the-shell-tests-must-prove)
+- [What they must not do](#what-they-must-not-do)
+- [Fakes for capabilities](#fakes-for-capabilities)
+- [Time, randomness, identifiers](#time-randomness-identifiers)
+- [Testing concurrency without threads](#testing-concurrency-without-threads)
+- [How many is enough](#how-many-is-enough)
+- [End-to-end tests](#end-to-end-tests)
+
 ## What the shell tests must prove
 
 1. **The wiring is right.** The composition root supplies the intended

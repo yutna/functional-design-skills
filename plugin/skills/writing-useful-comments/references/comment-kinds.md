@@ -1,5 +1,15 @@
 # Kinds of Comment
 
+## Contents
+
+- [Interface comments](#interface-comments)
+- [Implementation comments](#implementation-comments)
+- [Cross-module comments](#cross-module-comments)
+- [Rationale comments](#rationale-comments)
+- [Data comments](#data-comments)
+- [Module comments](#module-comments)
+- [Comments to delete on sight](#comments-to-delete-on-sight)
+
 ## Interface comments
 
 Written for a caller who will never read the implementation. Above the

@@ -4,6 +4,17 @@ A service is a declared dependency; a layer is how one is built. Together
 they are dependency parameterization with the compiler tracking which
 dependencies each piece of code needs.
 
+## Contents
+
+- [Declaring a service](#declaring-a-service)
+- [Using a service](#using-a-service)
+- [Building a layer](#building-a-layer)
+- [Composing layers](#composing-layers)
+- [Providing, once, at the edge](#providing-once-at-the-edge)
+- [Testing without mocks](#testing-without-mocks)
+- [Configuration](#configuration)
+- [When a service is too much](#when-a-service-is-too-much)
+
 ## Declaring a service
 
 ```ts

@@ -3,6 +3,14 @@
 Not every thin function is waste. This is the test set for deciding
 whether a layer is doing work.
 
+## Contents
+
+- [The test](#the-test)
+- [Worked cases](#worked-cases)
+- [Decorators specifically](#decorators-specifically)
+- [Counting hops](#counting-hops)
+- [The second axis: how often each layer changes](#the-second-axis-how-often-each-layer-changes)
+
 ## The test
 
 A function or module earns its layer if it does at least one of these:

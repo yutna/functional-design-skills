@@ -4,6 +4,19 @@ Three systems, none of them yours, all of them able to fail after
 succeeding. The example builds the process manager for a clinic booking
 that must reserve a slot, take payment, and issue a ticket.
 
+## Contents
+
+- [The request](#the-request)
+- [Step 1: give the intent an identity](#step-1-give-the-intent-an-identity)
+- [Step 2: model the process as states](#step-2-model-the-process-as-states)
+- [Step 3: the transition function](#step-3-the-transition-function)
+- [Step 4: make every effect idempotent](#step-4-make-every-effect-idempotent)
+- [Step 5: the shell loop](#step-5-the-shell-loop)
+- [Step 6: bound everything](#step-6-bound-everything)
+- [Step 7: make it visible](#step-7-make-it-visible)
+- [What this bought](#what-this-bought)
+- [Testing it](#testing-it)
+
 ## The request
 
 > Booking a paid appointment holds the slot, charges the card, and issues

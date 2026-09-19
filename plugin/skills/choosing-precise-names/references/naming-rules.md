@@ -1,5 +1,17 @@
 # Naming Rules by Kind
 
+## Contents
+
+- [Types](#types)
+- [Functions](#functions)
+- [Predicates](#predicates)
+- [Fields and values](#fields-and-values)
+- [Parameters](#parameters)
+- [Modules](#modules)
+- [Length against scope](#length-against-scope)
+- [Abbreviations](#abbreviations)
+- [Consistency across a codebase](#consistency-across-a-codebase)
+
 ## Types
 
 Nouns from the domain. Say what a value of the type is, not what it

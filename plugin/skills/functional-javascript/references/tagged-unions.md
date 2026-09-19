@@ -1,5 +1,14 @@
 # Tagged Unions in JavaScript
 
+## Contents
+
+- [The convention](#the-convention)
+- [Constructors](#constructors)
+- [Dispatch](#dispatch)
+- [The exhaustiveness test](#the-exhaustiveness-test)
+- [JSDoc types](#jsdoc-types)
+- [Serialising](#serialising)
+
 ## The convention
 
 One tag key for the whole codebase, and tag values defined as frozen

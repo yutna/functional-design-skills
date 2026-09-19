@@ -4,6 +4,16 @@ The design survives in dynamically typed languages; only the enforcement
 moves from compile time to construction time and test time. The rules
 below give most of the benefit at a small cost.
 
+## Contents
+
+- [Represent a choice as a tagged value](#represent-a-choice-as-a-tagged-value)
+- [Construct only through constructor functions](#construct-only-through-constructor-functions)
+- [Dispatch exhaustively](#dispatch-exhaustively)
+- [Test that every case is covered](#test-that-every-case-is-covered)
+- [Use whatever static help the language offers](#use-whatever-static-help-the-language-offers)
+- [Validate at the boundary, then trust](#validate-at-the-boundary-then-trust)
+- [What you genuinely lose](#what-you-genuinely-lose)
+
 ## Represent a choice as a tagged value
 
 Pick one tag key and use it everywhere in the codebase. Consistency

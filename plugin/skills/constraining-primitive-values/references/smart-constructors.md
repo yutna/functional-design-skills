@@ -4,6 +4,16 @@ A smart constructor is the only way to build a value of a constrained
 type. It takes a raw input, applies every rule the type promises, and
 returns either the value or a description of what was wrong.
 
+## Contents
+
+- [Why it returns a value rather than a verdict](#why-it-returns-a-value-rather-than-a-verdict)
+- [The shape](#the-shape)
+- [Normalise before validating](#normalise-before-validating)
+- [Design the error type](#design-the-error-type)
+- [Variants of the constructor](#variants-of-the-constructor)
+- [Testing a smart constructor](#testing-a-smart-constructor)
+- [Placing constructors in a pipeline](#placing-constructors-in-a-pipeline)
+
 ## Why it returns a value rather than a verdict
 
 The constructor above could have been a check. It is not, and the

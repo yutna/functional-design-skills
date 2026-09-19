@@ -3,6 +3,14 @@
 Not every failure deserves the same mechanism. Classify first; the
 mechanism follows.
 
+## Contents
+
+- [The four kinds](#the-four-kinds)
+- [Deciding](#deciding)
+- [What errors should carry](#what-errors-should-carry)
+- [Converting at the boundary](#converting-at-the-boundary)
+- [Logging](#logging)
+
 ## The four kinds
 
 | Kind            | Definition                        | Mechanism        |

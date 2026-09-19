@@ -1,5 +1,15 @@
 # Result and Async in JavaScript
 
+## Contents
+
+- [The helpers](#the-helpers)
+- [Collections](#collections)
+- [Accumulating field errors](#accumulating-field-errors)
+- [Promises](#promises)
+- [Converting at the boundary](#converting-at-the-boundary)
+- [Parallel work](#parallel-work)
+- [What to throw](#what-to-throw)
+
 ## The helpers
 
 ```js

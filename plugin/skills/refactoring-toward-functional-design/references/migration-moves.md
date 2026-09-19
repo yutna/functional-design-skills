@@ -3,6 +3,21 @@
 Each move is small, behaviour-preserving, and independently valuable.
 Apply in order where possible; each makes the next easier.
 
+## Contents
+
+- [1. Wrap primitives in domain types](#1-wrap-primitives-in-domain-types)
+- [2. Replace status strings with choice types](#2-replace-status-strings-with-choice-types)
+- [3. Collapse correlated optionals into cases](#3-collapse-correlated-optionals-into-cases)
+- [4. Return `Result` instead of throwing](#4-return-result-instead-of-throwing)
+- [5. Pass the clock, random, and identifiers in](#5-pass-the-clock-random-and-identifiers-in)
+- [6. Turn a service parameter into function types](#6-turn-a-service-parameter-into-function-types)
+- [7. Extract the pure decision from the effects](#7-extract-the-pure-decision-from-the-effects)
+- [8. Give the workflow stage types](#8-give-the-workflow-stage-types)
+- [9. Add a boundary mapping and split the DTO](#9-add-a-boundary-mapping-and-split-the-dto)
+- [10. Make the aggregate opaque](#10-make-the-aggregate-opaque)
+- [Order and pacing](#order-and-pacing)
+- [Move 0: pin what it does now](#move-0-pin-what-it-does-now)
+
 ## 1. Wrap primitives in domain types
 
 **Mechanics.** Create the wrapper and its parser in one module. Change

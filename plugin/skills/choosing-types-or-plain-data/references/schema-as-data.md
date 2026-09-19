@@ -7,6 +7,17 @@ is what the generic route was supposed to prevent.
 This file is the discipline. If a project is not going to follow it, model
 the type instead.
 
+## Contents
+
+- [The schema is a value](#the-schema-is-a-value)
+- [One parse at the edge](#one-parse-at-the-edge)
+- [Keys are constants, not literals](#keys-are-constants-not-literals)
+- [Accessors, not paths](#accessors-not-paths)
+- [Dispatch on data, and test the dispatch](#dispatch-on-data-and-test-the-dispatch)
+- [Version the schema, because stored data outlives it](#version-the-schema-because-stored-data-outlives-it)
+- [What you still model on this route](#what-you-still-model-on-this-route)
+- [Checklist](#checklist)
+
 ## The schema is a value
 
 The point of separating schema from representation is that the schema

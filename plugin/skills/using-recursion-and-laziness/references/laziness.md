@@ -3,6 +3,16 @@
 A lazy value is a computation that has not run. It runs when something
 demands its result, and, in most implementations, at most once.
 
+## Contents
+
+- [What laziness is for](#what-laziness-is-for)
+- [What laziness is not for](#what-laziness-is-not-for)
+- [The leak pattern](#the-leak-pattern)
+- [Streams and effects](#streams-and-effects)
+- [Traversing twice](#traversing-twice)
+- [Choosing strict or lazy](#choosing-strict-or-lazy)
+- [Laziness in strict languages](#laziness-in-strict-languages)
+
 ## What laziness is for
 
 **Sequences without a fixed size.** Describe the sequence, consume a

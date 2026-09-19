@@ -1,5 +1,17 @@
 # Pattern Vocabulary
 
+## Contents
+
+- [The shape of a match](#the-shape-of-a-match)
+- [Literal and structural patterns](#literal-and-structural-patterns)
+- [Wildcards](#wildcards)
+- [Combinators](#combinators)
+- [Guards](#guards)
+- [Selection](#selection)
+- [Typing the result](#typing-the-result)
+- [Where `.otherwise()` is legitimate](#where-otherwise-is-legitimate)
+- [Interaction with the design rules](#interaction-with-the-design-rules)
+
 ## The shape of a match
 
 ```ts

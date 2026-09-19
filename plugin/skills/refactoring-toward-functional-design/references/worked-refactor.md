@@ -5,6 +5,22 @@ One legacy service moved through the ten moves in
 between. Nothing here is a rewrite: at every point the service still
 works and still ships.
 
+## Contents
+
+- [The starting point](#the-starting-point)
+- [Commit 1 — wrap primitives](#commit-1--wrap-primitives)
+- [Commit 2 — status string to a choice type](#commit-2--status-string-to-a-choice-type)
+- [Commit 3 — collapse the correlated fields](#commit-3--collapse-the-correlated-fields)
+- [Commit 4 — return `Result` instead of throwing](#commit-4--return-result-instead-of-throwing)
+- [Commit 5 — pass the clock in](#commit-5--pass-the-clock-in)
+- [Commit 6 — narrow the dependencies](#commit-6--narrow-the-dependencies)
+- [Commit 7 — extract the pure decision](#commit-7--extract-the-pure-decision)
+- [Commit 8 — stage types](#commit-8--stage-types)
+- [Commit 9 — split the DTO](#commit-9--split-the-dto)
+- [Commit 10 — make the aggregate opaque](#commit-10--make-the-aggregate-opaque)
+- [What each commit bought](#what-each-commit-bought)
+- [What did not happen](#what-did-not-happen)
+
 ## The starting point
 
 ```text

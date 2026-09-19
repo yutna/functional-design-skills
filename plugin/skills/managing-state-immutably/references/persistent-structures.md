@@ -5,6 +5,15 @@ sharing everything unchanged with the previous version. That is what
 makes immutability affordable: "copying" a large map to change one key
 does not copy the map.
 
+## Contents
+
+- [Structural sharing](#structural-sharing)
+- [Choosing the structure](#choosing-the-structure)
+- [Cost model](#cost-model)
+- [Batch updates](#batch-updates)
+- [Immutability in languages without persistent collections](#immutability-in-languages-without-persistent-collections)
+- [Recursion and old versions](#recursion-and-old-versions)
+
 ## Structural sharing
 
 A list built by prepending shares its whole tail:

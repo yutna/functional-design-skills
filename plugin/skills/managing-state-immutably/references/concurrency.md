@@ -5,6 +5,16 @@ observed half-changed. What remains is coordinating updates to the few
 cells that do change, and the failure modes that immutability does not
 address.
 
+## Contents
+
+- [The update cycle](#the-update-cycle)
+- [Choosing the coordination primitive](#choosing-the-coordination-primitive)
+- [Idempotency](#idempotency)
+- [Reading two sequences against each other](#reading-two-sequences-against-each-other)
+- [What immutability does not fix](#what-immutability-does-not-fix)
+- [Parallelism as a free gain](#parallelism-as-a-free-gain)
+- [Testing concurrent state](#testing-concurrent-state)
+
 ## The update cycle
 
 Every state change, whether in memory or in a database, has the same

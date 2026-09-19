@@ -3,6 +3,14 @@
 Each case names the fact that settled it. None is settled by how much
 typing it saved.
 
+## Contents
+
+- [Case 1 — an amount on one endpoint](#case-1--an-amount-on-one-endpoint)
+- [Case 2 — a form whose fields an admin defines](#case-2--a-form-whose-fields-an-admin-defines)
+- [Case 3 — a report the user configures](#case-3--a-report-the-user-configures)
+- [Case 4 — a webhook payload that is stored and replayed](#case-4--a-webhook-payload-that-is-stored-and-replayed)
+- [What the four cases have in common](#what-the-four-cases-have-in-common)
+
 ## Case 1 — an amount on one endpoint
 
 **Situation.** A new endpoint accepts a refund amount. It is used in one

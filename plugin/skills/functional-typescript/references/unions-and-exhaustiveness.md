@@ -1,5 +1,16 @@
 # Discriminated Unions and Exhaustiveness
 
+## Contents
+
+- [The shape](#the-shape)
+- [Narrowing](#narrowing)
+- [Exhaustiveness](#exhaustiveness)
+- [Extracting one case](#extracting-one-case)
+- [Constructors](#constructors)
+- [Unions of primitives](#unions-of-primitives)
+- [Parsing a union from outside](#parsing-a-union-from-outside)
+- [Non-empty lists](#non-empty-lists)
+
 ## The shape
 
 A union of object types sharing a literal-typed field. Use one field name

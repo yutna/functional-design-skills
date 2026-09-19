@@ -3,6 +3,17 @@
 Storage is a boundary with three additional concerns: transactions,
 identity, and concurrency. The domain stays ignorant of all three.
 
+## Contents
+
+- [The shape](#the-shape)
+- [Read, decide, write](#read-decide-write)
+- [Concurrency](#concurrency)
+- [Commands and queries](#commands-and-queries)
+- [Storing choice types](#storing-choice-types)
+- [Storing events](#storing-events)
+- [Identity](#identity)
+- [Migrations](#migrations)
+
 ## The shape
 
 ```text

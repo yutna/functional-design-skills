@@ -4,6 +4,16 @@ The task: approve a refund if the booking exists, is less than sixty days
 old, and the amount does not exceed the customer's refund allowance for
 the month.
 
+## Contents
+
+- [Strategy 1: dependency rejection](#strategy-1-dependency-rejection)
+- [Strategy 2: dependency parameterization](#strategy-2-dependency-parameterization)
+- [Strategy 3: interpretation](#strategy-3-interpretation)
+- [Choosing](#choosing)
+- [Time, randomness and identifiers](#time-randomness-and-identifiers)
+- [Configuration](#configuration)
+- [The composition root](#the-composition-root)
+
 ## Strategy 1: dependency rejection
 
 The shell gathers everything, then a pure function decides.

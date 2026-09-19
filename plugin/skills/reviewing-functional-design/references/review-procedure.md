@@ -4,6 +4,19 @@ Work through the steps in order. Record findings; do not repair as you
 go. Each step lists the question, what a bad answer looks like, and where
 the fix is.
 
+## Contents
+
+- [Step 1: types](#step-1-types)
+- [Step 2: signatures](#step-2-signatures)
+- [Step 3: interfaces](#step-3-interfaces)
+- [Step 4: dependencies](#step-4-dependencies)
+- [Step 5: duplicated knowledge](#step-5-duplicated-knowledge)
+- [Step 6: names and comments](#step-6-names-and-comments)
+- [Step 7: effects](#step-7-effects)
+- [Step 8: tests](#step-8-tests)
+- [Producing the output](#producing-the-output)
+- [Calibrating effort](#calibrating-effort)
+
 ## Step 1: types
 
 - **Can any type hold a state the business forbids?** Count the states.

@@ -1,5 +1,15 @@
 # Transitions in Depth
 
+## Contents
+
+- [Guards](#guards)
+- [Terminal states](#terminal-states)
+- [The same command from several states](#the-same-command-from-several-states)
+- [Concurrent commands](#concurrent-commands)
+- [Persistence](#persistence)
+- [Evolving a state machine](#evolving-a-state-machine)
+- [Checking the model](#checking-the-model)
+
 ## Guards
 
 A guard is a condition that decides whether a legal transition succeeds

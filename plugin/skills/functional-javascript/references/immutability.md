@@ -1,5 +1,15 @@
 # Immutability in JavaScript
 
+## Contents
+
+- [Freezing](#freezing)
+- [Copying instead of mutating](#copying-instead-of-mutating)
+- [Nested updates](#nested-updates)
+- [Maps and sets](#maps-and-sets)
+- [Local mutation that is invisible](#local-mutation-that-is-invisible)
+- [Equality](#equality)
+- [Class instances](#class-instances)
+
 ## Freezing
 
 `Object.freeze` is shallow. Freeze at construction, and freeze what you

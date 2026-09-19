@@ -5,6 +5,15 @@ agreed meaning. Inside it, "customer" means exactly one thing. Outside
 it, the same word may mean something else, and that is not a problem to
 solve but a fact to model.
 
+## Contents
+
+- [Finding the boundaries](#finding-the-boundaries)
+- [Each context owns its types](#each-context-owns-its-types)
+- [Relationships between contexts](#relationships-between-contexts)
+- [Translating at the border](#translating-at-the-border)
+- [Context map](#context-map)
+- [In a single codebase](#in-a-single-codebase)
+
 ## Finding the boundaries
 
 The boundary is where the language changes. Signals, in order of
