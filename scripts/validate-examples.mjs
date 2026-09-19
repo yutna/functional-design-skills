@@ -265,4 +265,13 @@ if (problems.length > 0) {
   )
   process.exit(1)
 }
+// A check that found nothing to check has not passed; it has stopped
+// working. On a CRLF checkout one of these readers silently matched no
+// lines, reported zero, and exited clean. Every count below is a floor.
+if (checked === 0) {
+  process.stderr.write(
+    'error no code examples were parsed, so this check measured nothing\n',
+  )
+  process.exit(1)
+}
 process.stdout.write(`ok    ${checked} code example(s) parse\n`)

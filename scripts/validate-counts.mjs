@@ -40,7 +40,7 @@ const INDEX = 'functional-design'
 
 function declaredLanguagePacks () {
   const body = read(`plugin/skills/${INDEX}/SKILL.md`)
-  const section = /^## Language packs\n([\s\S]*?)^## /m.exec(body)
+  const section = /^## Language packs\r?\n([\s\S]*?)^## /m.exec(body)
   if (section === null) {
     throw new Error(
       `plugin/skills/${INDEX}/SKILL.md: no "## Language packs" section, so ` +
@@ -63,17 +63,37 @@ for (const pack of languagePacks) {
   }
 }
 
+// Line endings are normalised on the way in. Every pattern below is written
+// against \n, and .gitattributes checks Markdown out with the platform's own
+// endings, so on Windows a pattern anchored to \n matched nothing: the case
+// block was "missing" and two claims read as "rewritten". Normalising here
+// fixes all of them at once and cannot mask anything this script is for.
 function read (relative) {
-  return readFileSync(join(ROOT, relative), 'utf8')
+  return readFileSync(join(ROOT, relative), 'utf8').replace(/\r\n/g, '\n')
 }
 
 // Counted the way eval-routing.mjs counts them: inside the fenced block, so
-// the arrow in the prose that explains the format is not a case.
+// the arrow in the prose that explains the format is not a case, and
+// skipping comments, so the two scripts cannot disagree about the total.
+//
+// Both regexes tolerate CRLF. .gitattributes checks Markdown out with the
+// platform's endings, so on Windows every line here ends \r\n; a pattern
+// anchored to a bare \n found no block, returned zero, and reported that
+// the documentation over-counted. Nothing caught it because the Windows job
+// did not run this suite. It does now.
 function routingCases () {
-  const block = /```text\n([\s\S]*?)```/.exec(read('evals/routing-cases.md'))
-  return block === null
-    ? 0
-    : block[1].split('\n').filter((line) => line.includes(' -> ')).length
+  const block = /```text\r?\n([\s\S]*?)```/.exec(read('evals/routing-cases.md'))
+  if (block === null) {
+    throw new Error(
+      'evals/routing-cases.md: no fenced case block, so the case count ' +
+        'cannot be computed. A zero here would read as a documentation error.',
+    )
+  }
+  return block[1]
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith('#') && line.includes(' -> '))
+    .length
 }
 
 const FACTS = {
@@ -82,6 +102,18 @@ const FACTS = {
   coreSkills: coreSkills.length,
   scenarios: (read('evals/scenarios.md').match(/^## \d+\. /gm) ?? []).length,
   routingCases: routingCases(),
+}
+
+// Every fact here is a count of something this pack has always had. A zero
+// means the reader broke, not that the pack emptied, and reporting "ok" on
+// a zero is how a check stops working without anyone noticing.
+for (const [name, value] of Object.entries(FACTS)) {
+  if (value === 0) {
+    process.stderr.write(
+      `error counted zero ${name}, so this check measured nothing\n`,
+    )
+    process.exit(1)
+  }
 }
 
 const ONES = [

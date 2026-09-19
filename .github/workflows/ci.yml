@@ -99,16 +99,33 @@ jobs:
           done
           echo "SOURCES.md and PRIVATE-NOTES.md are gitignored and untracked."
 
-  # link-local.ps1 branches on $IsWindows: a junction there, a symbolic link
-  # everywhere else. The junction is the branch Windows users take and the
-  # only one no other job can reach, so this job exists to run it and then
-  # read a file back through it — New-Item not throwing is not the same as
-  # the link resolving.
+  # Two things only Windows can prove. The first is the junction that
+  # link-local.ps1 makes there and a symbolic link everywhere else, which no
+  # other job can reach. The second is the line endings: .gitattributes
+  # checks Markdown out with the platform's own, so this is the only
+  # checkout where the validators meet CRLF. Until 3.0.1 this job ran the
+  # scripts but not the suite, and three readers anchored to a bare \n went
+  # unnoticed — one of them reported "0 core rule(s) labelled across 0
+  # skill(s)" and exited clean, so the strictness gate was inert here.
   windows:
     name: windows
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run the whole suite against a CRLF checkout
+        run: npm test
+
+      - name: Prove every guard still fires here too
+        run: npm run test:guards
 
       - name: Run the PowerShell scripts on the platform they are for
         shell: pwsh

@@ -109,6 +109,19 @@ rejected.
   hand are counts that drift; three already had.
 - **Scripts are JavaScript, shell, or PowerShell, and nothing else.**
   One language for the tooling; the two script pairs exist for Windows.
+- **A check that measured nothing has failed, not passed.** Every
+  validator counts what it read and refuses to print `ok` on a zero.
+  Without that floor a reader that silently matches no lines reports a
+  clean run, which is worse than a red build because nobody looks.
+  `npm run test:guards` runs each one against an emptied copy.
+- **Every pattern that matches a line must tolerate CRLF.**
+  `.gitattributes` checks Markdown out with the platform's own endings,
+  so on Windows every line ends `\r\n`. Three readers were anchored to a
+  bare `\n`; one of them found no rules at all, printed
+  `0 core rule(s) labelled across 0 skill(s)` and exited clean, so the
+  strictness gate was inert on Windows for a whole release. Split on
+  `/\r?\n/`, or normalise on the way in. The Windows job runs the whole
+  suite now, which is what makes this enforceable rather than remembered.
 
 ## Writing rules that follow from the linter
 

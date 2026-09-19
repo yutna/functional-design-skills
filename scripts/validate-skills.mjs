@@ -341,11 +341,19 @@ function anchorsIn (text) {
   return slugs
 }
 
-// Every relative link in every shipped file must resolve, and so must every
+// Every relative link in every Markdown file must resolve, and so must every
 // anchor. Skills are copied into other people's projects, where a broken link
 // is a dead end with no repository around it to search — and the contents list
 // at the top of each long reference is written by a script, so a slug bug
 // would produce dozens of dead links at once.
+//
+// The walk covers the repository, not only plugin/skills. Until 3.0.1 it
+// stopped at the skills directory, so a broken link in README.md,
+// CONTRIBUTING.md or the evals was nobody's job to catch — and the README is
+// the first file anyone reads.
+const LINK_SKIP_DIRS = new Set(['node_modules', '.git', '.claude'])
+const LINK_SKIP_FILES = new Set(['SOURCES.md', 'PRIVATE-NOTES.md'])
+
 function validateLinks () {
   const link = /\[[^\]]*\]\(([^)\s#]*)(?:#([^)\s]*))?\)/g
   const anchors = new Map()
@@ -355,12 +363,13 @@ function validateLinks () {
   }
   const walk = (dir) => {
     for (const entry of readdirSync(dir)) {
+      if (LINK_SKIP_DIRS.has(entry)) continue
       const path = join(dir, entry)
       if (statSync(path).isDirectory()) {
         walk(path)
         continue
       }
-      if (!entry.endsWith('.md')) continue
+      if (!entry.endsWith('.md') || LINK_SKIP_FILES.has(entry)) continue
       const where = path.slice(ROOT.length + 1)
       const text = readFileSync(path, 'utf8')
       for (const [, href, anchor] of text.matchAll(link)) {
@@ -378,7 +387,7 @@ function validateLinks () {
       }
     }
   }
-  walk(SKILLS_DIR)
+  walk(ROOT)
 }
 
 function validateSkill (id) {
@@ -598,6 +607,15 @@ for (const error of errors) {
 
 if (errors.length > 0) {
   process.stderr.write(`\n${errors.length} skill validation error(s)\n`)
+  process.exit(1)
+}
+// A check that found nothing to check has not passed; it has stopped
+// working. On a CRLF checkout one of these readers silently matched no
+// lines, reported zero, and exited clean. Every count below is a floor.
+if (skillIds.length === 0) {
+  process.stderr.write(
+    'error no skills found under plugin/skills, so nothing was validated\n',
+  )
   process.exit(1)
 }
 process.stdout.write(

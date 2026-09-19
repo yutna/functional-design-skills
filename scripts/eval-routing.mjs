@@ -97,11 +97,23 @@ function loadSkills (profile) {
 }
 
 function loadCases () {
-  const block = /```text\r?\n([\s\S]*?)```/.exec(readFileSync(CASES, 'utf8'))
-  if (!block) {
+  const text = readFileSync(CASES, 'utf8')
+  const blocks = [...text.matchAll(/```text\r?\n([\s\S]*?)```/g)]
+  if (blocks.length === 0) {
     process.stderr.write('no ```text case block found in evals/routing-cases.md\n')
     process.exit(1)
   }
+  // Only the first block was ever read. A second one would have been skipped
+  // in silence, and every case in it would have gone unscored while the
+  // total still looked healthy.
+  if (blocks.length > 1) {
+    process.stderr.write(
+      `evals/routing-cases.md has ${blocks.length} \`\`\`text blocks; only the ` +
+        'first is scored. Keep every case in one block.\n',
+    )
+    process.exit(1)
+  }
+  const block = blocks[0]
   const cases = []
   for (const raw of block[1].split(/\r?\n/)) {
     const line = raw.trim()
@@ -138,6 +150,16 @@ const profile = argv.includes('--profile') && argv.includes('full') ? 'full' : '
 
 const skills = loadSkills(profile)
 const cases = loadCases()
+
+// A run that scored nothing is a broken reader, not a clean sheet. Both
+// sides have to be non-empty for the number below to mean anything.
+if (skills.size === 0 || cases.length === 0) {
+  process.stderr.write(
+    `found ${skills.size} skill(s) and ${cases.length} case(s); this scored ` +
+      'nothing, which is a failure rather than a pass.\n',
+  )
+  process.exit(1)
+}
 
 const docFreq = new Map()
 for (const counts of skills.values()) {
