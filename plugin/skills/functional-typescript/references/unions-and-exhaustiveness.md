@@ -106,7 +106,7 @@ export const deliver = (
 
 Transition functions take the specific case, not the union, so an illegal
 transition does not compile. See
-[modeling-state-machines](../../modeling-state-machines/SKILL.md).
+[functional-modeling-state-machines](../../functional-modeling-state-machines/SKILL.md).
 
 ## Constructors
 
@@ -155,7 +155,7 @@ export const parseCurrency = (raw: unknown): Result<Currency, ParseError> =>
 ```
 
 An unknown value is an error, never a default. See
-[crossing-io-boundaries](../../crossing-io-boundaries/SKILL.md).
+[functional-crossing-io-boundaries](../../functional-crossing-io-boundaries/SKILL.md).
 
 ## Non-empty lists
 

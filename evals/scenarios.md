@@ -15,7 +15,7 @@ An answer that reaches the same place by another route passes.
 
 Must contain: a choice type with one case per state; the data moved
 inside the case that owns it; the observation that consumers stop
-checking. Should reach `making-illegal-states-unrepresentable`.
+checking. Should reach `functional-making-illegal-states-unrepresentable`.
 
 ## 2. A rule in three places
 
@@ -25,7 +25,7 @@ checking. Should reach `making-illegal-states-unrepresentable`.
 
 Must contain: one owner for the rule; a wrapper type built through a
 parser; downstream code receiving an already-valid value. Should reach
-`constraining-primitive-values`, possibly via `hiding-information`.
+`functional-constraining-primitive-values`, possibly via `functional-hiding-information`.
 
 ## 3. Untestable pricing
 
@@ -35,7 +35,7 @@ parser; downstream code receiving an already-valid value. Should reach
 Must contain: separating the decision from the effects; the decision
 becoming a pure function of values; capabilities passed as parameters;
 tests with no infrastructure. Should reach
-`separating-pure-core-from-shell`.
+`functional-separating-pure-core-from-shell`.
 
 ## 4. How much design for a script
 
@@ -56,7 +56,7 @@ or an aggregate. Should reach the calibration guidance in
 
 Must contain: a client-supplied command identity; an idempotent charge
 adapter; state and event written in one transaction and relayed
-afterwards. Should reach `making-effects-reliable`.
+afterwards. Should reach `functional-making-effects-reliable`.
 
 ## 6. A status column driving everything
 
@@ -65,7 +65,7 @@ afterwards. Should reach `making-effects-reliable`.
 
 Must contain: states as a choice type; transitions as functions taking
 the specific source state; illegal transitions becoming unwriteable.
-Should reach `modeling-state-machines`.
+Should reach `functional-modeling-state-machines`.
 
 ## 7. A too-eager extraction
 
@@ -75,7 +75,7 @@ Should reach `modeling-state-machines`.
 Must contain: the observation that this is conjoined functions and worse
 than the original; the criterion that an extracted part must be
 independently meaningful; leaving it long if there is no natural
-boundary. Should reach `splitting-and-joining-code`.
+boundary. Should reach `functional-splitting-and-joining-code`.
 
 ## 8. Errors everywhere
 
@@ -84,8 +84,8 @@ boundary. Should reach `splitting-and-joining-code`.
 
 Must contain: an attempt to define errors away or mask them before
 handling them; aggregation at the edge; `Result` for what remains.
-Should reach `defining-errors-out-of-existence`, then
-`handling-errors-with-results`.
+Should reach `functional-defining-errors-out-of-existence`, then
+`functional-handling-errors-with-results`.
 
 ## 9. A dashboard that is slow
 
@@ -94,7 +94,7 @@ Should reach `defining-errors-out-of-existence`, then
 
 Must contain: a view type for the screen; querying storage directly on
 the read path; tolerating imperfect stored data rather than failing.
-Should reach `crossing-io-boundaries` and its read-model example.
+Should reach `functional-crossing-io-boundaries` and its read-model example.
 
 ## 10. A legacy service
 
@@ -105,7 +105,7 @@ Should reach `crossing-io-boundaries` and its read-model example.
 Must contain: incremental moves rather than a rewrite; one move per
 commit with tests green between; an order that starts with types and
 `Result` before extracting the pure decision. Should reach
-`refactoring-toward-functional-design`.
+`functional-refactoring-toward-functional-design`.
 
 ## 11. Naming failure
 
@@ -114,7 +114,7 @@ commit with tests green between; an order that starts with types and
 
 Must contain: treating the naming difficulty as a design finding, not a
 naming problem; splitting along the three jobs. Should reach
-`choosing-precise-names`, then `splitting-and-joining-code`.
+`functional-choosing-precise-names`, then `functional-splitting-and-joining-code`.
 
 ## 12. An incident nobody could diagnose
 
@@ -123,7 +123,7 @@ naming problem; splitting along the three jobs. Should reach
 
 Must contain: deciding the questions before the fields; events as the
 source; correlation identifiers carried from the edge; not logging
-inside pure functions. Should reach `designing-what-to-observe`.
+inside pure functions. Should reach `functional-designing-what-to-observe`.
 
 ## 13. Two ways to say customer
 
@@ -133,7 +133,7 @@ inside pure functions. Should reach `designing-what-to-observe`.
 
 Must contain: two bounded contexts; a type per context holding only what
 that context needs; translation at the border rather than a shared
-model. Should reach `capturing-the-domain`.
+model. Should reach `functional-capturing-the-domain`.
 
 ## 14. A wide dependency
 
@@ -142,7 +142,7 @@ model. Should reach `capturing-the-domain`.
 
 Must contain: narrowing to the function types actually used; naming them
 in the domain's words; the test becoming two one-line functions. Should
-reach `applying-solid-functionally` or `parameterizing-dependencies`.
+reach `functional-applying-solid-functionally` or `functional-parameterizing-dependencies`.
 
 ## 15. A schema as the domain model
 
@@ -151,7 +151,7 @@ reach `applying-solid-functionally` or `parameterizing-dependencies`.
 
 Must contain: two type families with a mapping between them; the domain
 type freed from storage; the inward mapping returning a result. Should
-reach `crossing-io-boundaries`.
+reach `functional-crossing-io-boundaries`.
 
 ## 16. Functions that will not chain
 
@@ -161,7 +161,7 @@ reach `crossing-io-boundaries`.
 
 Must contain: composing fallible functions with bind rather than
 nesting; totality as the precondition for composition; dependencies and
-configuration first, data last. Should reach `composing-functions`.
+configuration first, data last. Should reach `functional-composing-functions`.
 
 ## 17. Correct but unreadable
 
@@ -171,7 +171,7 @@ configuration first, data last. Should reach `composing-functions`.
 Must contain: deciding explicitly which facts a caller needs; hiding the
 rest rather than merely de-emphasising it; the point that obviousness is
 measured by the reader, not the author. Should reach
-`deciding-what-matters`.
+`functional-deciding-what-matters`.
 
 ## 18. Three nested loops
 
@@ -181,7 +181,7 @@ measured by the reader, not the author. Should reach
 Must contain: recognising the accumulator as a fold; naming the
 accumulator type first; a pure combining function; preferring a named
 operation such as groupBy where one exists. Should reach
-`folding-over-data`.
+`functional-folding-over-data`.
 
 ## 19. A lost update
 
@@ -191,7 +191,7 @@ operation such as groupBy where one exists. Should reach
 Must contain: returning a new value instead of mutating; keeping the one
 mutable cell in a single place; an atomic swap or compare-and-set rather
 than a lock; readers needing no lock at all. Should reach
-`managing-state-immutably`.
+`functional-managing-state-immutably`.
 
 ## 20. What to look for before merging
 
@@ -200,7 +200,7 @@ than a lock; readers needing no lock at all. Should reach
 
 Must contain: an ordered pass rather than ad hoc reading; types and
 signatures before names and style; ranking findings by what they cost;
-proposing the smallest fix. Should reach `reviewing-functional-design`.
+proposing the smallest fix. Should reach `functional-reviewing-functional-design`.
 
 ## 21. Three layers, one vocabulary
 
@@ -210,7 +210,7 @@ proposing the smallest fix. Should reach `reviewing-functional-design`.
 
 Must contain: each layer must change the abstraction; deleting
 pass-throughs; the test for whether a layer earns its place. Should
-reach `separating-layers`.
+reach `functional-separating-layers`.
 
 ## 22. About to write a strategy interface
 
@@ -219,7 +219,7 @@ reach `separating-layers`.
 
 Must contain: passing a function instead of defining an interface; or a
 choice type if the set of formats is fixed; no class hierarchy. Should
-reach `translating-gof-patterns`.
+reach `functional-translating-gof-patterns`.
 
 ## 23. Does this need comments
 
@@ -229,7 +229,7 @@ reach `translating-gof-patterns`.
 Must contain: both are half right; a comment must carry what the code
 cannot; interface comments stating what a caller must guarantee; the
 suggestion to write them before the implementation. Should reach
-`writing-useful-comments`.
+`functional-writing-useful-comments`.
 
 ## 24. Interchangeable ids in TypeScript
 
@@ -303,7 +303,7 @@ parse producing a distinct type, key constants in one module, named
 accessors, a coverage test per dispatch site.
 
 Must **not** contain: a branded type per customer field, or a record with
-every field optional. Should reach `choosing-types-or-plain-data`.
+every field optional. Should reach `functional-choosing-types-or-plain-data`.
 
 ## 31. Wrapper types feel like paperwork
 
@@ -325,8 +325,8 @@ the types.
 The scenario is a test of the tiebreaker's direction. An answer that
 takes the generic route because the caller said it feels heavy is a
 failure even if it is otherwise well argued. Should reach
-`choosing-types-or-plain-data` or
-`constraining-primitive-values`.
+`functional-choosing-types-or-plain-data` or
+`functional-constraining-primitive-values`.
 
 ## 32. Everyone says this needs refactoring
 
@@ -345,7 +345,7 @@ deleted or given a reader.
 
 Must contain the explicit point that extracting the guard into a
 well-named function would preserve the complexity permanently. Should
-reach `diagnosing-complexity`.
+reach `functional-diagnosing-complexity`.
 
 ## 33. A reviewer wants behaviour in our records
 
@@ -361,7 +361,7 @@ one of them.
 Must contain the redirection to what is worth checking instead: whether
 the record can only be built through a constructor that enforces its
 invariants, and whether any of its fields can hold a combination the
-business forbids. Should reach `refactoring-toward-functional-design`.
+business forbids. Should reach `functional-refactoring-toward-functional-design`.
 
 ## 34. A red flag against a stated convention
 
@@ -382,7 +382,7 @@ conversation. Not as a review finding, and not as an unrequested change.
 Fails if the answer reports the memoisation as a finding, proposes
 removing an existing `useCallback` or `memo()`, or hands the precedence
 question back to the author as work. Should reach
-`reviewing-functional-design`.
+`functional-reviewing-functional-design`.
 
 ## 35. A one-file fix in a codebase with recorded debt
 
@@ -409,7 +409,7 @@ position, not a backlog to start clearing here.
 
 Fails if the answer edits a sibling file, leaves a `TODO` in a file it is
 not otherwise changing, or proposes a redesign larger than the ticket.
-Should reach `programming-strategically`.
+Should reach `functional-programming-strategically`.
 
 ## 36. A ticket that has not been decided yet
 
@@ -427,7 +427,7 @@ of each. The absent product owner is the answer to one of those
 questions, not a reason to guess past them.
 
 Must contain that this is not design work and that the pack does not
-cover it. Naming `capturing-the-domain` for the vocabulary and the
+cover it. Naming `functional-capturing-the-domain` for the vocabulary and the
 open questions is correct; presenting it as the whole answer is not.
 
 Fails if the answer proposes a type, a module boundary, or a workflow;

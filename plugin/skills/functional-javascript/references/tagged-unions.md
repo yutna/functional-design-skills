@@ -55,7 +55,7 @@ export const delivered = (shipped, deliveredAt) =>
 
 Each case carries only its own data, which is what removes the illegal
 combinations. See
-[making-illegal-states-unrepresentable](../../making-illegal-states-unrepresentable/SKILL.md).
+[functional-making-illegal-states-unrepresentable](../../functional-making-illegal-states-unrepresentable/SKILL.md).
 
 ## Dispatch
 
@@ -153,4 +153,4 @@ export const fromDto = (d) => {
 ```
 
 An unknown tag from outside is an error, never a default. See
-[crossing-io-boundaries](../../crossing-io-boundaries/SKILL.md).
+[functional-crossing-io-boundaries](../../functional-crossing-io-boundaries/SKILL.md).

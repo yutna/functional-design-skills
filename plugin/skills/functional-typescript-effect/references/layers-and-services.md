@@ -34,7 +34,7 @@ Two rules from the core skills apply unchanged:
    it.
 2. **Keep it narrow.** Two or three related operations. A service with
    twenty members forces every consumer to depend on all twenty. See
-   [lsp-isp-dip.md](../../applying-solid-functionally/references/lsp-isp-dip.md).
+   [lsp-isp-dip.md](../../functional-applying-solid-functionally/references/lsp-isp-dip.md).
 
 Where a dependency is a single operation, a plain function parameter is
 still the simplest thing and needs no service at all.
@@ -98,7 +98,7 @@ are memoised, so `DatabaseLive` appearing twice builds one pool.
 The composed layer is the composition root: reading it tells you the
 system's whole dependency graph in one place, which is exactly what the
 core skill asks for. See
-[strategies.md](../../parameterizing-dependencies/references/strategies.md).
+[strategies.md](../../functional-parameterizing-dependencies/references/strategies.md).
 
 ## Providing, once, at the edge
 
@@ -138,12 +138,12 @@ it("suggests alternatives when the slot is taken", () =>
 No mocking framework, no verification of calls, and the compiler checks
 that the test layer implements the service completely. That is the
 payoff described in
-[testing-functional-code](../../testing-functional-code/SKILL.md).
+[functional-testing-functional-code](../../functional-testing-functional-code/SKILL.md).
 
 Keep one shared test layer per service, maintained as real code, and
 consider a contract test that runs the same assertions against both the
 test layer and the live one. See
-[testing-the-shell.md](../../testing-functional-code/references/testing-the-shell.md).
+[testing-the-shell.md](../../functional-testing-functional-code/references/testing-the-shell.md).
 
 ## Configuration
 

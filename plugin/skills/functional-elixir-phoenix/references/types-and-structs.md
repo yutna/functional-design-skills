@@ -114,8 +114,8 @@ visible in the head rather than buried in a conditional.
 ```
 
 The spec is the contract from
-[designing-deep-modules](../../designing-deep-modules/SKILL.md), and it
-is checkable. Rules that make it worth having:
+[functional-designing-deep-modules](../../functional-designing-deep-modules/SKILL.md),
+and it is checkable. Rules that make it worth having:
 
 1. `@spec` on every public function. Private functions benefit less.
 2. Enumerate error atoms in the spec, so callers can see the cases.
@@ -182,7 +182,7 @@ booking = put_in(booking, path, "York")
 Keep these inside the module that owns the struct. A caller reaching
 three levels into a value with a path is the same coupling as reaching
 three levels in with dots, written more compactly. See
-[hiding-information](../../hiding-information/SKILL.md).
+[functional-hiding-information](../../functional-hiding-information/SKILL.md).
 
 ## Immutability caveats
 

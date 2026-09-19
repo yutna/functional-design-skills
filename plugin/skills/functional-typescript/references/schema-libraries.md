@@ -23,10 +23,10 @@ Check `package.json` before following any example.
 
 1. **Can the parsed type be branded?** Without it, the boundary produces
    plain `string` and `number`, and the guarantees from
-   [constraining-primitive-values](../../constraining-primitive-values/SKILL.md)
+   [functional-constraining-primitive-values](../../functional-constraining-primitive-values/SKILL.md)
    stop at the edge.
 2. **Do errors accumulate?** A form needs every problem at once. See
-   [applicative-validation.md](../../handling-errors-with-results/references/applicative-validation.md).
+   [applicative-validation.md](../../functional-handling-errors-with-results/references/applicative-validation.md).
 3. **Is there an encode direction?** Outward mapping matters as much as
    inward, and one artefact describing both cannot drift.
 4. **What does it cost?** Bundle size in a browser; compile and startup
@@ -147,7 +147,7 @@ a nullable column, a legacy field, a string enum the domain models as a
 choice type with payloads. Keep the mapping function from the start, even
 when it is the identity, so that divergence is a change to one function
 rather than a refactor. See
-[crossing-io-boundaries](../../crossing-io-boundaries/SKILL.md).
+[functional-crossing-io-boundaries](../../functional-crossing-io-boundaries/SKILL.md).
 
 ## Depending on the interface, not the library
 
@@ -167,7 +167,7 @@ const parseWith = <T>(
 ```
 
 This is the narrow-dependency rule from
-[applying-solid-functionally](../../applying-solid-functionally/SKILL.md)
+[functional-applying-solid-functionally](../../functional-applying-solid-functionally/SKILL.md)
 applied to a library choice. Worth doing in a shared package; overkill in
 an application that will only ever use one.
 

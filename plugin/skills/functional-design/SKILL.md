@@ -58,8 +58,8 @@ Reading the rows:
 - **A new module or workflow.** The full loop below is worth its cost,
   because other code is about to depend on the shape you choose.
 - **A new bounded context.** The loop, plus the language and boundary
-  work in `capturing-the-domain` and
-  `enforcing-consistency-boundaries`.
+  work in `functional-capturing-the-domain` and
+  `functional-enforcing-consistency-boundaries`.
 
 Applying a heavier row than the task calls for is itself a design
 failure: it adds interface, indirection, and reading cost that the
@@ -93,11 +93,11 @@ in the room, and no amount of modelling substitutes for it. Types
 written over an undecided problem still compile; they encode the guess
 and make it expensive to revisit.
 
-[capturing-the-domain](../capturing-the-domain/SKILL.md) covers part of
-this. Its discovery procedure produces the events, the vocabulary, and
-the places where the experts disagree, which is most of the way there.
-It stops short of rules with worked examples, and that last piece is
-not design work.
+[functional-capturing-the-domain](../functional-capturing-the-domain/SKILL.md)
+covers part of this. Its discovery procedure produces the events, the
+vocabulary, and the places where the experts disagree, which is most of the way
+there. It stops short of rules with worked examples, and that last piece is not
+design work.
 
 ## The design loop
 
@@ -105,59 +105,60 @@ Run in order. Skip a step only when the previous one proved it irrelevant.
 
 1. Say what the software must do in the domain's own words, as commands
    and events. See
-   [capturing-the-domain](../capturing-the-domain/SKILL.md).
+   [functional-capturing-the-domain](../functional-capturing-the-domain/SKILL.md).
 2. Model the data so impossible states cannot be built. See
-   [modeling-with-algebraic-types](../modeling-with-algebraic-types/SKILL.md)
+   [functional-modeling-with-algebraic-types](../functional-modeling-with-algebraic-types/SKILL.md)
    and
-   [making-illegal-states-unrepresentable](../making-illegal-states-unrepresentable/SKILL.md).
+   [functional-making-illegal-states-unrepresentable](../functional-making-illegal-states-unrepresentable/SKILL.md).
 3. Write the workflow as a pipeline of total functions, typed end to end.
    See
-   [designing-workflow-pipelines](../designing-workflow-pipelines/SKILL.md).
+   [functional-designing-workflow-pipelines](../functional-designing-workflow-pipelines/SKILL.md).
 4. Decide where effects live: pure core, effectful shell. See
-   [separating-pure-core-from-shell](../separating-pure-core-from-shell/SKILL.md).
+   [functional-separating-pure-core-from-shell](../functional-separating-pure-core-from-shell/SKILL.md).
 5. Shape the modules so each hides more than it reveals. See
-   [designing-deep-modules](../designing-deep-modules/SKILL.md) and
-   [hiding-information](../hiding-information/SKILL.md).
+   [functional-designing-deep-modules](../functional-designing-deep-modules/SKILL.md)
+   and
+   [functional-hiding-information](../functional-hiding-information/SKILL.md).
 6. Name things precisely and comment only what code cannot say. See
-   [choosing-precise-names](../choosing-precise-names/SKILL.md).
+   [functional-choosing-precise-names](../functional-choosing-precise-names/SKILL.md).
 7. Audit the result against the red-flag catalogue. See
-   [reviewing-functional-design](../reviewing-functional-design/SKILL.md).
+   [functional-reviewing-functional-design](../functional-reviewing-functional-design/SKILL.md).
 
 ## Symptom to skill
 
-- Small change touches many files -> [diagnosing-complexity](../diagnosing-complexity/SKILL.md)
-- Shipping fast now, paying later -> [programming-strategically](../programming-strategically/SKILL.md)
-- Reader cannot tell what matters -> [deciding-what-matters](../deciding-what-matters/SKILL.md)
-- Interface as large as the code behind it -> [designing-deep-modules](../designing-deep-modules/SKILL.md)
-- Callers know internal details -> [hiding-information](../hiding-information/SKILL.md)
-- Layers repeat the same abstraction -> [separating-layers](../separating-layers/SKILL.md)
-- Unsure whether to split a function -> [splitting-and-joining-code](../splitting-and-joining-code/SKILL.md)
-- Dependency direction feels wrong -> [applying-solid-functionally](../applying-solid-functionally/SKILL.md)
-- Code and business speak different words -> [capturing-the-domain](../capturing-the-domain/SKILL.md)
-- Types are records of primitives -> [modeling-with-algebraic-types](../modeling-with-algebraic-types/SKILL.md)
-- Shape comes from config or varies per tenant -> [choosing-types-or-plain-data](../choosing-types-or-plain-data/SKILL.md)
-- Booleans and nullable fields encode state -> [making-illegal-states-unrepresentable](../making-illegal-states-unrepresentable/SKILL.md)
-- Strings and numbers used raw -> [constraining-primitive-values](../constraining-primitive-values/SKILL.md)
-- Status fields and if-ladders -> [modeling-state-machines](../modeling-state-machines/SKILL.md)
-- Unclear what one transaction covers -> [enforcing-consistency-boundaries](../enforcing-consistency-boundaries/SKILL.md)
-- Use case spread across services -> [designing-workflow-pipelines](../designing-workflow-pipelines/SKILL.md)
-- Functions do not fit together -> [composing-functions](../composing-functions/SKILL.md)
-- Database calls deep inside logic -> [parameterizing-dependencies](../parameterizing-dependencies/SKILL.md)
-- Errors thrown and caught everywhere -> [handling-errors-with-results](../handling-errors-with-results/SKILL.md)
-- Error handling dwarfs the happy path -> [defining-errors-out-of-existence](../defining-errors-out-of-existence/SKILL.md)
-- Logic cannot be tested without I/O -> [separating-pure-core-from-shell](../separating-pure-core-from-shell/SKILL.md)
-- Shared mutable state or race conditions -> [managing-state-immutably](../managing-state-immutably/SKILL.md)
-- Wire and storage shapes leak inward -> [crossing-io-boundaries](../crossing-io-boundaries/SKILL.md)
-- Reaching for a class-based pattern -> [translating-gof-patterns](../translating-gof-patterns/SKILL.md)
-- Loops accumulating into variables -> [folding-over-data](../folding-over-data/SKILL.md)
-- Deep recursion or expensive repeats -> [using-recursion-and-laziness](../using-recursion-and-laziness/SKILL.md)
-- Names are vague or hard to choose -> [choosing-precise-names](../choosing-precise-names/SKILL.md)
-- Comments restate the code -> [writing-useful-comments](../writing-useful-comments/SKILL.md)
-- Tests need heavy mocking -> [testing-functional-code](../testing-functional-code/SKILL.md)
-- Need to judge a design or a diff -> [reviewing-functional-design](../reviewing-functional-design/SKILL.md)
-- Imperative code to be moved forward -> [refactoring-toward-functional-design](../refactoring-toward-functional-design/SKILL.md)
-- Effects retried, duplicated, or lost -> [making-effects-reliable](../making-effects-reliable/SKILL.md)
-- An incident the records could not explain -> [designing-what-to-observe](../designing-what-to-observe/SKILL.md)
+- Small change touches many files -> [functional-diagnosing-complexity](../functional-diagnosing-complexity/SKILL.md)
+- Shipping fast now, paying later -> [functional-programming-strategically](../functional-programming-strategically/SKILL.md)
+- Reader cannot tell what matters -> [functional-deciding-what-matters](../functional-deciding-what-matters/SKILL.md)
+- Interface as large as the code behind it -> [functional-designing-deep-modules](../functional-designing-deep-modules/SKILL.md)
+- Callers know internal details -> [functional-hiding-information](../functional-hiding-information/SKILL.md)
+- Layers repeat the same abstraction -> [functional-separating-layers](../functional-separating-layers/SKILL.md)
+- Unsure whether to split a function -> [functional-splitting-and-joining-code](../functional-splitting-and-joining-code/SKILL.md)
+- Dependency direction feels wrong -> [functional-applying-solid-functionally](../functional-applying-solid-functionally/SKILL.md)
+- Code and business speak different words -> [functional-capturing-the-domain](../functional-capturing-the-domain/SKILL.md)
+- Types are records of primitives -> [functional-modeling-with-algebraic-types](../functional-modeling-with-algebraic-types/SKILL.md)
+- Shape comes from config or varies per tenant -> [functional-choosing-types-or-plain-data](../functional-choosing-types-or-plain-data/SKILL.md)
+- Booleans and nullable fields encode state -> [functional-making-illegal-states-unrepresentable](../functional-making-illegal-states-unrepresentable/SKILL.md)
+- Strings and numbers used raw -> [functional-constraining-primitive-values](../functional-constraining-primitive-values/SKILL.md)
+- Status fields and if-ladders -> [functional-modeling-state-machines](../functional-modeling-state-machines/SKILL.md)
+- Unclear what one transaction covers -> [functional-enforcing-consistency-boundaries](../functional-enforcing-consistency-boundaries/SKILL.md)
+- Use case spread across services -> [functional-designing-workflow-pipelines](../functional-designing-workflow-pipelines/SKILL.md)
+- Functions do not fit together -> [functional-composing-functions](../functional-composing-functions/SKILL.md)
+- Database calls deep inside logic -> [functional-parameterizing-dependencies](../functional-parameterizing-dependencies/SKILL.md)
+- Errors thrown and caught everywhere -> [functional-handling-errors-with-results](../functional-handling-errors-with-results/SKILL.md)
+- Error handling dwarfs the happy path -> [functional-defining-errors-out-of-existence](../functional-defining-errors-out-of-existence/SKILL.md)
+- Logic cannot be tested without I/O -> [functional-separating-pure-core-from-shell](../functional-separating-pure-core-from-shell/SKILL.md)
+- Shared mutable state or race conditions -> [functional-managing-state-immutably](../functional-managing-state-immutably/SKILL.md)
+- Wire and storage shapes leak inward -> [functional-crossing-io-boundaries](../functional-crossing-io-boundaries/SKILL.md)
+- Reaching for a class-based pattern -> [functional-translating-gof-patterns](../functional-translating-gof-patterns/SKILL.md)
+- Loops accumulating into variables -> [functional-folding-over-data](../functional-folding-over-data/SKILL.md)
+- Deep recursion or expensive repeats -> [functional-using-recursion-and-laziness](../functional-using-recursion-and-laziness/SKILL.md)
+- Names are vague or hard to choose -> [functional-choosing-precise-names](../functional-choosing-precise-names/SKILL.md)
+- Comments restate the code -> [functional-writing-useful-comments](../functional-writing-useful-comments/SKILL.md)
+- Tests need heavy mocking -> [functional-testing-functional-code](../functional-testing-functional-code/SKILL.md)
+- Need to judge a design or a diff -> [functional-reviewing-functional-design](../functional-reviewing-functional-design/SKILL.md)
+- Imperative code to be moved forward -> [functional-refactoring-toward-functional-design](../functional-refactoring-toward-functional-design/SKILL.md)
+- Effects retried, duplicated, or lost -> [functional-making-effects-reliable](../functional-making-effects-reliable/SKILL.md)
+- An incident the records could not explain -> [functional-designing-what-to-observe](../functional-designing-what-to-observe/SKILL.md)
 
 ## Language packs
 
@@ -205,7 +206,7 @@ only with evidence -- a measurement, a reproduced bug, or a failing test.
   compressed onto one page, for when there is no time to read a skill.
 - [calibration.md](references/calibration.md) is how much of the pack a
   given task actually warrants, and the cost of getting that wrong.
-- [essential-and-accidental.md](../diagnosing-complexity/references/essential-and-accidental.md)
+- [essential-and-accidental.md](../functional-diagnosing-complexity/references/essential-and-accidental.md)
   is the question to ask before any refactor: did we add this
   complexity, or is it in the problem?
 
@@ -216,11 +217,11 @@ than through rules.
 
 - [design-loop.md](references/design-loop.md) — a small feature through
   all seven steps.
-- [a new workflow](../designing-workflow-pipelines/references/worked-example.md)
+- [a new workflow](../functional-designing-workflow-pipelines/references/worked-example.md)
   — booking an appointment, from event storming to composed code.
-- [a refactor](../refactoring-toward-functional-design/references/worked-refactor.md)
+- [a refactor](../functional-refactoring-toward-functional-design/references/worked-refactor.md)
   — a legacy service moved in ten commits.
-- [a read model](../crossing-io-boundaries/references/worked-read-model.md)
+- [a read model](../functional-crossing-io-boundaries/references/worked-read-model.md)
   — a screen where the aggregate rules do not apply.
-- [a long-running process](../making-effects-reliable/references/worked-long-running.md)
+- [a long-running process](../functional-making-effects-reliable/references/worked-long-running.md)
   — three systems, compensation, and idempotency.

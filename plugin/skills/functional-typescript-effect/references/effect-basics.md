@@ -76,7 +76,7 @@ const book = (cmd: BookAppointment) =>
 Generator style suits workflows with several dependent steps; pipe style
 suits short transformations. Mixing them arbitrarily within one file
 costs readability. See
-[consistency.md](../../programming-strategically/references/consistency.md).
+[consistency.md](../../functional-programming-strategically/references/consistency.md).
 
 ## Tagged errors
 
@@ -89,7 +89,7 @@ class SlotUnavailable extends Data.TaggedError("SlotUnavailable")<{
 
 The tag drives `catchTag`, the fields carry what the caller needs to act
 or explain. Design them the way
-[error-taxonomy.md](../../handling-errors-with-results/references/error-taxonomy.md)
+[error-taxonomy.md](../../functional-handling-errors-with-results/references/error-taxonomy.md)
 describes: named for the business, carrying data, free of driver
 details.
 

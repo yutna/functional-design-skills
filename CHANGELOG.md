@@ -8,6 +8,35 @@ skills or guidance, a patch one corrects what is already there.
 
 ## Unreleased
 
+### Breaking: every skill is now named `functional-something`
+
+The thirty-three core skills gained the prefix the index and the six
+language packs already had. Skills install flat into `~/.claude/skills`,
+so a name like `hiding-information` is one any pack might claim and the
+second pack to claim it loses. Anyone who installed with the scripts
+should remove the old directories by hand; the plugin route replaces
+them.
+
+- 1,138 references rewritten across 114 files: sibling links, routing
+  cases, scenarios, frontmatter names, and the prose that names a skill.
+- Six tables became lists. Eleven more characters per name put them
+  past the eighty-character limit, and a wide comparison table is not
+  viable at that width, so they now use the arrow form the index
+  already used for the same kind of mapping.
+- `CHANGELOG.md` was deliberately left alone. A skill that was called
+  `separating-layers` when 2.0.0 shipped is still called that in the
+  2.0.0 entry; a record that updates itself is not a record.
+- The count check caught the rename twice: once when the sentences in
+  `CLAUDE.md` describing the naming were rewritten, and it refused to
+  keep quiet about numbers it could no longer find.
+
+PowerShell moved into `mise.toml`. This repository keeps two
+implementations of each install script and requires them to change
+together, and there was no way to run the PowerShell half without
+already having it.
+
+### The rest
+
 Mechanism, not guidance. Nothing about what the pack recommends has
 changed; what changed is that a reader can now tell how firmly each rule
 is meant, and that four things which used to depend on care now depend

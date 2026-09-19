@@ -101,7 +101,7 @@ const bookAppointment = (
 
 The signature states the whole contract: what it produces, how it fails,
 and what it needs. That is
-[designing-workflow-pipelines](../designing-workflow-pipelines/SKILL.md)
+[functional-designing-workflow-pipelines](../functional-designing-workflow-pipelines/SKILL.md)
 with the compiler checking it.
 
 ## Providing dependencies
@@ -152,7 +152,7 @@ outside the code — config, tenant, admin — reach for
 `Schema.Record({ key: FieldKey, value: Schema.Unknown })` behind a
 branded wrapper rather than generating a union of every field. The
 envelope stays fully modelled either way. See
-[choosing-types-or-plain-data](../choosing-types-or-plain-data/SKILL.md).
+[functional-choosing-types-or-plain-data](../functional-choosing-types-or-plain-data/SKILL.md).
 
 ## Red flags
 
@@ -185,9 +185,9 @@ envelope stays fully modelled either way. See
 
 ## Related skills
 
-- [parameterizing-dependencies](../parameterizing-dependencies/SKILL.md)
-- [handling-errors-with-results](../handling-errors-with-results/SKILL.md)
-- [crossing-io-boundaries](../crossing-io-boundaries/SKILL.md)
+- [functional-parameterizing-dependencies](../functional-parameterizing-dependencies/SKILL.md)
+- [functional-handling-errors-with-results](../functional-handling-errors-with-results/SKILL.md)
+- [functional-crossing-io-boundaries](../functional-crossing-io-boundaries/SKILL.md)
 - [functional-typescript](../functional-typescript/SKILL.md)
 
 ## Further reading

@@ -186,7 +186,7 @@ When the field set comes from config, varies per tenant, or is decided by
 an admin, there is no compile-time set of cases to model. Use
 `Record<FieldKey, JsonValue>` behind a parsed wrapper, keep the envelope
 around it fully typed, and pay the costs listed in
-[choosing-types-or-plain-data](../choosing-types-or-plain-data/SKILL.md).
+[functional-choosing-types-or-plain-data](../functional-choosing-types-or-plain-data/SKILL.md).
 Reach for `z.record()` rather than a generated union of every field any
 customer has ever added.
 
@@ -207,7 +207,7 @@ customer has ever added.
   documentation, not a guarantee. Export the parser, not the cast.
 - **`Partial<T>` for a draft.** Give the draft its own type with its own
   rules. See
-  [when-to-validate-instead.md](../making-illegal-states-unrepresentable/references/when-to-validate-instead.md).
+  [when-to-validate-instead.md](../functional-making-illegal-states-unrepresentable/references/when-to-validate-instead.md).
 - **`unknown` left unnarrowed at the boundary.** Parse it into a domain
   type immediately.
 - **Structural typing collisions.** Two unbranded types with the same
@@ -219,10 +219,10 @@ customer has ever added.
 
 ## Related skills
 
-- [modeling-with-algebraic-types](../modeling-with-algebraic-types/SKILL.md)
-- [constraining-primitive-values](../constraining-primitive-values/SKILL.md)
-- [handling-errors-with-results](../handling-errors-with-results/SKILL.md)
-- [crossing-io-boundaries](../crossing-io-boundaries/SKILL.md)
+- [functional-modeling-with-algebraic-types](../functional-modeling-with-algebraic-types/SKILL.md)
+- [functional-constraining-primitive-values](../functional-constraining-primitive-values/SKILL.md)
+- [functional-handling-errors-with-results](../functional-handling-errors-with-results/SKILL.md)
+- [functional-crossing-io-boundaries](../functional-crossing-io-boundaries/SKILL.md)
 
 ## Further reading
 

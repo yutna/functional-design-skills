@@ -87,7 +87,7 @@ const view = (s: ScreenState) => {
 
 Four states, each with exactly its own data, and a compile error when a
 fifth is added. This is
-[making-illegal-states-unrepresentable](../making-illegal-states-unrepresentable/SKILL.md)
+[functional-making-illegal-states-unrepresentable](../functional-making-illegal-states-unrepresentable/SKILL.md)
 applied to a screen.
 
 ## Derived, not stored
@@ -168,7 +168,7 @@ that can disagree with the first. See
   components.
 - **Prop drilling a value nobody in between reads.** That is the
   pass-through variable smell. See
-  [hiding-information](../hiding-information/SKILL.md).
+  [functional-hiding-information](../functional-hiding-information/SKILL.md).
 - **Putting rules in handlers.** A discount calculated in `onClick`
   cannot be tested or reused. Move it to a pure function.
 - **Client components by default.** Marking a component as client-side
@@ -178,9 +178,9 @@ that can disagree with the first. See
 
 ## Related skills
 
-- [making-illegal-states-unrepresentable](../making-illegal-states-unrepresentable/SKILL.md)
-- [separating-pure-core-from-shell](../separating-pure-core-from-shell/SKILL.md)
-- [designing-deep-modules](../designing-deep-modules/SKILL.md)
+- [functional-making-illegal-states-unrepresentable](../functional-making-illegal-states-unrepresentable/SKILL.md)
+- [functional-separating-pure-core-from-shell](../functional-separating-pure-core-from-shell/SKILL.md)
+- [functional-designing-deep-modules](../functional-designing-deep-modules/SKILL.md)
 - [functional-typescript](../functional-typescript/SKILL.md)
 
 ## Further reading

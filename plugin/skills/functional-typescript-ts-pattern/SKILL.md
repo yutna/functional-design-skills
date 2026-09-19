@@ -30,7 +30,7 @@ covers how to consume them.
 - Handling a `Result` or a union of errors
 
 Not for: designing the union itself, which is
-[modeling-with-algebraic-types](../modeling-with-algebraic-types/SKILL.md).
+[functional-modeling-with-algebraic-types](../functional-modeling-with-algebraic-types/SKILL.md).
 
 ## Core rules
 
@@ -105,10 +105,10 @@ const apply = (
 ```
 
 This is the transition table from
-[modeling-state-machines](../modeling-state-machines/SKILL.md) written
-directly. It is the one place `.otherwise()` is legitimate: the empty
-cells of the table are genuinely a single outcome, and enumerating every
-illegal pair would be noise.
+[functional-modeling-state-machines](../functional-modeling-state-machines/SKILL.md)
+written directly. It is the one place `.otherwise()` is legitimate: the empty
+cells of the table are genuinely a single outcome, and enumerating every illegal
+pair would be noise.
 
 Where transitions carry different failures, prefer separate functions per
 source state and keep the match only for dispatching commands.
@@ -145,7 +145,7 @@ const render = (r: Result<PricedBooking, ConfirmBookingError>) =>
 ```
 
 This is the aggregated error handling from
-[defining-errors-out-of-existence](../defining-errors-out-of-existence/SKILL.md),
+[functional-defining-errors-out-of-existence](../functional-defining-errors-out-of-existence/SKILL.md),
 at the edge, with the compiler proving every case is covered.
 
 ## Red flags
@@ -173,9 +173,9 @@ at the edge, with the compiler proving every case is covered.
 ## Related skills
 
 - [functional-typescript](../functional-typescript/SKILL.md)
-- [modeling-with-algebraic-types](../modeling-with-algebraic-types/SKILL.md)
-- [modeling-state-machines](../modeling-state-machines/SKILL.md)
-- [handling-errors-with-results](../handling-errors-with-results/SKILL.md)
+- [functional-modeling-with-algebraic-types](../functional-modeling-with-algebraic-types/SKILL.md)
+- [functional-modeling-state-machines](../functional-modeling-state-machines/SKILL.md)
+- [functional-handling-errors-with-results](../functional-handling-errors-with-results/SKILL.md)
 
 ## Further reading
 

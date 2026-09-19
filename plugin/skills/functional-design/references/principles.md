@@ -36,7 +36,7 @@ reasoning.
 7. Almost all added complexity is state, then ordering, then sheer
    volume of code, in that order of harm.
 
-Skills: `diagnosing-complexity`, `programming-strategically`.
+Skills: `functional-diagnosing-complexity`, `functional-programming-strategically`.
 
 ## Modules and interfaces
 
@@ -55,9 +55,9 @@ Skills: `diagnosing-complexity`, `programming-strategically`.
    part is general and the other special.
 8. Make what matters obvious and everything else invisible.
 
-Skills: `designing-deep-modules`, `hiding-information`,
-`separating-layers`, `splitting-and-joining-code`,
-`deciding-what-matters`, `applying-solid-functionally`.
+Skills: `functional-designing-deep-modules`, `functional-hiding-information`,
+`functional-separating-layers`, `functional-splitting-and-joining-code`,
+`functional-deciding-what-matters`, `functional-applying-solid-functionally`.
 
 ## Types and the domain
 
@@ -76,9 +76,9 @@ Skills: `designing-deep-modules`, `hiding-information`,
 8. Draw a context boundary wherever a word changes meaning, and never
    share a model across one.
 
-Skills: `capturing-the-domain`, `modeling-with-algebraic-types`,
-`making-illegal-states-unrepresentable`, `constraining-primitive-values`,
-`modeling-state-machines`, `enforcing-consistency-boundaries`.
+Skills: `functional-capturing-the-domain`, `functional-modeling-with-algebraic-types`,
+`functional-making-illegal-states-unrepresentable`, `functional-constraining-primitive-values`,
+`functional-modeling-state-machines`, `functional-enforcing-consistency-boundaries`.
 
 ## Representation
 
@@ -97,7 +97,7 @@ not.
 5. Anything the system decides with gets a type. Anything it only
    stores, forwards, or renders may stay generic.
 
-Skill: `choosing-types-or-plain-data`.
+Skill: `functional-choosing-types-or-plain-data`.
 
 ## Functions and workflows
 
@@ -111,8 +111,8 @@ Skill: `choosing-types-or-plain-data`.
 4. Configuration and dependencies first, data last, so partial
    application produces something useful.
 
-Skills: `composing-functions`, `designing-workflow-pipelines`,
-`parameterizing-dependencies`.
+Skills: `functional-composing-functions`, `functional-designing-workflow-pipelines`,
+`functional-parameterizing-dependencies`.
 
 ## Errors
 
@@ -125,8 +125,8 @@ Skills: `composing-functions`, `designing-workflow-pipelines`,
 4. Crash on conditions that mean the program is wrong.
 5. Convert foreign failures once, at the boundary.
 
-Skills: `handling-errors-with-results`,
-`defining-errors-out-of-existence`.
+Skills: `functional-handling-errors-with-results`,
+`functional-defining-errors-out-of-existence`.
 
 ## Effects and state
 
@@ -138,8 +138,8 @@ Skills: `handling-errors-with-results`,
 5. Domain types are not wire types or storage types. Parse inward,
    serialise outward, in one place per boundary.
 
-Skills: `separating-pure-core-from-shell`, `managing-state-immutably`,
-`crossing-io-boundaries`.
+Skills: `functional-separating-pure-core-from-shell`, `functional-managing-state-immutably`,
+`functional-crossing-io-boundaries`.
 
 ## Mechanics
 
@@ -151,8 +151,8 @@ Skills: `separating-pure-core-from-shell`, `managing-state-immutably`,
 4. Most design patterns are a function, a function type, or a choice
    type here.
 
-Skills: `folding-over-data`, `using-recursion-and-laziness`,
-`translating-gof-patterns`.
+Skills: `functional-folding-over-data`, `functional-using-recursion-and-laziness`,
+`functional-translating-gof-patterns`.
 
 ## Reliability, once effects cross a process
 
@@ -169,7 +169,7 @@ duplicated, or lost.
    systems.
 7. Model partial success explicitly; it is a report, not a `Result`.
 
-Skill: `making-effects-reliable`.
+Skill: `functional-making-effects-reliable`.
 
 ## Observability, as a design decision
 
@@ -184,7 +184,7 @@ reveals.
 5. Keep identifiers out of metric labels and secrets out of everything.
 6. Alert on what a user would notice, not on a resource number.
 
-Skill: `designing-what-to-observe`.
+Skill: `functional-designing-what-to-observe`.
 
 ## Communication
 
@@ -194,8 +194,8 @@ Skill: `designing-what-to-observe`.
    comment before the implementation.
 3. Similar things look similar; different things look different.
 
-Skills: `choosing-precise-names`, `writing-useful-comments`,
-`programming-strategically`.
+Skills: `functional-choosing-precise-names`, `functional-writing-useful-comments`,
+`functional-programming-strategically`.
 
 ## Verification
 
@@ -205,4 +205,4 @@ Skills: `choosing-precise-names`, `writing-useful-comments`,
 3. Assert on returned values, never on which functions were called.
 4. Audit against the red flags before calling anything done.
 
-Skills: `testing-functional-code`, `reviewing-functional-design`.
+Skills: `functional-testing-functional-code`, `functional-reviewing-functional-design`.

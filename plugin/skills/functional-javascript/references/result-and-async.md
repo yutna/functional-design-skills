@@ -66,7 +66,7 @@ export const traverseAll = (f) => (xs) => {
 
 Use `traverseAll` for form fields and batch imports, `traverse` inside a
 sequential pipeline. See
-[applicative-validation.md](../../handling-errors-with-results/references/applicative-validation.md).
+[applicative-validation.md](../../functional-handling-errors-with-results/references/applicative-validation.md).
 
 ## Accumulating field errors
 
@@ -152,7 +152,7 @@ const classify = (e) => {
 
 Past this function, no caller knows which driver is in use, and the
 `cause` is kept for logs without being something callers match on. See
-[error-taxonomy.md](../../handling-errors-with-results/references/error-taxonomy.md).
+[error-taxonomy.md](../../functional-handling-errors-with-results/references/error-taxonomy.md).
 
 ## Parallel work
 
@@ -177,4 +177,4 @@ available, and the caller decides which failure to report.
 Reserve `throw` for programmer errors: an unhandled tag, a broken
 invariant, an impossible state. Those should crash the request, be logged
 with context, and be fixed. See
-[defining-errors-out-of-existence](../../defining-errors-out-of-existence/SKILL.md).
+[functional-defining-errors-out-of-existence](../../functional-defining-errors-out-of-existence/SKILL.md).

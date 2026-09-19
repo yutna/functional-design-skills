@@ -509,9 +509,9 @@ function validateEvalNames (ids) {
     for (const [, name] of text.matchAll(pattern)) {
       if (known.has(name)) continue
       // A hyphenated word in backticks is not automatically a skill name.
-      // Only shapes this pack actually uses are worth complaining about, so
-      // `use-server` or `ts-pattern` in prose stay out of it.
-      if (!/^functional-|^[a-z]+ing-/.test(name)) continue
+      // Since 3.0.0 every skill carries the pack's prefix, so anything
+      // without it -- `use-server`, `ts-pattern` -- is prose, not a name.
+      if (!name.startsWith('functional-')) continue
       errors.push(`evals/${file}: names "${name}", which is not a skill`)
     }
   }

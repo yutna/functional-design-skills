@@ -15,10 +15,19 @@ Everything the plugin ships lives under `plugin/`. The repository's own
 tooling stays outside it, for the reason given under "Files you should
 not create".
 
-There are forty skills. Six are language packs, named
-`functional-<stack>`; `functional-design` is the index that routes
-between everything else; the remaining thirty-three carry one design
-rule each. Their `SKILL.md` frontmatter describes when each applies.
+There are forty skills, and every one is named `functional-something`.
+The prefix is not decoration: skills install flat into
+`~/.claude/skills`, where a name like `hiding-information` is one any
+pack might claim, and the second pack to claim it loses. Six are
+language packs, named for the stack; `functional-design` is the index
+that routes between everything else; the remaining thirty-three carry
+one design rule each. Their `SKILL.md` frontmatter describes when each
+applies.
+
+Because the prefix is now on everything, the name no longer says which
+group a skill is in. The index's `## Language packs` section is the
+list that does, and `scripts/validate-counts.mjs` reads it rather than
+keeping a second copy.
 
 ## Before you finish any change
 
@@ -54,6 +63,11 @@ rejected.
   `license`, and `metadata`. A key outside the set is a hard error,
   because it is either a typo or a feature this runtime does not have.
 - **Skill content is English only.**
+- **Every skill name starts with `functional-`.** See "What is here".
+- **`CHANGELOG.md` is a record, not a description.** Its entries say
+  what was true when a version shipped, so a rename does not rewrite
+  them. A skill that was called `hiding-information` in 2.0.0 is still
+  called that in the 2.0.0 entry.
 - **Dependencies are pinned to an exact version, never a range.** A
   caret range lets a patch release change what `markdownlint` reports,
   and this repository forbids lint configuration, so the build can turn
