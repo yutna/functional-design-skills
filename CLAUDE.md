@@ -27,11 +27,12 @@ npm test
 npm run test:guards
 ```
 
-`npm test` runs Markdown linting, skill validation, the prose checks,
-and routing coverage. `npm run test:guards` breaks every guard on a
-throwaway copy and confirms it still fires. All of it must pass. Run
-them as you write, not once at the end; the line-length rule in
-particular is easier to satisfy while drafting than to retrofit.
+`npm test` runs Markdown linting, skill validation, the prose checks, a
+parse of every code example, and routing coverage. `npm run test:guards`
+breaks every guard on a throwaway copy and confirms it still fires. All
+of it must pass. Run them as you write, not once at the end; the
+line-length rule in particular is easier to satisfy while drafting than
+to retrofit.
 
 `npm test` does not check the lock file, but continuous integration
 installs with `npm ci`, which fails when `package.json` and

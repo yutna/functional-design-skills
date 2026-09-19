@@ -27,12 +27,14 @@
     "lint:md": "markdownlint-cli2 \"**/*.md\" \"#node_modules\" \"#SOURCES.md\" \"#PRIVATE-NOTES.md\" \"#.claude\"",
     "validate:skills": "node scripts/validate-skills.mjs",
     "validate:prose": "node scripts/validate-prose.mjs",
+    "validate:examples": "node scripts/validate-examples.mjs",
     "eval:routing": "node scripts/eval-routing.mjs",
-    "test": "npm run lint:md && npm run validate:skills && npm run validate:prose && npm run eval:routing",
+    "test": "npm run lint:md && npm run validate:skills && npm run validate:prose && npm run validate:examples && npm run eval:routing",
     "test:guards": "node scripts/validate-prose.mjs --selftest && node scripts/negative-test.mjs"
   },
   "devDependencies": {
     "markdownlint-cli2": "0.23.2",
+    "typescript": "5.9.3",
     "yaml": "2.9.1"
   },
   "overrides": {

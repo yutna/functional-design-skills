@@ -16,6 +16,10 @@ PRIVATE-NOTES.md
 # hard constraint here, and the build fails if such a file exists. Ignoring
 # them would hide an accidental config instead of catching it.
 
+# Written by the Erlang VM if it dies while validate-examples.mjs is
+# parsing the Elixir examples under --with-elixir.
+erl_crash.dump
+
 # OS / editor cruft
 .DS_Store
 .vscode/

@@ -2,7 +2,7 @@
 
 ## What this repository contains
 
-Markdown skill files, four Node validation scripts, and two pairs of
+Markdown skill files, five Node validation scripts, and two pairs of
 install scripts. The skills themselves are documentation: they are read
 by an agent and contain no executable content.
 
@@ -13,9 +13,11 @@ The parts that do run on a contributor's or a user's machine are:
 - `scripts/link-local.sh` and `scripts/link-local.ps1`, which link them
   into `.claude/skills` inside a clone.
 - `scripts/validate-skills.mjs`, `scripts/validate-prose.mjs`,
-  `scripts/eval-routing.mjs` and `scripts/negative-test.mjs`, which read
-  files in the repository. The last one also writes to a temporary
-  directory it creates and removes.
+  `scripts/validate-examples.mjs`, `scripts/eval-routing.mjs` and
+  `scripts/negative-test.mjs`, which read files in the repository. The
+  last two also write to a temporary directory they create and remove.
+  `validate-examples.mjs` parses the code in the documentation; it never
+  runs it.
 - The development dependencies installed by `npm ci`.
 
 Nothing the plugin ships needs npm. `package.json` and the lock file

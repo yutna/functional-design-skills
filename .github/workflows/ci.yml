@@ -46,6 +46,11 @@ jobs:
       - name: Check the prose a linter cannot
         run: npm run validate:prose
 
+      # A parser, not a type checker: it proves an example is the language its
+      # fence claims, which is what makes it safe to paste.
+      - name: Parse every code example
+        run: npm run validate:examples
+
       - name: Score routing coverage
         run: npm run eval:routing
 

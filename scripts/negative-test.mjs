@@ -21,8 +21,9 @@ import { spawnSync } from 'node:child_process'
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)))
 const SKILL = join('plugin', 'skills', 'folding-over-data', 'SKILL.md')
 
-// Each case: what we break, the edit that breaks it, and the text the
-// validator must produce. The edit is [find, replace] applied to one file.
+// Each case: what we break, the edit that breaks it, the text the validator
+// must produce, and which validator. The edit is [find, replace] applied to
+// one file; the script defaults to validate-skills.mjs.
 const CASES = [
   ['name mismatches its directory', SKILL,
     ['name: folding-over-data', 'name: folding-over-datum'], 'but the directory is'],
@@ -54,6 +55,14 @@ const CASES = [
     ['"version": "', '"version": "0.'], 'marketplace.json:'],
   ['a caret range instead of an exact pin', 'package.json',
     ['"yaml": "', '"yaml": "^'], 'pinned to an exact version'],
+  ['an ellipsis where the language expects code',
+    join('plugin', 'skills', 'functional-typescript', 'SKILL.md'),
+    ['  /* ... */', '  ...'], 'not the language the fence claims',
+    'validate-examples.mjs'],
+  ['an example whose fence claims the wrong language',
+    join('plugin', 'skills', 'functional-typescript', 'SKILL.md'),
+    ['```ts', '```json'], 'not the language the fence claims',
+    'validate-examples.mjs'],
 ]
 
 const work = mkdtempSync(join(tmpdir(), 'fds-negative-'))
@@ -64,21 +73,23 @@ cpSync(join(ROOT, 'package.json'), join(work, 'package.json'))
 // The validator imports `yaml`; point the copy at the real install.
 cpSync(join(ROOT, 'node_modules'), join(work, 'node_modules'), { recursive: true })
 
-function run () {
-  const result = spawnSync(process.execPath, [join(work, 'scripts', 'validate-skills.mjs')], {
+function run (script = 'validate-skills.mjs') {
+  const result = spawnSync(process.execPath, [join(work, 'scripts', script)], {
     encoding: 'utf8',
   })
   return `${result.stdout}${result.stderr}`
 }
 
-const baseline = run()
 let failures = 0
-if (!baseline.startsWith('ok')) {
-  process.stderr.write(`baseline is not clean, so nothing below proves anything:\n${baseline}\n`)
-  failures++
+for (const script of ['validate-skills.mjs', 'validate-examples.mjs']) {
+  const baseline = run(script)
+  if (!baseline.startsWith('ok')) {
+    process.stderr.write(`${script} baseline is not clean, so nothing below proves anything:\n${baseline}\n`)
+    failures++
+  }
 }
 
-for (const [label, file, [find, replace], expected] of CASES) {
+for (const [label, file, [find, replace], expected, script] of CASES) {
   const path = join(work, file)
   const original = readFileSync(path, 'utf8')
   if (!original.includes(find)) {
@@ -87,7 +98,7 @@ for (const [label, file, [find, replace], expected] of CASES) {
     continue
   }
   writeFileSync(path, original.replace(find, replace))
-  const output = run()
+  const output = run(script)
   writeFileSync(path, original)
   if (output.includes(expected)) {
     process.stdout.write(`neg ok   ${label}\n`)
