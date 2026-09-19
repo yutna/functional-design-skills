@@ -217,6 +217,11 @@ function linkModules (into) {
   }
 }
 linkModules(work)
+// Three cases search for a string that spans two lines. On a Windows
+// checkout those arrived as \r\n and matched nothing, so the guards looked
+// broken when only the harness was. The copy is normalised here; the CRLF
+// section below converts it back on purpose, after the edits have run.
+convertEndings(work, '\n')
 
 function run (script = 'validate-skills.mjs') {
   const result = spawnSync(process.execPath, [join(work, 'scripts', script)], {
@@ -300,21 +305,21 @@ const SCRIPTS = [
 // bare \n. validate-rules.mjs was the worst: it matched no headings, found
 // no rules at all, printed "0 core rule(s) labelled across 0 skill(s)" and
 // exited zero, so the strictness gate was inert on Windows and green.
-function convertToCrlf (dir) {
+function convertEndings (dir, ending) {
   for (const entry of readdirSync(dir)) {
     if (entry === 'node_modules' || entry === '.git') continue
     const path = join(dir, entry)
     if (statSync(path).isDirectory()) {
-      convertToCrlf(path)
+      convertEndings(path, ending)
       continue
     }
     if (!entry.endsWith('.md')) continue
-    writeFileSync(path, readFileSync(path, 'utf8').replace(/\r?\n/g, '\r\n'))
+    writeFileSync(path, readFileSync(path, 'utf8').replace(/\r?\n/g, ending))
   }
 }
 
 const lfSummary = new Map(SCRIPTS.map((script) => [script, run(script).text.trim()]))
-convertToCrlf(work)
+convertEndings(work, '\r\n')
 for (const script of SCRIPTS) {
   const after = run(script)
   if (after.status !== 0) {
