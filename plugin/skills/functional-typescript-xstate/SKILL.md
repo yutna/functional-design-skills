@@ -4,7 +4,7 @@ description: Use when a lifecycle needs nested states, regions active at the sam
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.0.0
+  version: 3.0.1
 ---
 
 # Functional Statecharts with XState

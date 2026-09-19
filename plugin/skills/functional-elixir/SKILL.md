@@ -4,7 +4,7 @@ description: Use when designing Elixir structs, ok and error tuples, or `with` p
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.0.0
+  version: 3.0.1
 ---
 
 # Functional Elixir

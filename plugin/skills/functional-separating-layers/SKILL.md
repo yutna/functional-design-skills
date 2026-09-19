@@ -4,7 +4,7 @@ description: Use when adjacent layers repeat the same abstraction, when a functi
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.0.0
+  version: 3.0.1
 ---
 
 # Separating Layers

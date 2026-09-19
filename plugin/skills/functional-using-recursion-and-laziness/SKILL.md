@@ -4,7 +4,7 @@ description: Use when a stack overflows, when data is too large to hold in memor
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.0.0
+  version: 3.0.1
 ---
 
 # Using Recursion and Laziness

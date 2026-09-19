@@ -10,7 +10,7 @@
     {
       "name": "functional-design-skills",
       "description": "Diagnose complexity, model a domain in types, compose total functions, keep effects at the edges, and refactor toward all of it",
-      "version": "3.0.0",
+      "version": "3.0.1",
       "source": "./plugin",
       "author": {
         "name": "Yutthana Siphuengchai"

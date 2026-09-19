@@ -4,7 +4,7 @@ description: Use when writing or reviewing comments and documentation, when a co
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.0.0
+  version: 3.0.1
 ---
 
 # Writing Useful Comments
