@@ -156,7 +156,7 @@ The default rules bite in specific ways. The ones that catch people out:
   with a contents list. `npm test` enforces this.
 - `description` opens with `Use when`, states the situations that
   should trigger the skill rather than what it covers, stays under 180
-  characters, and is clearly distinct from the other thirty-nine so
+  characters, and is clearly distinct from the other forty-two so
   routing works.
 - Cross-references between skills are sibling-relative
   (`../other-skill/SKILL.md`), and every reference file is linked from

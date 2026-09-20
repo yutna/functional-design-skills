@@ -72,6 +72,13 @@ const FACTS = {
   coreSkills: coreSkills.length,
   scenarios: scenarios().length,
   routingCases: routingCases().length,
+  // Three counts of the skills seen from somewhere else. A description is
+  // distinct from every skill but itself; a version bump touches every
+  // skill plus package.json and both manifests, and bump-version.mjs
+  // carries all of that except package.json, which npm version owns.
+  otherSkills: ids.length - 1,
+  versionedFiles: ids.length + 3,
+  filesTheScriptBumps: ids.length + 2,
 }
 
 
@@ -115,6 +122,18 @@ const CLAIMS = [
   // same reason as the one above: add a scenario and the run has to happen
   // again, not have its number retyped.
   ['evals/README.md', 'scenarios', /The ([a-z-]+) scenarios were run this way/],
+  // The same pack counted from somewhere other than the directory listing.
+  // The first of these drifted silently: written at 2.0.0 when there were
+  // forty skills, wrong three packs later, and it shipped wrong in both
+  // 3.0.0 and 3.0.1. The remaining hand-written number is the "+ 3" above:
+  // the list of manifests lives in bump-version.mjs, so a third manifest
+  // would make both the prose and the fact wrong together, and pass.
+  ['CLAUDE.md', 'otherSkills', /distinct from the other ([a-z-]+) so/],
+  ['CLAUDE.md', 'versionedFiles', /The number appears in ([a-z-]+) files/],
+  ['CLAUDE.md', 'filesTheScriptBumps',
+    /to the other ([a-z-]+), touching one line/],
+  ['CLAUDE.md', 'versionedFiles', /then proves all\s+([a-z-]+) agree/],
+  ['README.md', 'coreSkills', /^([A-Za-z-]+) core skills carry one rule each/m],
 ]
 
 const errors = []
