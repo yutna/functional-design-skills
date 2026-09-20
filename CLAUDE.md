@@ -103,6 +103,12 @@ rejected.
   `functional-design-skills`. The installer reads it to tell "already
   installed" from "another pack owns this name", which is the difference
   between a skip and silently missing skills.
+- **A substantial paragraph belongs to one skill.** Where two skills need
+  the same point, one states it and the other links to it. Checked
+  between every pair of skills, not only where the names say they are
+  related, because two core skills have nothing in their names to say so.
+  A link counts as its text, so a shared cross-reference line is not a
+  repeat.
 - **A pack that extends another says only what it changes.** A skill
   whose name extends another skill's name -- `functional-typescript-effect`
   over `functional-typescript` -- must link to it, and must not repeat a

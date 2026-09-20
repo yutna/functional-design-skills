@@ -340,14 +340,20 @@ function selftest () {
   process.exit(failures > 0 ? 1 : 0)
 }
 
-// A pack whose name extends another pack's name says only what its
-// framework or library changes; the base says the rest. Nothing enforced
-// that until 3.0.0, and the cost of losing it is the one this repository
-// warns about most: the same sentence in two places, corrected in one.
+// The same sentence written in two skills is corrected in one. That is the
+// cost this repository warns about most, and nothing enforced it until
+// 3.0.0 -- and then only between a pack and the pack its name extends,
+// which is the one pair a reader can spot unaided. Two core skills sharing
+// a paragraph have nothing in their names to say so. Measured over all of
+// them before this widened, the pack was already clean, so this holds a
+// floor rather than working off a backlog.
 //
 // Only substantial paragraphs are compared. A short line can legitimately
-// repeat — a heading, a one-clause reminder — and flagging those would make
-// the check noise rather than signal.
+// repeat -- a heading, a one-clause reminder -- and flagging those would
+// make the check noise rather than signal. A link is reduced to its text
+// before the length is taken: a URL is not prose, validate-skills.mjs
+// already owns whether it resolves, and one cross-reference line cleared
+// the threshold on the length of its href alone.
 const SKILLS_DIR = join(ROOT, 'plugin', 'skills')
 const SHARED_PARAGRAPH_CHARS = 120
 
@@ -368,7 +374,10 @@ function paragraphsOf (dir) {
     // snippet is the point of a shared notation, not a duplication.
     const prose = text.split(/^```[\s\S]*?^```$/gm).join('\n\n')
     for (const block of prose.split(/\n\s*\n/)) {
-      const normalised = block.trim().replace(/\s+/g, ' ')
+      const normalised = block
+        .trim()
+        .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+        .replace(/\s+/g, ' ')
       if (normalised.length < SHARED_PARAGRAPH_CHARS) continue
       if (normalised.startsWith('#') || normalised.startsWith('|')) continue
       if (!found.has(normalised)) found.set(normalised, relative(ROOT, file))
@@ -390,28 +399,39 @@ function ancestorsOf (id, known) {
   return found
 }
 
-function checkDeltaPacks () {
+// Counted so the summary can say it. A reader that matched no paragraph
+// would otherwise report a clean run, which is the failure this pack calls
+// worse than a red build.
+let paragraphsCompared = 0
+
+function checkDuplicatedProse () {
   let ids
   try {
     ids = skillIds()
   } catch { return }
   const known = new Set(ids)
+  // skillIds() is sorted, so the first skill to claim a paragraph is the
+  // alphabetically earliest one holding it and every later skill is
+  // reported against that one. For a name-extension pair that is also the
+  // base, because an ancestor's name is a prefix of its own and so always
+  // sorts first. One paragraph in three skills is two errors, not three.
+  const seen = new Map()
   for (const id of ids) {
-    const ancestors = ancestorsOf(id, known)
-    if (ancestors.length === 0) continue
-    const base = new Map()
-    for (const ancestor of ancestors) {
-      for (const [text, file] of paragraphsOf(join(SKILLS_DIR, ancestor))) {
-        if (!base.has(text)) base.set(text, file)
-      }
-    }
     for (const [text, file] of paragraphsOf(join(SKILLS_DIR, id))) {
-      if (!base.has(text)) continue
+      paragraphsCompared++
+      const first = seen.get(text)
+      if (first === undefined) {
+        seen.set(text, { id, file })
+        continue
+      }
+      const isExtension = ancestorsOf(id, known).includes(first.id)
       report(
         file,
         0,
-        `repeats a paragraph from ${base.get(text)}; a pack that extends ` +
-          `another says only what it changes`,
+        `repeats a paragraph from ${first.file}; ` +
+          (isExtension
+            ? 'a pack that extends another says only what it changes'
+            : 'say it once and link to it from the other'),
       )
     }
   }
@@ -421,7 +441,7 @@ if (process.argv.includes('--selftest')) selftest()
 
 const files = walk(ROOT)
 for (const path of files) checkFile(path)
-checkDeltaPacks()
+checkDuplicatedProse()
 
 for (const problem of problems) {
   process.stderr.write(`error ${problem}\n`)
@@ -444,4 +464,14 @@ if (fromSkills === 0) {
   )
   process.exit(1)
 }
+if (paragraphsCompared === 0) {
+  process.stderr.write(
+    'error no paragraph was long enough to compare, so nothing checked ' +
+      'that one skill does not repeat another\n',
+  )
+  process.exit(1)
+}
 process.stdout.write(`ok    prose checks clean across ${files.length} file(s)\n`)
+process.stdout.write(
+  `      ${paragraphsCompared} paragraph(s) compared for duplication\n`,
+)

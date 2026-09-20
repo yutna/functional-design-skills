@@ -148,9 +148,12 @@ See
   change.
 - **Do not skip decoding because the input "comes from us".** Another
   service, an older client, or an older row is still outside.
-- **Do not validate again downstream.** If a second function re-checks,
-  either the first one's output type is too weak or the second is
-  defending against a state the type forbids.
+- **Do not validate again downstream.** A value that came back from
+  `Schema.decodeUnknown` carries the schema's guarantee in its type, so a
+  second check is either distrust of `Schema` or a guard against
+  something the type already rules out. The rule, and the cases where a
+  check does still belong, are in
+  [when-to-validate-instead.md](../../functional-making-illegal-states-unrepresentable/references/when-to-validate-instead.md).
 
 ## Testing
 
