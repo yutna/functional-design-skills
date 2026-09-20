@@ -141,7 +141,7 @@ const CASES = [
       '## Red flags\n\nA value that crosses a process boundary arrives as its ' +
       'shape without\nits guarantees, so the type on the far side is a claim ' +
       'nobody checked\nuntil something parses it back.'],
-    'repeats a paragraph from', 'validate-prose.mjs'],
+    'a pack that extends another says only what it changes', 'validate-prose.mjs'],
   ['the same paragraph in a pack and the pack it extends',
     [join('plugin', 'skills', 'functional-typescript', 'SKILL.md'),
       join('plugin', 'skills', 'functional-typescript-effect', 'SKILL.md')],
@@ -149,7 +149,21 @@ const CASES = [
       '## Pattern\n\nA branded identifier survives the round trip only when ' +
       'the parser and\nthe serialiser agree on the encoded shape, which is ' +
       'why both live in\none module and neither is exported on its own.'],
-    'repeats a paragraph from', 'validate-prose.mjs'],
+    'a pack that extends another says only what it changes', 'validate-prose.mjs'],
+  // Neither of these two is the other's ancestor, so the name tells the
+  // reader nothing and the extends rule the two cases above prove does
+  // not reach them. Nothing did until this case. CLAUDE.md has said since
+  // 2.0.0 that nothing duplicates skill prose; it was pure convention
+  // until 3.0.0, and after that a check only where one name extends
+  // another.
+  ['the same paragraph in two skills that are not a name-extension pair',
+    [join('plugin', 'skills', 'functional-folding-over-data', 'SKILL.md'),
+      join('plugin', 'skills', 'functional-choosing-precise-names', 'SKILL.md')],
+    ['## Red flags',
+      '## Red flags\n\nA rule stated once and linked to from the other place ' +
+      'stays correct\nwhen it changes, and a rule pasted into both places is ' +
+      'two rules the\nday one of them is edited.'],
+    'say it once and link to it from the other', 'validate-prose.mjs'],
   ['a skill whose body never opens a level-one heading', SKILL,
     ['\n# Folding Over Data\n', '\n## Folding Over Data\n'],
     'must open with a single level-one heading'],
