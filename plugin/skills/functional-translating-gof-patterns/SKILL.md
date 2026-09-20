@@ -4,7 +4,7 @@ description: Use when reaching for a factory, strategy, visitor or other class-b
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.0.1
+  version: 3.0.2
 ---
 
 # Translating GoF Patterns

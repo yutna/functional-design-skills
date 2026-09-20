@@ -4,7 +4,7 @@ description: Use when deciding what to log, trace, or measure, when an incident 
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.0.1
+  version: 3.0.2
 ---
 
 # Designing What to Observe

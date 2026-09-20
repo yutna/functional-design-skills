@@ -4,7 +4,7 @@ description: Use when domain values are raw strings or numbers, when the same fo
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.0.1
+  version: 3.0.2
 ---
 
 # Constraining Primitive Values

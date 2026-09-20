@@ -4,7 +4,7 @@ description: Use when a loop accumulates into a variable, when combining a colle
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.0.1
+  version: 3.0.2
 ---
 
 # Folding Over Data

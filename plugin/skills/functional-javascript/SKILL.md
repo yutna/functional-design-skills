@@ -4,7 +4,7 @@ description: Use when applying functional design in plain JavaScript, without a 
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.0.1
+  version: 3.0.2
 ---
 
 # Functional JavaScript

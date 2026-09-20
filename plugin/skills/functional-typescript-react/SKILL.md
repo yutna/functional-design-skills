@@ -4,7 +4,7 @@ description: Use when a React component's props grow, when an effect computes st
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.0.1
+  version: 3.0.2
 ---
 
 # Functional React

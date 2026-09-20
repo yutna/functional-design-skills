@@ -4,7 +4,7 @@ description: Use when mapping between domain types and JSON, database rows, or A
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.0.1
+  version: 3.0.2
 ---
 
 # Crossing IO Boundaries

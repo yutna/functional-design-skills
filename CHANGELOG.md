@@ -6,6 +6,69 @@ skills or guidance, a patch one corrects what is already there.
 
 [semantic versioning]: https://semver.org
 
+## 3.0.2
+
+Two sentences this repository had written down as rules, neither of
+which anything checked. One of them was already being broken.
+
+The theme: a convention is not a check. Both sentences had been in
+`CLAUDE.md` since 2.0.0, both read as constraints, and an agent
+following them had no way to find out it had stopped.
+
+### A count that had been wrong since 3.0.0
+
+- `CLAUDE.md` said a skill's description must be "clearly distinct
+  from the other thirty-nine". There are forty-three skills, so it is
+  distinct from the other forty-two. The sentence was written at 2.0.0
+  when there were forty, and the React split, the Elixir split and the
+  statechart pack each moved it by one without moving the number.
+- `validate-counts.mjs` held eleven claims and now holds sixteen. The
+  five added were found by reading every number-word in the tracked
+  prose and asking which ones the script knew about. The new claim
+  went in against the still-wrong sentence and failed before the word
+  was changed.
+- `README.md`'s "the thirty-three core skills gained the
+  `functional-` prefix" is deliberately not registered. It records
+  what 3.0.0 did, so it must still say thirty-three the day a
+  thirty-fourth core skill lands.
+- One hand-written number is left and is documented next to itself:
+  `versionedFiles` adds the manifests as `+ 3`, and the list of them
+  lives in `bump-version.mjs`.
+
+### A paragraph belongs to one skill, not one pack
+
+- The duplicate-prose check compared a skill only against the packs
+  its own name extends, which is the one pair a reader can spot
+  unaided. It compares every pair now. Two core skills sharing a
+  paragraph have nothing in their names to say so.
+- Measured before widening: zero. This holds a floor rather than
+  working off a backlog, and the summary reports 1726 paragraphs
+  compared so a run that compared none cannot read as clean.
+- A link is reduced to its text before the length is measured. One
+  cross-reference line cleared the hundred-and-twenty-character
+  threshold on the length of its href alone.
+- A fortieth guard, added before the widening and failing then: the
+  same paragraph in two skills whose names say nothing about each
+  other. The two existing cases now assert their own half of the
+  message rather than the prefix they shared, so neither can pass by
+  matching what the other proves.
+
+### One rule was written twice
+
+Exact matching cannot see a paragraph with a word changed, so that was
+measured separately: sentence-level similarity over 1989 sentences,
+three pairs above the threshold, read once and not turned into a gate.
+A threshold set by looking at today's text is fitted to today's text,
+which is the argument this pack already had with itself over the
+routing noise gate.
+
+- `functional-typescript-effect` restated a rule from
+  `functional-making-illegal-states-unrepresentable` nearly word for
+  word. It says what `Schema` changes about it and links for the rest,
+  which is the shape a language pack is meant to have.
+- The other two are an example sentence carried between two packs and
+  two routing pointers worded differently. Both are left alone.
+
 ## 3.0.1
 
 A pass over everything that is not a skill. No skill content changed
