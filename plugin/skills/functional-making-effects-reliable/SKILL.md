@@ -4,7 +4,7 @@ description: Use when a timeout leaves an effect unsure, when a retry could char
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.0.1
+  version: 3.0.2
 ---
 
 # Making Effects Reliable

@@ -4,7 +4,7 @@ description: Use when a shape could be a type or a generic map, when fields or c
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.0.1
+  version: 3.0.2
 ---
 
 # Choosing Types or Plain Data
