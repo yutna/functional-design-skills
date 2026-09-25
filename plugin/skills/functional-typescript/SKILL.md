@@ -4,7 +4,7 @@ description: Use when applying functional design in TypeScript without a functio
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.0.2
+  version: 3.0.3
 ---
 
 # Functional TypeScript

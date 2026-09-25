@@ -4,7 +4,7 @@ description: Use when a TypeScript project uses ts-pattern for matching, includi
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.0.2
+  version: 3.0.3
 ---
 
 # Functional TypeScript With ts-pattern

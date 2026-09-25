@@ -4,7 +4,7 @@ description: Use when designing domain types, when a record has many optional fi
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.0.2
+  version: 3.0.3
 ---
 
 # Modeling With Algebraic Types

@@ -4,7 +4,7 @@ description: Use when code mutates shared data or updates a record in place, whe
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.0.2
+  version: 3.0.3
 ---
 
 # Managing State Immutably

@@ -4,7 +4,7 @@ description: Use when a function throws and callers cannot tell, when exceptions
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.0.2
+  version: 3.0.3
 ---
 
 # Handling Errors With Results

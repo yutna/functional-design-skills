@@ -4,7 +4,7 @@ description: Use when an entity has a lifecycle, when a status field drives bran
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.0.2
+  version: 3.0.3
 ---
 
 # Modeling State Machines

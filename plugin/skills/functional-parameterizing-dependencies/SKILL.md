@@ -4,7 +4,7 @@ description: Use when domain code needs a database or clock, when tests need hea
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.0.2
+  version: 3.0.3
 ---
 
 # Parameterizing Dependencies

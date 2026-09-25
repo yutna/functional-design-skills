@@ -4,7 +4,7 @@ description: Use when naming a function, type or variable, when a name is vague 
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.0.2
+  version: 3.0.3
 ---
 
 # Choosing Precise Names
