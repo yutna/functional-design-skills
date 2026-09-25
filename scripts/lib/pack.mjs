@@ -82,6 +82,36 @@ export function everySkill () {
   return skillIds().map(readSkill)
 }
 
+// Since 3.0.0 every skill is named functional-something, so the name no
+// longer says whether a skill is a core rule or a language pack. The index
+// already lists the packs, and readers maintain that list, so it is the
+// authority rather than a second list in a script.
+export const INDEX_SKILL = 'functional-design'
+
+// Read here rather than in either caller, for the reason at the top of this
+// file: validate-counts.mjs owned this parse, and when validate-skills.mjs
+// came to need the same list the choice was to copy it or to move it. The
+// same fact written down twice drifts.
+export function languagePackIds () {
+  const body = readRepoFile(join('plugin', 'skills', INDEX_SKILL, 'SKILL.md'))
+  const section = /^## Language packs\n([\s\S]*?)^## /m.exec(body)
+  if (section === null) {
+    throw new Error(
+      `plugin/skills/${INDEX_SKILL}/SKILL.md: no "## Language packs" ` +
+        'section, so nothing can tell a pack from a core skill',
+    )
+  }
+  const ids = [...section[1].matchAll(/^- \[([a-z0-9-]+)\]/gm)].map((m) => m[1])
+  if (ids.length === 0) {
+    throw new Error(
+      `plugin/skills/${INDEX_SKILL}/SKILL.md: the "## Language packs" ` +
+        'section lists none, so every pack check below would read nothing ' +
+        'and report a clean run.',
+    )
+  }
+  return ids
+}
+
 export function referenceFiles (id) {
   const dir = join(SKILLS_DIR, id, 'references')
   if (!existsSync(dir)) return []

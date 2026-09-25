@@ -23,6 +23,9 @@ This pack covers React itself. The TypeScript it is written in is in
 server and client split a meta-framework adds is in
 [functional-typescript-react-nextjs](../functional-typescript-react-nextjs/SKILL.md).
 
+**Check the installed version before writing code.** The shapes below
+target React 19.
+
 ## When to use
 
 - Designing a component, a hook, or a custom hook's interface

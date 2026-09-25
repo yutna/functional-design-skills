@@ -20,6 +20,9 @@ The language itself, and OTP, are unchanged and live in
 [functional-elixir](../functional-elixir/SKILL.md). This pack is only
 what Phoenix and Ecto add.
 
+**Check the installed version before writing code.** The shapes below
+target Phoenix 1.8, LiveView 1.2 and Ecto 3.
+
 ## When to use
 
 - Designing a context, a schema, or a changeset

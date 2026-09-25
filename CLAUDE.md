@@ -113,6 +113,18 @@ rejected.
   whose name extends another skill's name -- `functional-typescript-effect`
   over `functional-typescript` -- must link to it, and must not repeat a
   paragraph from it. Both are checked.
+- **A pack that teaches a library names the major it targets.** A pack
+  whose name extends another language pack's is a delta for some library,
+  and a library's shapes move at its major. It must name the major the
+  shapes target and tell the reader to verify the installed version; the
+  check reads the pack list out of the index and greps for that phrase.
+  The base packs are out of scope on purpose. `functional-javascript` and
+  `functional-elixir` name only long-stable language features, so a
+  version caveat over those would be a sentence that earns nothing. A
+  base pack's own toolchain claims are carried by its prose instead:
+  nothing observable separates `erasableSyntaxOnly`, which needs
+  TypeScript 5.8 and fails the build on anything older, from an option
+  that has been there for a decade.
 - **Numbers in prose are checked against reality.** If you write a count
   of skills, scenarios, or cases anywhere in the documentation, add it to
   `scripts/validate-counts.mjs` in the same commit. Counts written by
@@ -178,11 +190,11 @@ The default rules bite in specific ways. The ones that catch people out:
 ## The tooling reads through one boundary
 
 `scripts/lib/markdown.mjs` is the only place a Markdown file is read, and
-`scripts/lib/pack.mjs` is the only place that says what a skill is, what
-a routing case is, and what a scenario is. Use them. A script that reads
-a file itself is how the three CRLF bugs got in: eight scripts each split
-lines their own way, so each was a separate chance to be wrong, and there
-was no single place to fix it.
+`scripts/lib/pack.mjs` is the only place that says what a skill is, which
+skills are language packs, what a routing case is, and what a scenario
+is. Use them. A script that reads a file itself is how the three CRLF
+bugs got in: eight scripts each split lines their own way, so each was a
+separate chance to be wrong, and there was no single place to fix it.
 
 This is the pack's own advice applied to its own tooling, which is worth
 saying plainly because it had not been:
