@@ -6,6 +6,54 @@ skills or guidance, a patch one corrects what is already there.
 
 [semantic versioning]: https://semver.org
 
+## 3.0.3
+
+A pack that teaches a library now says which major its shapes target,
+and a check keeps it saying so.
+
+### One pack in six carried a version caveat
+
+- `functional-typescript-effect` told the reader to check the installed
+  version before writing code. The five other packs that teach a library
+  said nothing, so the same reader was warned about Effect's majors and
+  told nothing about XState's -- and XState 5 reorganised everything
+  around actors, renaming `interpret` to `createActor` along the way.
+- `validate-skills.mjs` now requires that caveat from any pack whose
+  name extends another pack's name. That is the one thing observable
+  from the name: such a pack is the delta for some library, and a
+  library has majors. Six packs are in scope, and one already passed.
+- The base packs are out of scope on purpose. `functional-javascript`
+  and `functional-elixir` name only long-stable language features, and a
+  version caveat over freezing and `defstruct` would be a sentence that
+  earns nothing.
+- The five now name what they target: ts-pattern 5, XState 5, React 19,
+  the App Router on Next.js 16, and Phoenix 1.8 with LiveView 1.2 and
+  Ecto 3. Each number was read off that library's own registry rather
+  than written from memory.
+- The check went in before any of them were fixed and listed all five.
+  `negative-test.mjs` gained a case that breaks it on purpose, taking
+  the guard count from forty to forty-one.
+
+### A compiler option that stops the build
+
+- `functional-typescript` recommends a set of compiler options carrying
+  `erasableSyntaxOnly`, which arrived in TypeScript 5.8. On anything
+  older `tsc` answers `error TS5023` and stops, so the skill sent a
+  reader to a failed build rather than to a weaker guarantee. It says so
+  now.
+- Nothing observable separates that flag from an option that has been
+  there for a decade, so this one is carried by the prose rather than by
+  the check, and `CLAUDE.md` says as much rather than implying the check
+  covers it.
+
+### The language-pack list lives in one place
+
+- `validate-counts.mjs` parsed the index's `## Language packs` section
+  to tell a pack from a core skill. `validate-skills.mjs` came to need
+  the same list, so the parse moved into `lib/pack.mjs` instead of being
+  copied into a second reader. It throws on an empty list, so neither
+  caller can report a zero as a pass.
+
 ## 3.0.2
 
 Two sentences this repository had written down as rules, neither of

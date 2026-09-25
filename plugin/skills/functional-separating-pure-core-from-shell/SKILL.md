@@ -4,7 +4,7 @@ description: Use when business logic cannot be tested without I/O, when one call
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.0.2
+  version: 3.0.3
 ---
 
 # Separating Pure Core From Shell
