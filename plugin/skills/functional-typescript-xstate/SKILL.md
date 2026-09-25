@@ -23,6 +23,10 @@ modelling itself is unchanged and lives in
 the TypeScript is in
 [functional-typescript](../functional-typescript/SKILL.md).
 
+**Check the installed version before writing code.** The shapes below
+target XState 5, which reorganised everything around actors and renamed
+`interpret` to `createActor`; version 4 spells most of this differently.
+
 ## When to use
 
 - A lifecycle with states inside states

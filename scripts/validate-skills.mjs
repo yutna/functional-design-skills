@@ -12,7 +12,9 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parse as parseYaml } from 'yaml'
 import { anchorsIn, readMarkdown, slugOf, stripFences } from './lib/markdown.mjs'
-import { readSkill, skillIds as everyId } from './lib/pack.mjs'
+import {
+  languagePackIds, readSkill, skillIds as everyId,
+} from './lib/pack.mjs'
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)))
 // The plugin lives in its own directory so that package.json and the lock file
@@ -561,6 +563,67 @@ function validateParentPack (ids) {
   }
 }
 
+// A language pack whose name extends another language pack's name teaches a
+// library rather than a language, and a library's shapes move at its major
+// version. The Effect pack said so and the other five did not, so a reader
+// told to check Effect's version was told nothing about XState's, whose
+// fifth major renamed most of what the fourth called things.
+//
+// The base packs are deliberately out of scope. functional-javascript and
+// functional-elixir name only long-stable language features -- freezing,
+// spread, defstruct, tagged tuples -- and a version caveat over those would
+// be a sentence that earns nothing. The rule is keyed to the one thing that
+// is observable from the name: a pack that extends another is the delta for
+// some library, and that library has majors.
+//
+// This does not cover a base pack's own toolchain claims. Nothing observable
+// separates `erasableSyntaxOnly`, which needs TypeScript 5.8, from a
+// compiler option that has been there for a decade; that one is carried by
+// the prose, not by this.
+const VERSION_CAVEAT = /installed (?:major )?version/
+
+let packsChecked = 0
+
+function validateStackVersion (ids) {
+  let packs
+  try {
+    packs = languagePackIds()
+  } catch (error) {
+    errors.push(error.message)
+    return
+  }
+  const known = new Set(ids)
+  const packSet = new Set(packs)
+  for (const id of packs) {
+    // A pack listed by the index but absent from disk is validate-counts.mjs's
+    // error to report; reading it here would throw instead.
+    if (!known.has(id)) continue
+    // Reuses the name-nesting rule validateParentPack applies, and asks it of
+    // the pack list rather than of every skill: only a pack extending another
+    // pack is a library delta.
+    const parts = id.split('-')
+    let extendsAPack = false
+    for (let i = parts.length - 1; i > 1; i--) {
+      if (packSet.has(parts.slice(0, i).join('-'))) {
+        extendsAPack = true
+        break
+      }
+    }
+    if (!extendsAPack) continue
+    packsChecked++
+    if (VERSION_CAVEAT.test(readMarkdown(join(SKILLS_DIR, id, 'SKILL.md')))) {
+      continue
+    }
+    fail(
+      id,
+      'teaches a library and never tells the reader to check the installed ' +
+        'version of it. Its shapes move at that library\'s major, so name ' +
+        'the major they target and say to verify it -- the phrase this ' +
+        'looks for is "installed version".',
+    )
+  }
+}
+
 const skillIds = readSkillDirs()
 if (skillIds.length === 0 && errors.length === 0) {
   errors.push('plugin/skills/: no skill directories found')
@@ -576,6 +639,7 @@ validateLockVersions()
 validateScriptModes()
 validateEvalNames(skillIds)
 validateParentPack(skillIds)
+validateStackVersion(skillIds)
 if (errors.length === 0) {
   validateDistinctDescriptions(skillIds)
 }
@@ -600,6 +664,16 @@ if (skillIds.length === 0) {
   )
   process.exit(1)
 }
+if (packsChecked === 0) {
+  process.stderr.write(
+    'error the index listed no language pack that extends another, so ' +
+      'nothing checked that a library pack names the major it targets\n',
+  )
+  process.exit(1)
+}
 process.stdout.write(
   `ok    ${skillIds.length} skill(s) valid at ${EXPECTED_VERSION}\n`,
+)
+process.stdout.write(
+  `      ${packsChecked} library pack(s) name the major they target\n`,
 )

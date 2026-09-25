@@ -22,6 +22,9 @@ from
 [functional-typescript](../functional-typescript/SKILL.md); this pack
 covers how to consume them.
 
+**Check the installed version before writing code.** The shapes below
+target ts-pattern 5.
+
 ## When to use
 
 - A TypeScript project that already depends on ts-pattern

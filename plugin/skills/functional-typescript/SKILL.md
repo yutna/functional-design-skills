@@ -62,7 +62,9 @@ None of this works without these compiler options:
 
 `strict` is the minimum. `noUncheckedIndexedAccess` is what stops
 `array[0]` claiming to be defined, which is the most common source of
-runtime undefined in otherwise well-typed code.
+runtime undefined in otherwise well-typed code. `erasableSyntaxOnly`
+needs TypeScript 5.8; on anything older `tsc` rejects the config file,
+so check the installed version before pasting the block.
 
 ## Core rules
 

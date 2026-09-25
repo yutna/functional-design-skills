@@ -23,30 +23,15 @@
 // Usage: node scripts/validate-counts.mjs
 
 import {
-  readRepoFile, routingCases, scenarios, skillIds,
+  INDEX_SKILL as INDEX, languagePackIds, readRepoFile, routingCases, scenarios,
+  skillIds,
 } from './lib/pack.mjs'
 
 const ids = skillIds()
 
-// Since 3.0.0 every skill is named functional-something, so the name no
-// longer says whether a skill is a core rule or a language pack. The index
-// already lists the packs, and that list is maintained because readers use
-// it, so it is the authority here rather than a second list in this script.
-const INDEX = 'functional-design'
-
-function declaredLanguagePacks () {
-  const body = readRepoFile(`plugin/skills/${INDEX}/SKILL.md`)
-  const section = /^## Language packs\n([\s\S]*?)^## /m.exec(body)
-  if (section === null) {
-    throw new Error(
-      `plugin/skills/${INDEX}/SKILL.md: no "## Language packs" section, so ` +
-        'nothing can tell a pack from a core skill',
-    )
-  }
-  return [...section[1].matchAll(/^- \[([a-z0-9-]+)\]/gm)].map((m) => m[1])
-}
-
-const languagePacks = declaredLanguagePacks()
+// The pack list used to be parsed here. validate-skills.mjs came to need the
+// same list, so it moved to lib/pack.mjs rather than being copied.
+const languagePacks = languagePackIds()
 const packSet = new Set([...languagePacks, INDEX])
 const coreSkills = ids.filter((id) => !packSet.has(id))
 

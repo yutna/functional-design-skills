@@ -22,6 +22,10 @@ lives in
 [functional-typescript-react](../functional-typescript-react/SKILL.md).
 This pack is only what the boundary adds.
 
+**Check the installed version before writing code.** The shapes below
+target the App Router on Next.js 16; the pages router puts the boundary
+somewhere else entirely.
+
 ## When to use
 
 - Deciding whether something is a server component or a client one
