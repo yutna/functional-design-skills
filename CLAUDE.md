@@ -49,6 +49,15 @@ installs with `npm ci`, which fails when `package.json` and
 `package-lock.json` disagree. Change a dependency by running
 `npm install`, never by editing `package.json` alone.
 
+Opening the pull request is part of finishing the change, and two labels
+are required on it: `pr-hygiene` fails the run without them, and
+[CONTRIBUTING.md](CONTRIBUTING.md) says which. Merges here are merge
+commits whose subject is the pull request's title, which the repository
+now produces on its own, so `gh pr merge --merge` needs no `--subject`.
+A release is one further pull request carrying the version bump and the
+changelog entry, and once it lands it gets an annotated tag at its merge
+commit and a GitHub release whose title repeats the tag's subject.
+
 ## Hard constraints
 
 These are not preferences, and a change that breaks one will be
