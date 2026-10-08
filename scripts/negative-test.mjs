@@ -135,6 +135,13 @@ const CASES = [
     join('evals', 'README.md'),
     [SCENARIO_SENTENCE, 'holds a good number of problems'],
     'was rewritten', 'validate-counts.mjs'],
+  // The two cases above break a count the evals state about themselves. This
+  // one breaks a count a skill states about its own table, which is counted
+  // from the Markdown rather than read off a directory listing.
+  ['a skill that miscounts its own table of exceptions',
+    join('plugin', 'skills', 'functional-choosing-types-or-plain-data', 'SKILL.md'),
+    ['It has five exceptions', 'It has six exceptions'],
+    'says "six" genericFacts, but there are', 'validate-counts.mjs'],
   ['a bibliographic reference in a tracked file', SKILL,
     ['## Pattern', '## Pattern\n\nStated in Chapter 7 of the other book.'],
     'this pack cites no sources', 'validate-prose.mjs'],
