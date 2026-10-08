@@ -18,9 +18,11 @@
 // checker and not a test. An example can parse and still be wrong. It cannot
 // be wrong in the one way that makes it useless to paste.
 //
-// Elixir needs the Elixir toolchain, which continuous integration does not
-// install, so it is opt-in with --with-elixir and JavaScript, TypeScript and
-// JSON are what gate.
+// Elixir needs the Elixir toolchain, so it is opt-in with --with-elixir, and
+// without the flag JavaScript, TypeScript and JSON are what gate. The Ubuntu
+// job in continuous integration installs the toolchain and passes the flag,
+// so there Elixir gates too; the Windows job installs none, and on your own
+// machine the fences are parsed only when you ask.
 //
 // Usage:
 //   node scripts/validate-examples.mjs                 js, ts, tsx, json
@@ -188,8 +190,8 @@ function selftest () {
   let failures = 0
   for (const [label, shouldFail, doc, lang] of SELFTEST) {
     // A case that needs a toolchain this machine has not got is skipped, not
-    // failed. Continuous integration has no Elixir, and a self-test that
-    // passes only where it was written is worse than none.
+    // failed. The Windows job has no Elixir, and a self-test that passes
+    // only where it was written is worse than none.
     if (lang === 'elixir' && !haveElixir()) {
       process.stdout.write(`selftest skip: ${label} (no elixir on PATH)\n`)
       continue
