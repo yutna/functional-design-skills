@@ -112,6 +112,15 @@ rejected.
   `functional-design-skills`. The installer reads it to tell "already
   installed" from "another pack owns this name", which is the difference
   between a skip and silently missing skills.
+- **The skill listing has a ceiling, and it only comes down.** Claude Code
+  puts every skill's name and description in context on every turn and
+  caps that listing at one per cent of the context window, 8,000
+  characters where it cannot tell. Past the cap it drops descriptions,
+  least-used first, and a skill listed by name alone is rarely chosen.
+  This pack's listing is already that size on its own, before anything
+  else the user has installed. `validate-skills.mjs` sums the names and
+  descriptions and fails when the total passes its ceiling, so a longer
+  description has to be paid for by a shorter one.
 - **A substantial paragraph belongs to one skill.** Where two skills need
   the same point, one states it and the other links to it. Checked
   between every pair of skills, not only where the names say they are

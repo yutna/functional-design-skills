@@ -73,6 +73,15 @@ const CASES = [
     ['description: Use when ', 'description: This skill covers '], 'must open with "Use when "'],
   ['a description past this pack\'s length limit', SKILL,
     ['description: Use when ', `description: Use when ${'x'.repeat(200)} `], "this pack's limit is"],
+  // The description stays inside its own limit; it is the sum that goes over.
+  // The clause is longer than the headroom the listing has, so if the ceiling
+  // is ever left standing far above the listing this stops tripping, which
+  // is the cue to bring the ceiling down.
+  ['one more description that fits alone but overflows the listing',
+    join('plugin', 'skills', 'functional-composing-functions', 'SKILL.md'),
+    [ANOTHER_DESCRIPTION,
+      `${ANOTHER_DESCRIPTION} or when small steps will not line up end to end`],
+    'over the ceiling'],
   ['a second level-one heading', SKILL,
     ['## Overview', '# Overview'], 'level-one headings, expected 1'],
   ['a link to a reference that is not there', SKILL,
