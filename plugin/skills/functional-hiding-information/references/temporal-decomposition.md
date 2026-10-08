@@ -79,4 +79,4 @@ for how a pipeline is structured once the modules are right.
 - Names with a sequence in them: `preValidate`, `postProcess`
 - Two modules importing the same format constant
 - A change to a field's meaning touching every stage
-- The workflow function contains no logic yet all stages know its booking
+- The workflow function contains no logic yet all stages know its order

@@ -45,6 +45,11 @@ const DOMAIN_NOUNS = [
 // booking", "Booking the steps", "an implicit booking", "in original booking",
 // "the booking is the only thing", "not one record per treatment",
 // "one shared test layer per treatment", and the table header "| Booking |".
+//
+// Three more were found by a second reading at 3.0.4, after the list had
+// already been reported clean: "all stages know its booking", "cannot run
+// out of booking", and the table cell "Reverse-booking compensation". Each
+// sat in an idiom the list did not yet name, so the list could not see it.
 const IDIOMS = [
   [String.raw`the (NOUN) things happen`, 'the order things happen'],
   [String.raw`(NOUN) of calls`, 'Ordering of calls'],
@@ -62,6 +67,9 @@ const IDIOMS = [
   [String.raw`nothing about (NOUN)\b`, 'nothing about order'],
   [String.raw`(NOUN)-independent`, 'order-independent'],
   [String.raw`(NOUN) (?:is|was) (?:not )?(?:preserved|guaranteed)`, 'order is preserved'],
+  [String.raw`reverse-(NOUN)\b`, 'reverse-order'],
+  [String.raw`\bout of (NOUN)\b`, 'out of order'],
+  [String.raw`\bknows? its (NOUN)\b`, 'know its order'],
 ]
 
 // Whether a word opens with a vowel *sound*, which is what chooses the
@@ -296,6 +304,9 @@ function selftest () {
     ['idiom', '| Booking | Move |', checkIdioms, 'prose'],
     ['idiom', 'At-least-once says nothing about booking.', checkIdioms, 'prose'],
     ['idiom', 'Or make handlers booking-independent, which is cheaper.', checkIdioms, 'prose'],
+    ['idiom', '- The workflow function contains no logic yet all stages know its booking', checkIdioms, 'prose'],
+    ['idiom', 'The loop splits into two steps that cannot run out of booking.', checkIdioms, 'prose'],
+    ['idiom', '| Reverse-booking compensation | A released slot still charged |', checkIdioms, 'prose'],
     ['article', 'A draft with an `bookingId` is representable.', checkArticles, 'prose'],
     ['article-wrapped', 'Write each rule as a sentence. "An\nbooking\'s total equals the sum."', checkArticles, 'prose'],
     ['coined', 'A limit the developer invented becomes a treatmention incident.', checkCoinedWords, 'prose'],
@@ -320,6 +331,9 @@ function selftest () {
   // And the clean forms must not fire.
   const clean = [
     ['idiom', 'Modules named parse, enrich, send follow the order things happen.', checkIdioms],
+    ['idiom', '- The workflow function contains no logic yet all stages know its order', checkIdioms],
+    ['idiom', 'The loop splits into two steps that cannot run out of order.', checkIdioms],
+    ['idiom', '| Reverse-order compensation | A released slot still charged |', checkIdioms],
     ['article', 'A draft with a `bookingId` is representable.', checkArticles],
     ['article', 'An hour later the booking expires, and an HTTP call is made.', checkArticles],
     ['article', 'Read "an X and a Y" as a record, and a choice of A or B as a union.', checkArticles],

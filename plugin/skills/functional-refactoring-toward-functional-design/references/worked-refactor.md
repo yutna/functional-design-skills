@@ -176,7 +176,7 @@ UnvalidatedBooking -> ValidatedBooking -> PricedBooking -> ConfirmedBooking
 
 Rename the input type, add each stage as a copy, and change each step's
 signature in turn. The loop that validated and priced in one pass splits
-into two steps that cannot run out of booking.
+into two steps that cannot run out of order.
 
 The re-checks inside `decidePlacement` can now be deleted: a
 `ValidatedBooking` is validated by construction.
