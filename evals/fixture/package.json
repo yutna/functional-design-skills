@@ -1,5 +1,9 @@
 {
   "name": "clinic-board-fixture",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "next": "16.4.0",
+    "react": "19.3.0"
+  }
 }
