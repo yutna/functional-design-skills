@@ -20,6 +20,14 @@ export function readMarkdown (path) {
   return readFileSync(path, 'utf8').replace(/\r\n/g, '\n')
 }
 
+// The same boundary for the TypeScript that sits beside the Markdown. The
+// preludes under example-types/ are checked out with the platform's endings
+// like everything else, and a \r left in one would reach a pattern that does
+// not expect it.
+export function readSource (path) {
+  return readMarkdown(path)
+}
+
 export function linesOf (text) {
   return text.split('\n')
 }
@@ -53,6 +61,97 @@ export function stripFences (text) {
 export function fencedBlocks (text, language) {
   const pattern = new RegExp('```' + language + '\\n([\\s\\S]*?)```', 'g')
   return [...text.matchAll(pattern)].map((match) => match[1])
+}
+
+// House style indents a fence inside a numbered list to the item's content
+// column, so the indent is captured, required again on the closing fence, and
+// stripped from every line before the code is read.
+const FENCE = /^([ \t]*)```(\w+)[ \t]*\r?\n([\s\S]*?)^\1```[ \t]*$/gm
+
+function outdent (code, indent) {
+  if (indent === '') return code
+  return code
+    .split('\n')
+    .map((line) => (line.startsWith(indent) ? line.slice(indent.length) : line))
+    .join('\n')
+}
+
+// Every fence of every language, in order: where it opens, what it claims to
+// be, and its code with the list indent taken off. `line` is the line of the
+// opening marker, so the first line of `code` is Markdown line `line + 1`.
+// The parse check and the type check both read examples through this, and
+// they would disagree about which lines belong to which fence if each kept
+// its own copy of the pattern.
+export function fencesIn (text, file) {
+  const found = []
+  for (const match of text.matchAll(FENCE)) {
+    found.push({
+      file,
+      line: text.slice(0, match.index).split('\n').length,
+      lang: match[2],
+      code: outdent(match[3], match[1]),
+    })
+  }
+  return found
+}
+
+// Inline code outside fenced blocks, with the line each span opens on. A span
+// is a run of backticks closed by a run of the same length, and a wrapped
+// sentence can break one across lines, so the scan is over the whole text
+// rather than line by line. A paragraph break ends the search: an unmatched
+// run is literal text, not a span that swallows the rest of the file.
+export function inlineCodeSpans (text) {
+  let fence = null
+  const prose = linesOf(text).map((line) => {
+    const marker = /^\s*(`{3,}|~{3,})/.exec(line)
+    if (fence === null && marker) {
+      fence = marker[1]
+      return ''
+    }
+    if (fence !== null) {
+      if (marker && marker[1][0] === fence[0] && marker[1].length >= fence.length) {
+        fence = null
+      }
+      return ''
+    }
+    return line
+  }).join('\n')
+  const spans = []
+  let at = 0
+  while (at < prose.length) {
+    if (prose[at] !== '`') {
+      at++
+      continue
+    }
+    let end = at
+    while (prose[end] === '`') end++
+    const width = end - at
+    let close = -1
+    for (let probe = end; probe < prose.length;) {
+      if (prose[probe] !== '`') {
+        probe++
+        continue
+      }
+      let after = probe
+      while (prose[after] === '`') after++
+      if (after - probe === width) {
+        close = probe
+        break
+      }
+      probe = after
+    }
+    const inside = close === -1 ? '' : prose.slice(end, close)
+    if (close === -1 || /\n[ \t]*\n/.test(inside)) {
+      at = end
+      continue
+    }
+    spans.push({
+      line: prose.slice(0, at).split('\n').length,
+      code: inside.replace(/\s+/g, ' ').trim(),
+    })
+    at = close + width
+  }
+  return spans
 }
 
 // The slug a heading gets in rendered Markdown: lower-cased, with anything
