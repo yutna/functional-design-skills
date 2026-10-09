@@ -14,7 +14,7 @@
 
 ## The shape of a match
 
-```ts
+```text
 match(value).with(pattern, handler).with(pattern, handler).exhaustive();
 ```
 
@@ -26,14 +26,21 @@ system.
 `.otherwise(handler)` and `.run()` end a match without the check. Reserve
 them for the cases described below.
 
+The sections that follow show patterns one `.with` at a time and leave
+the ending off. A real match always has one.
+
 ## Literal and structural patterns
 
 ```ts
 match(shipment)
-  .with({ tag: "Shipped" }, handler)                  // discriminant
-  .with({ tag: "Shipped", tracking: "X1" }, handler)  // and a literal
-  .with({ shipping: { method: "express" } }, handler) // nested
-  .with([{ tag: "Draft" }, { tag: "Send" }], handler) // tuple
+  .with({ tag: "Pending" }, handler)                  // discriminant
+  .with({ tag: "Failed", reason: "Lost" }, handler);  // and a literal
+
+match(booking)
+  .with({ treatment: { tag: "Procedure" } }, handler); // nested
+
+match([quote, command] as const)
+  .with([{ tag: "Draft" }, { tag: "Send" }], handler); // tuple
 ```
 
 An object pattern matches partially: keys not mentioned are unconstrained.
@@ -51,7 +58,7 @@ well.
 | `P.boolean` | Any boolean              |
 | `P.symbol`  | Any symbol               |
 | `P.nullish` | `null` or `undefined`    |
-| `P.any`     | Anything, typed as `any` |
+| `P.any`     | Anything, same as `P._`  |
 
 In domain code, `P._` as a final catch-all is the same mistake as a
 permissive `default`. It is useful inside a larger pattern, to say "this
@@ -60,11 +67,11 @@ field can be anything".
 ## Combinators
 
 ```ts
-match(booking)
-  .with({ tag: P.union("Draft", "Sent") }, handler)
-  .with({ status: P.not("cancelled") }, handler)
-  .with({ treatments: P.array({ quantity: P.number }) }, handler)
-  .with({ note: P.optional(P.string) }, handler)
+// one match each, so no arm hides the next
+match(booking).with({ tag: P.union("Draft", "Sent") }, handler);
+match(booking).with({ tag: P.not("Draft") }, handler);
+match(booking).with({ treatments: P.array({ quantity: P.number }) }, handler);
+match(booking).with({ note: P.optional(P.string) }, handler);
 ```
 
 `P.array(p)` matches when every element matches `p`. To match on the

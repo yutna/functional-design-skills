@@ -37,8 +37,10 @@ Not for: designing the union itself, which is
 
 ## Core rules
 
-1. Rule. **End every match with `.exhaustive()`.** That is the whole point;
-   `.otherwise()` throws the guarantee away.
+1. Rule. **End a match over a union with `.exhaustive()`.** That is the whole
+   point; `.otherwise()` there throws the guarantee away. A match over a pair,
+   such as a state and a command, is a table whose empty cells are one
+   outcome, and `.otherwise()` is how that outcome is written.
 2. Default. **Match on the discriminant first**, then on nested structure, so
    the patterns read in the order a person would ask the questions.
 3. Default. **Use `P.when` for guards**, not for business rules that deserve a
@@ -80,11 +82,11 @@ const routing = (booking: Booking) =>
   match(booking)
     .with({ lifecycle: { tag: "Cancelled" } }, () => "archive")
     .with(
-      { shipping: { method: "express" }, total: P.when((t) => t > 500_00) },
-      () => "priority courier",
+      { treatment: { tag: "Procedure" }, minutes: P.when((m) => m > 90) },
+      () => "theatre",
     )
-    .with({ shipping: { method: "express" } }, () => "courier")
-    .with({ shipping: { method: "standard" } }, () => "post")
+    .with({ treatment: { tag: "Procedure" } }, () => "procedure room")
+    .with({ treatment: { tag: "Consultation" } }, () => "consulting room")
     .exhaustive();
 ```
 
@@ -109,9 +111,10 @@ const apply = (
 
 This is the transition table from
 [functional-modeling-state-machines](../functional-modeling-state-machines/SKILL.md)
-written directly. It is the one place `.otherwise()` is legitimate: the empty
-cells of the table are genuinely a single outcome, and enumerating every illegal
-pair would be noise.
+written directly, and the pair it matches over is why rule 1 lets it end in
+`.otherwise()`: enumerating every illegal pair would be noise. The table form
+gives up the list `.exhaustive()` produces. A state or a command added later is
+not reported here, because `.otherwise()` answers for it.
 
 Where transitions carry different failures, prefer separate functions per
 source state and keep the match only for dispatching commands.
@@ -154,7 +157,8 @@ at the edge, with the compiler proving every case is covered.
 ## Red flags
 
 - `.otherwise()` on a match over a domain union
-- `.run()` or `.exhaustive()` missing, leaving the match unevaluated
+- `.run()`, `.exhaustive()` or `.otherwise()` missing, leaving the match
+  unevaluated
 - A match on a raw string status rather than a choice type
 - `P._` used as a catch-all in a domain match
 - A `P.when` guard containing a multi-line business rule
