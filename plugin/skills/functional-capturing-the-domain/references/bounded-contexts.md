@@ -19,8 +19,8 @@ solve but a fact to model.
 The boundary is where the language changes. Signals, in order of
 reliability:
 
-1. **A word means different things.** Shipping's "booking" is a box with an
-   address; billing's "booking" is a set of charges.
+1. **A word means different things.** Scheduling's "booking" is a slot
+   held for a patient; billing's "booking" is a set of charges.
 2. **Different people are responsible.** Different departments produce
    different models, and reorganisations follow the same lines.
 3. **Different rates of change.** A pricing engine that changes weekly
