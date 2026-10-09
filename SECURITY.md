@@ -2,9 +2,9 @@
 
 ## What this repository contains
 
-Markdown skill files, five Node validation scripts, and two pairs of
-install scripts. The skills themselves are documentation: they are read
-by an agent and contain no executable content.
+Markdown skill files, the Node scripts that check them, and two pairs
+of install scripts. The skills themselves are documentation: they are
+read by an agent and contain no executable content.
 
 The parts that do run on a contributor's or a user's machine are:
 
@@ -12,13 +12,23 @@ The parts that do run on a contributor's or a user's machine are:
   into `~/.claude/skills`.
 - `scripts/link-local.sh` and `scripts/link-local.ps1`, which link them
   into `.claude/skills` inside a clone.
-- `scripts/validate-skills.mjs`, `scripts/validate-prose.mjs`,
-  `scripts/validate-examples.mjs`, `scripts/eval-routing.mjs` and
-  `scripts/negative-test.mjs`, which read files in the repository. The
-  last two also write to a temporary directory they create and remove.
-  `validate-examples.mjs` parses the code in the documentation; it never
-  runs it.
-- The development dependencies installed by `npm ci`.
+- The checks that `npm test` and `npm run test:guards` run: the
+  `scripts/validate-*.mjs` files, `scripts/eval-routing.mjs` and
+  `scripts/negative-test.mjs`. They read files in the repository.
+  `negative-test.mjs` works on copies in temporary directories it
+  creates and removes, and `validate-types.mjs` writes the modules it
+  generates under `node_modules/.cache/`. The code in the documentation
+  is parsed and type-checked, never run; asked to parse the Elixir
+  examples, `validate-examples.mjs` hands them to `elixir` to read.
+- `scripts/eval-scenarios.mjs` and `scripts/eval-plugin.mjs`, which no
+  test runs. They start the `claude` command, which calls a model on
+  the account that is signed in, against a copy of the fixture or of the
+  plugin in a temporary directory, and they keep what comes back there
+  or under `evals/results/`.
+- `scripts/bump-version.mjs`, which rewrites the version in the
+  manifests and in every skill's frontmatter.
+- The development dependencies installed by `npm ci`, which include
+  the libraries the examples are type-checked against.
 
 Nothing the plugin ships needs npm. `package.json` and the lock file
 live outside `plugin/` deliberately, so that installing the plugin never
