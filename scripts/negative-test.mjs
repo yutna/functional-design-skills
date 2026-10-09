@@ -157,6 +157,13 @@ const CASES = [
     join('plugin', 'skills', 'functional-choosing-types-or-plain-data', 'SKILL.md'),
     ['It has five exceptions', 'It has six exceptions'],
     'says "six" genericFacts, but there are', 'validate-counts.mjs'],
+  // The other way a count goes wrong: not the wrong number but none. Renaming
+  // the heading leaves nothing under it to count, and a zero compared with
+  // the sentences below would be a number like any other. It has to throw.
+  ['a count that read nothing, because its heading was renamed',
+    join('plugin', 'skills', 'functional-choosing-types-or-plain-data', 'SKILL.md'),
+    ['## What the generic route costs', '## What the generic route costs us'],
+    'found no numbered items under', 'validate-counts.mjs'],
   ['a bibliographic reference in a tracked file', SKILL,
     ['## Pattern', '## Pattern\n\nStated in Chapter 7 of the other book.'],
     'this pack cites no sources', 'validate-prose.mjs'],
