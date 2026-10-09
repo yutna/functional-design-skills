@@ -37,7 +37,8 @@ Not for: TypeScript projects, which have
 | `Result<T, E>`      | `{ ok: true, value }` or `{ ok: false, error }` |
 | `Option<T>`         | `undefined`, or a `Maybe` object                |
 | `A -> B -> C`       | Arrow function returning a function             |
-| `>>` composition    | `pipe` helper, or nested calls                  |
+| `\|>` pipe          | `pipe` helper, or nested calls                  |
+| `>>` composition    | Arrow function that pipes its argument          |
 | `Async<T>`          | `Promise<T>`                                    |
 | Exhaustive match    | `switch` with a `default` that throws           |
 
@@ -75,6 +76,8 @@ const card = (number, expiry) =>
     ? ok(Object.freeze({ tag: TAGS.card, number, expiry }))
     : err({ tag: "InvalidCard", number });
 
+const transfer = (bank) => Object.freeze({ tag: TAGS.transfer, bank });
+
 const describe = (payment) => {
   switch (payment.tag) {
     case TAGS.cash:
@@ -88,7 +91,7 @@ const describe = (payment) => {
   }
 };
 
-export { TAGS, cash, card, describe };
+export { TAGS, cash, card, transfer, describe };
 ```
 
 The `default` branch is not a fallback; it is an assertion that the tag
@@ -105,13 +108,10 @@ const map = (f) => (r) => (r.ok ? ok(f(r.value)) : r);
 const bind = (f) => (r) => (r.ok ? f(r.value) : r);
 const mapError = (f) => (r) => (r.ok ? r : err(f(r.error)));
 
-const pipe =
-  (...fns) =>
-  (x) =>
-    fns.reduce((acc, f) => f(acc), x);
+const pipe = (x, ...fns) => fns.reduce((acc, f) => f(acc), x);
 ```
 
-Thirty lines covers the whole of
+These few lines cover the whole of
 [functional-handling-errors-with-results](../functional-handling-errors-with-results/SKILL.md).
 More, including async, in
 [result-and-async.md](references/result-and-async.md).
@@ -145,8 +145,8 @@ absence of any design.
 ## Common mistakes
 
 - **Shallow freezing.** `Object.freeze` does not freeze nested objects.
-  Freeze at construction, all the way down, or use a persistent
-  collection library.
+  Freeze at construction, all the way down, or build the value with
+  `immer`, whose `produce` returns it frozen all the way down.
 - **`sort` and `reverse` mutating in place.** Copy first:
   `[...xs].sort(cmp)`.
 - **Equality on objects.** `===` is reference equality. Compare by a key,

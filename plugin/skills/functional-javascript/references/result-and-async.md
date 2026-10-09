@@ -24,17 +24,14 @@ export const mapError = (f) => (r) => (r.ok ? r : err(f(r.error)));
 
 export const unwrapOr = (fallback) => (r) => (r.ok ? r.value : fallback);
 
-export const pipe =
-  (...fns) =>
-  (x) =>
-    fns.reduce((acc, f) => f(acc), x);
+export const pipe = (x, ...fns) => fns.reduce((acc, f) => f(acc), x);
 ```
 
 Usage:
 
 ```js
 const confirmBooking = (raw) =>
-  pipe(validate, bind(price(catalogue)), bind(acknowledge), map(toEvents))(raw);
+  pipe(raw, validate, bind(price(catalogue)), map(acknowledge), map(toEvents));
 ```
 
 ## Collections
@@ -144,14 +141,16 @@ export const saveBooking = async (pool, booking) => {
 };
 
 const classify = (e) => {
-  if (e.code === "23505") return { tag: "DuplicateBooking" };
-  if (e.code === "57014") return { tag: "Transient", retryAfterMs: 1000 };
+  if (e?.code === "23505") return { tag: "DuplicateBooking" };
+  if (e?.code === "57014") return { tag: "Transient", retryAfterMs: 1000 };
   return { tag: "Unexpected", cause: e };
 };
 ```
 
-Past this function, no caller knows which driver is in use, and the
-`cause` is kept for logs without being something callers match on. See
+`catch` can be handed anything, `undefined` included, which is why
+`classify` reads the code with `?.`. Past this function, no caller knows
+which driver is in use, and the `cause` is kept for logs without being
+something callers match on. See
 [error-taxonomy.md](../../functional-handling-errors-with-results/references/error-taxonomy.md).
 
 ## Parallel work

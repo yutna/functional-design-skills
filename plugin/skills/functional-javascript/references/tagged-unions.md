@@ -51,6 +51,9 @@ export const delivered = (shipped, deliveredAt) =>
         }),
       )
     : err({ tag: "DeliveredBeforeShipped" });
+
+export const failed = (reason) =>
+  Object.freeze({ tag: SHIPMENT.failed, reason });
 ```
 
 Each case carries only its own data, which is what removes the illegal
@@ -86,6 +89,8 @@ structure:
 const HANDLERS = Object.freeze({
   [SHIPMENT.pending]: () => "awaiting dispatch",
   [SHIPMENT.shipped]: (s) => `in transit: ${s.tracking}`,
+  [SHIPMENT.delivered]: (s) => `delivered ${formatDate(s.deliveredAt)}`,
+  [SHIPMENT.failed]: (s) => `failed: ${s.reason}`,
 });
 
 const describe = (s) => {
@@ -127,30 +132,84 @@ comment.
  */
 
 /**
+ * @param {never} s
+ * @returns {never}
+ */
+const unhandled = (s) => {
+  throw new Error(`unhandled shipment: ${JSON.stringify(s)}`);
+};
+
+/**
  * @param {Shipment} s
  * @returns {string}
  */
-export const describe = (s) => { /* the switch above */ };
-```
-
-With `checkJs` enabled, the checker narrows on `s.tag` exactly as it does
-in TypeScript, and reports a missing case. Where a project can afford
-this, it removes most of the reason for the exhaustiveness test, though
-the test is still worth keeping for values that arrive at runtime.
-
-## Serialising
-
-The tag value is part of the wire contract. Renaming a case in code is
-free; changing the stored or transmitted string is a breaking change.
-
-```js
-export const toDto = (s) => ({ ...s, kind: s.tag.toLowerCase() });
-
-export const fromDto = (d) => {
-  const tag = ALL_SHIPMENT_TAGS.find((t) => t.toLowerCase() === d.kind);
-  return tag ? ok({ ...d, tag }) : err({ tag: "UnknownKind", kind: d.kind });
+export const describe = (s) => {
+  switch (s.tag) {
+    case SHIPMENT.pending:
+      return "awaiting dispatch";
+    case SHIPMENT.shipped:
+      return `in transit: ${s.tracking}`;
+    default:
+      return unhandled(s);
+  }
 };
 ```
 
-An unknown tag from outside is an error, never a default. See
+With `checkJs` enabled, the checker narrows on `s.tag` exactly as it does
+in TypeScript. It reports a missing case only when the `default` branch
+hands the value to a parameter typed `never`, as `unhandled` does; a
+`default` that simply throws satisfies the checker whatever is missing.
+Where a project can afford this, it removes most of the reason for the
+exhaustiveness test, though the test is still worth keeping for values
+that arrive at runtime.
+
+## Serialising
+
+The wire name of a case is a contract with whoever stores or reads it,
+so it has its own constants. Renaming a case in code is then free, and
+changing the transmitted string is a breaking change someone has to
+choose.
+
+```js
+const KIND = Object.freeze({ pending: "pending", shipped: "shipped" });
+
+export const toDto = (s) => {
+  switch (s.tag) {
+    case SHIPMENT.pending:
+      return { kind: KIND.pending, requestedAt: s.requestedAt.toISOString() };
+    case SHIPMENT.shipped:
+      return {
+        kind: KIND.shipped,
+        tracking: s.tracking,
+        shippedAt: s.shippedAt.toISOString(),
+      };
+    // delivered and failed follow the same shape
+    default:
+      throw new Error(`unhandled shipment tag: ${s.tag}`);
+  }
+};
+
+export const fromDto = (d) => {
+  switch (d.kind) {
+    case KIND.pending:
+      return map(pending)(parseInstant(d.requestedAt));
+    case KIND.shipped: {
+      const tracking = parseTracking(d.tracking);
+      const shippedAt = parseInstant(d.shippedAt);
+      if (!tracking.ok) return tracking;
+      if (!shippedAt.ok) return shippedAt;
+      return ok(shipped(tracking.value, shippedAt.value));
+    }
+    // delivered and failed follow the same shape
+    default:
+      return err({ tag: "UnknownKind", kind: d.kind });
+  }
+};
+```
+
+Each direction names its fields. `toDto` never spreads the value, so a
+field added to the domain does not leak onto the wire. `fromDto` never
+spreads what arrived, so nothing from outside reaches the domain except
+through a parser and the case's own constructor. An unknown kind from
+outside is an error, never a default. See
 [functional-crossing-io-boundaries](../../functional-crossing-io-boundaries/SKILL.md).
