@@ -400,6 +400,67 @@ function validateManifestVersions () {
   }
 }
 
+// Every top-level key plugin.json may carry: the rows of the Fields table in
+// the plugin manifest reference, last checked on 2026-10-09 at
+// code.claude.com/docs/en/plugins/manifest-reference. That page says an
+// unrecognised top-level key is stripped and the plugin loads anyway, and
+// that `claude plugin validate` reports it as a warning, which only --strict
+// turns into a failure. Continuous integration has no `claude` to run it
+// with, so this does the same job from the documented list, the way
+// ALLOWED_KEYS does for frontmatter. Without it an `interface` object
+// outlived the runtime it was written for, because loading it never failed
+// and nothing in this repository looked.
+//
+// Only the top level is read: `experimental` is a container whose shape the
+// page says may still change. marketplace.json is a different document with
+// a schema of its own, and is left alone.
+const MANIFEST_KEYS = new Set([
+  '$schema',
+  'name',
+  'displayName',
+  'version',
+  'description',
+  'author',
+  'homepage',
+  'repository',
+  'license',
+  'keywords',
+  'metadata',
+  'icon',
+  'documentationUrl',
+  'supportUrl',
+  'privacyPolicyUrl',
+  'termsOfServiceUrl',
+  'defaultEnabled',
+  'dependencies',
+  'settings',
+  'userConfig',
+  'types',
+  'channels',
+  'skills',
+  'commands',
+  'agents',
+  'hooks',
+  'mcpServers',
+  'lspServers',
+  'outputStyles',
+  'workflows',
+  'experimental',
+])
+
+function validateManifestKeys () {
+  const plugin = readJson('plugin/.claude-plugin/plugin.json')
+  for (const key of Object.keys(plugin)) {
+    if (!MANIFEST_KEYS.has(key)) {
+      errors.push(
+        `plugin/.claude-plugin/plugin.json: "${key}" is not a key Claude ` +
+          'Code documents. Claude Code strips it at load and ' +
+          'claude plugin validate warns about it, so remove it.',
+      )
+    }
+  }
+}
+
 // A package.json beside a package-lock.json at the plugin's root makes
 // `claude plugin install` run npm on the machine of everyone who installs it,
 // pulling this repository's dev tooling for no benefit. Keep both outside.
@@ -671,6 +732,7 @@ for (const id of skillIds) {
 }
 validateLinks()
 validateManifestVersions()
+validateManifestKeys()
 validateNoPackageFilesInPlugin()
 validateExactDependencies()
 validateLockVersions()

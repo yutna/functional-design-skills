@@ -98,6 +98,12 @@ const CASES = [
     ['"version": "', '"version": "0.'], 'plugin.json: "version"'],
   ['a marketplace entry left behind', join('.claude-plugin', 'marketplace.json'),
     ['"version": "', '"version": "0.'], 'marketplace.json:'],
+  // The field this guard was written for: left in plugin.json after the
+  // runtime it belonged to was dropped, and ignored by Claude Code at load.
+  ['a plugin manifest key Claude Code does not document',
+    join('plugin', '.claude-plugin', 'plugin.json'),
+    ['"skills": "./skills/"', '"skills": "./skills/",\n  "interface": {}'],
+    'is not a key Claude Code documents'],
   ['a lock file whose version disagrees with what it resolves to',
     'package-lock.json',
     ['"version": "2.9.1"', '"version": "3.0.0"'],
