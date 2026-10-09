@@ -16,7 +16,7 @@ returns either the value or a description of what was wrong.
 
 ## Why it returns a value rather than a verdict
 
-The constructor above could have been a check. It is not, and the
+A smart constructor could have been a check. It is not, and the
 difference is the whole reason this file exists.
 
 ```text

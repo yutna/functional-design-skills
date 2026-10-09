@@ -135,14 +135,14 @@ storage layer will end up satisfying neither.
 
 The transfer type is the thing with versions; the domain type is not.
 
-1. Add a new transfer type: `OrderDtoV2`.
+1. Add a new transfer type: `BookingDtoV2`.
 2. Add a mapping from it into the same domain type.
 3. Keep the old mapping while old clients or old rows exist.
 4. Retire the old one when telemetry says nobody uses it.
 
 ```text
-fromDtoV1 : OrderDtoV1 -> Result<Booking, BookingDtoError>
-fromDtoV2 : OrderDtoV2 -> Result<Booking, BookingDtoError>
+fromDtoV1 : BookingDtoV1 -> Result<Booking, BookingDtoError>
+fromDtoV2 : BookingDtoV2 -> Result<Booking, BookingDtoError>
 ```
 
 The domain evolves without a version number, because nothing outside

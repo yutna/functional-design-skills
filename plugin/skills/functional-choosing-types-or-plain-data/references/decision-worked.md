@@ -118,8 +118,8 @@ reason to be generic.
 ## Case 3 — a report the user configures
 
 **Situation.** A reporting screen where the user picks dimensions to group
-by and measures to aggregate, from a fixed list the treatment team owns. The
-result is a table.
+by and measures to aggregate, from a fixed list the development team owns.
+The result is a table.
 
 **Facts that apply — and they point both ways.** The output columns vary
 per request, so the row shape is generic. But the dimensions and measures
