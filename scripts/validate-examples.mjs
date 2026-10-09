@@ -22,7 +22,9 @@
 // without the flag JavaScript, TypeScript and JSON are what gate. The Ubuntu
 // job in continuous integration installs the toolchain and passes the flag,
 // so there Elixir gates too; the Windows job installs none, and on your own
-// machine the fences are parsed only when you ask.
+// machine the fences are parsed only when you ask. Asking on a machine with no
+// Elixir on PATH fails: a run that parsed no Elixir has measured nothing, and
+// printing "ok" for it is worse than a red build.
 //
 // Usage:
 //   node scripts/validate-examples.mjs                 js, ts, tsx, json
@@ -134,9 +136,16 @@ function haveElixir () {
 // running anything.
 function elixirErrors (list) {
   if (list.length === 0) return []
+  // Reached only by a caller that asked for Elixir; selftest skips for itself
+  // before it gets here. This used to print a skip and return no errors,
+  // which counted every Elixir fence as parsed on a machine that parsed none.
+  // A check that measured nothing has failed, not passed.
   if (!haveElixir()) {
-    process.stdout.write('skip  elixir fences: no elixir on PATH\n')
-    return []
+    process.stderr.write(
+      'error Elixir was asked for with --with-elixir and none is on PATH, ' +
+        'so no Elixir fence was parsed\n',
+    )
+    process.exit(1)
   }
   const work = mkdtempSync(join(tmpdir(), 'fds-examples-'))
   try {

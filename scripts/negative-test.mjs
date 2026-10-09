@@ -13,11 +13,11 @@
 // Usage: node scripts/negative-test.mjs
 
 import {
-  chmodSync, cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync,
-  statSync, symlinkSync, unlinkSync, writeFileSync,
+  chmodSync, copyFileSync, cpSync, mkdirSync, mkdtempSync, readdirSync,
+  readFileSync, rmSync, statSync, symlinkSync, unlinkSync, writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
 
@@ -427,6 +427,47 @@ for (const script of SCRIPTS) {
   }
 }
 rmSync(empty, { recursive: true, force: true })
+
+// The same floor with the toolchain missing rather than the files. Asking for
+// Elixir on a machine without it used to print a skip and then report every
+// Elixir fence as parsed. The PATH below holds a link to node and nothing
+// else, so the one thing it lacks is the thing under test. The script itself
+// is launched by absolute path, so a link that cannot be made is not fatal.
+const bin = mkdtempSync(join(tmpdir(), 'fds-bin-'))
+const nodeLink = join(bin, basename(process.execPath))
+try {
+  symlinkSync(process.execPath, nodeLink)
+} catch {
+  try {
+    copyFileSync(process.execPath, nodeLink)
+  } catch { /* the run does not need it */ }
+}
+// Windows spells the variable Path, and a second spelling would be ignored.
+const pathKey = Object.keys(process.env)
+  .find((key) => key.toLowerCase() === 'path') ?? 'PATH'
+const noElixir = spawnSync(
+  process.execPath,
+  [join(ROOT, 'scripts', 'validate-examples.mjs'), '--with-elixir'],
+  { encoding: 'utf8', env: { ...process.env, [pathKey]: bin } },
+)
+const noElixirText = `${noElixir.stdout}${noElixir.stderr}`
+if (
+  noElixir.status === 1 &&
+  noElixirText.includes('none is on PATH, so no Elixir fence was parsed')
+) {
+  process.stdout.write(
+    'floor ok validate-examples.mjs --with-elixir refuses to pass with no ' +
+      'elixir on PATH\n',
+  )
+  proved++
+} else {
+  process.stderr.write(
+    'floor FAIL validate-examples.mjs --with-elixir exited ' +
+      `${noElixir.status} with no elixir on PATH:\n${noElixirText}\n`,
+  )
+  failures++
+}
+rmSync(bin, { recursive: true, force: true })
 
 // The installer, run for real. Continuous integration only ever passed it
 // --dry-run, which writes nothing and therefore proves nothing about the
