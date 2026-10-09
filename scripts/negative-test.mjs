@@ -458,27 +458,61 @@ try {
 // Windows spells the variable Path, and a second spelling would be ignored.
 const pathKey = Object.keys(process.env)
   .find((key) => key.toLowerCase() === 'path') ?? 'PATH'
-const noElixir = spawnSync(
-  process.execPath,
-  [join(ROOT, 'scripts', 'validate-examples.mjs'), '--with-elixir'],
-  { encoding: 'utf8', env: { ...process.env, [pathKey]: bin } },
+// Asks the example check for Elixir with `bin` as the whole of PATH.
+function askForElixir () {
+  const result = spawnSync(
+    process.execPath,
+    [join(ROOT, 'scripts', 'validate-examples.mjs'), '--with-elixir'],
+    { encoding: 'utf8', env: { ...process.env, [pathKey]: bin } },
+  )
+  return { status: result.status, text: `${result.stdout}${result.stderr}` }
+}
+
+// A refusal is an exit of 1 and the reason, not merely any failure: a crash
+// would also exit non-zero and prove nothing about the check.
+function expectRefusal (what, { status, text }, reason) {
+  if (status === 1 && text.includes(reason)) {
+    process.stdout.write(`floor ok validate-examples.mjs --with-elixir ${what}\n`)
+    proved++
+  } else {
+    process.stderr.write(
+      `floor FAIL validate-examples.mjs --with-elixir ${what} -> exited ` +
+        `${status}, expected 1 and "${reason}", got:\n${text}\n`,
+    )
+    failures++
+  }
+}
+
+expectRefusal(
+  'refuses to pass with no elixir on PATH',
+  askForElixir(),
+  'none is on PATH, so no Elixir fence was parsed',
 )
-const noElixirText = `${noElixir.stdout}${noElixir.stderr}`
-if (
-  noElixir.status === 1 &&
-  noElixirText.includes('none is on PATH, so no Elixir fence was parsed')
-) {
+
+// The other way to have no Elixir: it is there, answers --version, and then
+// dies without parsing anything, as a BEAM that cannot start would. The parse
+// script exits 0 whatever it finds, so any other ending means it did not get
+// through the fences; an empty stdout used to read as nothing wrong in them.
+// A shell script stands in for the dying elixir, and Windows cannot spawn one
+// under that name, so there the case is reported as skipped, not as proved.
+if (process.platform === 'win32') {
   process.stdout.write(
-    'floor ok validate-examples.mjs --with-elixir refuses to pass with no ' +
-      'elixir on PATH\n',
+    'floor skip validate-examples.mjs --with-elixir refuses to pass when ' +
+      'elixir dies: Windows cannot spawn a shell script as elixir\n',
   )
-  proved++
 } else {
-  process.stderr.write(
-    'floor FAIL validate-examples.mjs --with-elixir exited ' +
-      `${noElixir.status} with no elixir on PATH:\n${noElixirText}\n`,
+  const fake = join(bin, 'elixir')
+  writeFileSync(
+    fake,
+    '#!/bin/sh\nif [ "$1" = "--version" ]; then echo "Elixir 9.9.9"; exit 0; fi\n' +
+      'exit 1\n',
   )
-  failures++
+  chmodSync(fake, 0o755)
+  expectRefusal(
+    'refuses to pass when elixir dies',
+    askForElixir(),
+    'did not finish, so no Elixir fence can be called parsed',
+  )
 }
 rmSync(bin, { recursive: true, force: true })
 
