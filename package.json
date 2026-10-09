@@ -28,13 +28,14 @@
     "validate:skills": "node scripts/validate-skills.mjs",
     "validate:prose": "node scripts/validate-prose.mjs",
     "validate:examples": "node scripts/validate-examples.mjs",
+    "validate:types": "node scripts/validate-types.mjs",
     "validate:rules": "node scripts/validate-rules.mjs",
     "validate:counts": "node scripts/validate-counts.mjs",
     "eval:routing": "node scripts/eval-routing.mjs",
     "eval:scenarios": "node scripts/eval-scenarios.mjs",
     "eval:plugin": "node scripts/eval-plugin.mjs",
-    "test": "npm run lint:md && npm run validate:skills && npm run validate:prose && npm run validate:examples && npm run validate:rules && npm run validate:counts && npm run eval:routing",
-    "test:guards": "node scripts/validate-prose.mjs --selftest && node scripts/validate-examples.mjs --selftest && node scripts/negative-test.mjs && node scripts/eval-plugin.mjs --selftest"
+    "test": "npm run lint:md && npm run validate:skills && npm run validate:prose && npm run validate:examples && npm run validate:types && npm run validate:rules && npm run validate:counts && npm run eval:routing",
+    "test:guards": "node scripts/validate-prose.mjs --selftest && node scripts/validate-examples.mjs --selftest && node scripts/negative-test.mjs && node scripts/eval-plugin.mjs --selftest && node scripts/validate-types.mjs --selftest"
   },
   "devDependencies": {
     "@standard-schema/spec": "1.1.0",

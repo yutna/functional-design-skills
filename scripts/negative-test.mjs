@@ -17,7 +17,7 @@ import {
   readFileSync, rmSync, statSync, symlinkSync, unlinkSync, writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { basename, dirname, join } from 'node:path'
+import { basename, dirname, join, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
 
@@ -51,6 +51,19 @@ const descriptionOf = (id) =>
   )[0]
 const OWN_DESCRIPTION = descriptionOf('functional-folding-over-data')
 const ANOTHER_DESCRIPTION = descriptionOf('functional-composing-functions')
+
+// What a validator must say to count as having caught a defect: one string,
+// several that must all be there (the file's name and the member it named),
+// or a pattern for what cannot be written down (a compiler's error code).
+function says (output, expected) {
+  return (Array.isArray(expected) ? expected : [expected]).every((want) =>
+    (want instanceof RegExp ? want.test(output) : output.includes(want)))
+}
+function describe (expected) {
+  return (Array.isArray(expected) ? expected : [expected])
+    .map((want) => (want instanceof RegExp ? String(want) : `"${want}"`))
+    .join(' and ')
+}
 
 // Each case: what we break, the edit that breaks it, the text the validator
 // must produce, and which validator. The edit is [find, replace] applied to
@@ -118,6 +131,30 @@ const CASES = [
     join('plugin', 'skills', 'functional-typescript', 'SKILL.md'),
     ['```ts', '```json'], 'not the language the fence claims',
     'validate-examples.mjs'],
+  // The three below are what the parse check cannot see: each one parses.
+  ['an example that names a member the library does not have',
+    join('plugin', 'skills', 'functional-typescript-effect', 'references', 'effect-basics.md'),
+    ['Effect.succeed(', 'Effect.succeedNow('],
+    ['effect-basics.md', 'succeedNow'], 'validate-types.mjs'],
+  ['an example that returns a value of the wrong type',
+    join('plugin', 'skills', 'functional-typescript', 'SKILL.md'),
+    ['ok(n as Satang)', 'ok(n)'],
+    ['functional-typescript/SKILL.md', /TS\d{4}/], 'validate-types.mjs'],
+  ['prose that names a member the library does not have',
+    join('plugin', 'skills', 'functional-typescript-effect', 'references', 'schema-boundaries.md'),
+    ['`Arbitrary.make`', '`Schema.Arbitrary`'],
+    'Schema.Arbitrary', 'validate-types.mjs'],
+  // The two lists in the script itself: a library nothing imports, and a file
+  // named as not yet covered that has no examples to cover.
+  ['an example library that nothing imports',
+    join('scripts', 'validate-types.mjs'),
+    ["  'next',\n]", "  'next',\n  'left-pad',\n]"],
+    'left-pad is on the list of example libraries and nothing imports it',
+    'validate-types.mjs'],
+  ['a file marked not yet covered that has no examples',
+    join('scripts', 'validate-types.mjs'),
+    ['const NOT_YET_COVERED = [', "const NOT_YET_COVERED = [\n  'plugin/skills/nope/SKILL.md',"],
+    'NOT_YET_COVERED names plugin/skills/nope/SKILL.md', 'validate-types.mjs'],
   ['a skill that does not say which pack it came from', SKILL,
     ['  pack: functional-design-skills\n', ''],
     '"metadata.pack" is missing'],
@@ -236,10 +273,27 @@ const CREATED = [
   ['a lock file at the plugin root',
     join('plugin', 'package-lock.json'), '{}\n',
     'must not exist', 'validate-skills.mjs'],
+  // A prelude is named after the Markdown file it stands beside. One that
+  // stands beside none is an assumption about nothing.
+  ['a prelude that stands beside no Markdown file',
+    join('example-types', 'functional-typescript', 'references', 'no-such-reference.ts'),
+    '', 'stands beside no Markdown file', 'validate-types.mjs'],
+  ['a shared declaration that no prelude imports',
+    join('example-types', '_shared', 'unused.ts'),
+    'export type Unused = string;\n',
+    'is imported by no prelude', 'validate-types.mjs'],
+]
+
+// A defect that is the absence of a file, the other way round: the file is
+// there and is taken away.
+const REMOVED = [
+  ['a Markdown file with examples and no prelude',
+    join('example-types', 'functional-typescript-xstate', 'references', 'machines.ts'),
+    ['machines.md', 'has no prelude'], 'validate-types.mjs'],
 ]
 
 const work = mkdtempSync(join(tmpdir(), 'fds-negative-'))
-for (const dir of ['scripts', 'plugin', '.claude-plugin', 'evals']) {
+for (const dir of ['scripts', 'plugin', '.claude-plugin', 'evals', 'example-types']) {
   cpSync(join(ROOT, dir), join(work, dir), { recursive: true })
 }
 // validate-counts.mjs checks sentences in some of these; the rest are here
@@ -288,6 +342,7 @@ let proved = 0
 for (const script of [
   'validate-skills.mjs',
   'validate-examples.mjs',
+  'validate-types.mjs',
   'validate-rules.mjs',
   'validate-counts.mjs',
   'validate-prose.mjs',
@@ -320,11 +375,11 @@ for (const [label, target, [find, replace, scope], expected, script] of CASES) {
   })
   const output = run(script).text
   paths.forEach((path, i) => writeFileSync(path, originals[i]))
-  if (output.includes(expected)) {
+  if (says(output, expected)) {
     process.stdout.write(`neg ok   ${label}\n`)
     proved++
   } else {
-    process.stderr.write(`neg FAIL ${label} -> expected "${expected}", got:\n${output}\n`)
+    process.stderr.write(`neg FAIL ${label} -> expected ${describe(expected)}, got:\n${output}\n`)
     failures++
   }
 }
@@ -334,11 +389,30 @@ for (const [label, file, content, expected, script] of CREATED) {
   writeFileSync(path, content)
   const output = run(script).text
   unlinkSync(path)
-  if (output.includes(expected)) {
+  if (says(output, expected)) {
     process.stdout.write(`neg ok   ${label}\n`)
     proved++
   } else {
-    process.stderr.write(`neg FAIL ${label} -> expected "${expected}", got:\n${output}\n`)
+    process.stderr.write(`neg FAIL ${label} -> expected ${describe(expected)}, got:\n${output}\n`)
+    failures++
+  }
+}
+
+// And the other direction: a defect that is the absence of a file. A prelude
+// is what a Markdown file's examples assume, and a file with examples and
+// nothing assumed for them has to be refused rather than checked against
+// nothing.
+for (const [label, file, expected, script] of REMOVED) {
+  const path = join(work, file)
+  const original = readFileSync(path, 'utf8')
+  unlinkSync(path)
+  const output = run(script).text
+  writeFileSync(path, original)
+  if (says(output, expected)) {
+    process.stdout.write(`neg ok   ${label}\n`)
+    proved++
+  } else {
+    process.stderr.write(`neg FAIL ${label} -> expected ${describe(expected)}, got:\n${output}\n`)
     failures++
   }
 }
@@ -369,6 +443,7 @@ if (process.platform !== 'win32') {
 const SCRIPTS = [
   'validate-skills.mjs',
   'validate-examples.mjs',
+  'validate-types.mjs',
   'validate-rules.mjs',
   'validate-counts.mjs',
   'validate-prose.mjs',
@@ -388,7 +463,10 @@ function convertEndings (dir, ending) {
       convertEndings(path, ending)
       continue
     }
-    if (!entry.endsWith('.md')) continue
+    // The preludes are checked out with the platform's endings as well, and
+    // validate-types.mjs reads them.
+    const inTypes = path.split(sep).includes('example-types')
+    if (!entry.endsWith('.md') && !inTypes) continue
     writeFileSync(path, readFileSync(path, 'utf8').replace(/\r?\n/g, ending))
   }
 }
@@ -415,7 +493,7 @@ for (const script of SCRIPTS) {
 // And the floor: with nothing to read, every one of these must fail rather
 // than report a clean zero.
 const empty = mkdtempSync(join(tmpdir(), 'fds-empty-'))
-for (const dir of ['scripts', 'plugin', '.claude-plugin', 'evals']) {
+for (const dir of ['scripts', 'plugin', '.claude-plugin', 'evals', 'example-types']) {
   cpSync(join(ROOT, dir), join(empty, dir), { recursive: true })
 }
 for (const file of TOP_LEVEL) {

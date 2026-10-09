@@ -250,13 +250,18 @@ Worth knowing before relying on it.
   buried inside a longer word, for the nouns listed in
   `scripts/validate-prose.mjs`. A new example domain that is not added
   to that list is unchecked.
-- **The example check is a parser, not a type checker.** Every fenced
-  example in a real language is handed to that language's compiler, so
-  one that cannot be pasted fails the build. An example that parses can
-  still be wrong: nothing here type-checks it, runs it, or knows
-  whether the library it names behaves as shown. Elixir fences are
-  parsed in continuous integration, which installs the toolchain for
-  that step; locally they are parsed only when you pass `--with-elixir`.
+- **The example check is a type checker, not a test.** Every fenced
+  example in a real language is parsed, and every TypeScript, TSX and
+  JavaScript one is type-checked against the libraries `package.json`
+  pins, so a member that does not exist or a value of the wrong type
+  fails the build. An example is a fragment, so the names it assumes are
+  declared in a prelude outside the plugin, and a prelude is an
+  assumption: an example can type-check against one that is wrong, or
+  type-check and still be wrong. Nothing runs an example or knows
+  whether a library behaves as shown. Elixir fences are parsed, not
+  compiled, in continuous integration, which installs the toolchain for
+  that step; locally they are parsed only when you pass
+  `--with-elixir`. The notation below has no checker.
 - **The neutral notation is checked by nobody.** Around three quarters
   of the code blocks in the pack are `text`, the notation the core
   skills share, and no parser exists for it. Those blocks are held to

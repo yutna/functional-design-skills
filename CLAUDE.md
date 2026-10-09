@@ -15,6 +15,13 @@ Everything the plugin ships lives under `plugin/`. The repository's own
 tooling stays outside it, for the reason given under "Files you should
 not create".
 
+`example-types/` holds a prelude for each Markdown file that has
+TypeScript or JavaScript examples: the names those examples use and do
+not define, declared so that `scripts/validate-types.mjs` can type-check
+them. It sits outside `plugin/`, so none of it ships, and it is not a
+copy of skill content. A prelude says what an example assumes, never
+what a skill teaches.
+
 There are forty-three skills, and every one is named `functional-something`.
 The prefix is not decoration: skills install flat into
 `~/.claude/skills`, where a name like `hiding-information` is one any
@@ -37,8 +44,9 @@ npm run test:guards
 ```
 
 `npm test` runs Markdown linting, skill validation, the prose checks, a
-parse of every code example, the strictness labels, the documented counts,
-and routing coverage. `npm run test:guards`
+parse of every code example, a type check of every TypeScript and
+JavaScript example, the strictness labels, the documented counts, and
+routing coverage. `npm run test:guards`
 breaks every guard on a throwaway copy and confirms it still fires. All
 of it must pass. Run them as you write, not once at the end; the
 line-length rule in particular is easier to satisfy while drafting than
@@ -204,6 +212,10 @@ The default rules bite in specific ways. The ones that catch people out:
 - Name the tools. Guidance that says "use a persistent collection
   library" cannot be acted on. Name the library, and verify the name
   against its current documentation rather than from memory.
+- An example in TypeScript or JavaScript must type-check against the
+  pinned libraries. The names it uses and does not define go in its
+  prelude under `example-types/`, and `npm run validate:types` names any
+  that are missing.
 
 ## The tooling reads through one boundary
 
