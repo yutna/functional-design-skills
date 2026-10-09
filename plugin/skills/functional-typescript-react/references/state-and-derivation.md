@@ -34,7 +34,9 @@ derived.
 const [query, setQuery] = useState("");
 const [results, setResults] = useState<Item[]>([]);
 const [hasResults, setHasResults] = useState(false);
+```
 
+```tsx
 // single source
 const [query, setQuery] = useState("");
 const results = useMemo(() => search(items, query), [items, query]);
@@ -143,7 +145,9 @@ subtree untestable. See
 const onSubmit = () => {
   if (booking.total > 5000 && !customer.isVerified) { /* ... */ }
 };
+```
 
+```tsx
 // rules in a pure module, tested without React
 const decision = decideCheckout(customer, booking);
 const onSubmit = () => dispatch({ tag: "Submitted", decision });
