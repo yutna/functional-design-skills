@@ -93,23 +93,28 @@ an exhaustiveness check for features you are not using.
 ```ts
 import { setup, assign, fromPromise } from "xstate";
 
+type BookingContext = { readonly slot: SlotId | null };
+
+const heldSlot = (context: BookingContext): SlotId => {
+  if (context.slot === null) throw new Error("held without a slot");
+  return context.slot;
+};
+
 const bookingMachine = setup({
   types: {
-    context: {} as { slot: SlotId | null; error: BookingError | null },
+    context: {} as BookingContext,
     events: {} as { type: "HOLD"; slot: SlotId } | { type: "CONFIRM" },
   },
+  delays: { holdWindow: 120_000 },
   actors: {
     confirmBooking: fromPromise(
       async ({ input }: { input: { slot: SlotId } }) => confirm(input.slot),
     ),
   },
-  guards: {
-    hasSlot: ({ context }) => context.slot !== null,
-  },
 }).createMachine({
   id: "booking",
   initial: "browsing",
-  context: { slot: null, error: null },
+  context: { slot: null },
   states: {
     browsing: {
       on: {
@@ -120,13 +125,15 @@ const bookingMachine = setup({
       },
     },
     held: {
-      after: { 120000: { target: "browsing", actions: assign({ slot: null }) } },
-      on: { CONFIRM: { target: "confirming", guard: "hasSlot" } },
+      after: {
+        holdWindow: { target: "browsing", actions: assign({ slot: null }) },
+      },
+      on: { CONFIRM: { target: "confirming" } },
     },
     confirming: {
       invoke: {
         src: "confirmBooking",
-        input: ({ context }) => ({ slot: context.slot as SlotId }),
+        input: ({ context }) => ({ slot: heldSlot(context) }),
         onDone: { target: "confirmed" },
         onError: { target: "held" },
       },
@@ -140,6 +147,20 @@ The hold expiring is `after`, not a `setTimeout` somebody has to
 remember to clear. The confirmation is `invoke`, so leaving
 `confirming` cancels it. Both are the features that justified the
 library; without them this is a union with extra ceremony.
+
+The timer moves the screen on. Whether the hold has really expired is
+decided where the clock can be trusted, from the time it was taken.
+
+The chart guarantees a slot is in context whenever the machine is in
+`held`, but XState 5 types one context for every state, so the type says
+`SlotId | null` and cannot say more. `heldSlot` returns the slot or
+throws, which is how
+[functional-defining-errors-out-of-existence](../functional-defining-errors-out-of-existence/SKILL.md)
+treats a state that should be impossible; a cast would claim the same
+thing and check nothing.
+
+The `{} as T` inside `types` is how XState 5 is told a type, and it
+constructs nothing, so it is no licence to cast anywhere else.
 
 ## Testing
 
@@ -170,8 +191,10 @@ asserting the machine scheduled it, not by waiting for it.
 
 - **Adopting it for one screen.** A statechart is a shared vocabulary;
   one machine in a codebase of reducers is a second idiom.
-- **Strings where a union would do.** State names in a config are not
-  checked against a type unless you give the machine one.
+- **Strings where a union would do.** A transition's `target` is a
+  string the compiler does not check: a misspelt one fails when the
+  machine is created, not when the file compiles. Reading the state with
+  `snapshot.matches()` is checked.
 - **Putting the domain in the machine.** Pricing, eligibility and
   validation are pure functions the machine calls, not actions.
 - **An actor per row without a lifetime.** If nothing cancels it and

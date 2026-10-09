@@ -72,7 +72,7 @@ A choice type with one state at a time:
 type ScreenState =
   | { tag: "Loading" }
   | { tag: "Failed"; error: LoadError }
-  | { tag: "Loaded"; bookings: readonly Booking[] }
+  | { tag: "Loaded"; bookings: NonEmptyArray<Booking> }
   | { tag: "Empty" };
 
 const view = (s: ScreenState) => {
@@ -92,9 +92,24 @@ const view = (s: ScreenState) => {
 ```
 
 Four states, each with exactly its own data, and a compile error when a
-fifth is added. This is
+fifth is added. `Loaded` holds a `NonEmptyArray`, so it cannot be empty,
+and `Empty` is not a second way to say it: an empty list can only be
+`Empty`. This is
 [functional-making-illegal-states-unrepresentable](../functional-making-illegal-states-unrepresentable/SKILL.md)
 applied to a screen.
+
+The choice between `Loaded` and `Empty` is made once, where the list
+arrives, with `nonEmpty` from
+[functional-typescript](../functional-typescript/references/unions-and-exhaustiveness.md#non-empty-lists):
+
+```tsx
+const screenOf = (bookings: readonly Booking[]): ScreenState => {
+  const result = nonEmpty(bookings);
+  return result.ok
+    ? { tag: "Loaded", bookings: result.value }
+    : { tag: "Empty" };
+};
+```
 
 ## Derived, not stored
 
@@ -102,7 +117,9 @@ applied to a screen.
 // stored: two facts that can disagree
 const [items, setItems] = useState<Item[]>([]);
 const [total, setTotal] = useState(0);
+```
 
+```tsx
 // derived: one fact
 const [items, setItems] = useState<readonly Item[]>([]);
 const total = items.reduce((sum, i) => sum + i.price, 0);
