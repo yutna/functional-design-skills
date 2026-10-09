@@ -27,7 +27,7 @@ load them. The directory it creates is gitignored.
 ## Verifying a change
 
 ```bash
-npm test          # lint, skills, prose, examples, rules, counts, routing
+npm test          # lint, skills, prose, examples, types, rules, counts, routing
 npm run test:guards   # break every guard and confirm it fires
 ```
 

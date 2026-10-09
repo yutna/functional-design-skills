@@ -118,6 +118,50 @@ export function referenceFiles (id) {
   return readdirSync(dir).filter((file) => file.endsWith('.md')).sort()
 }
 
+// Every file under a directory, at any depth, in the order a person would list
+// them: each directory's entries sorted by name, subdirectories walked in
+// place. Two listings that disagree about order print the same errors in a
+// different sequence, and a report nobody can diff is a report nobody reads.
+function filesUnder (dir) {
+  const found = []
+  const walk = (at) => {
+    const entries = readdirSync(at, { withFileTypes: true })
+      .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
+    for (const entry of entries) {
+      const path = join(at, entry.name)
+      if (entry.isDirectory()) walk(path)
+      else found.push(path)
+    }
+  }
+  walk(dir)
+  return found
+}
+
+// Every Markdown file the skills ship, SKILL.md and references alike, at any
+// depth. The parse check and the type check both read the examples in these,
+// and a file one of them walked past is an example nobody checked. Reading
+// nothing throws, for the reason at the top of this file.
+export function skillMarkdownFiles () {
+  const found = filesUnder(SKILLS_DIR).filter((path) => path.endsWith('.md'))
+  if (found.length === 0) {
+    throw new Error(
+      `${SKILLS_DIR} holds no Markdown. A check that reads nothing has not ` +
+        'passed; it has stopped working.',
+    )
+  }
+  return found
+}
+
+// What the examples assume lives outside the plugin, so that none of it ships
+// and none of it is a second copy of a skill's prose. A directory that is not
+// there is a pack with no preludes yet, which the type check reports file by
+// file; it is not an error in listing.
+export const EXAMPLE_TYPES_DIR = join(ROOT, 'example-types')
+
+export function exampleTypeFiles () {
+  return existsSync(EXAMPLE_TYPES_DIR) ? filesUnder(EXAMPLE_TYPES_DIR) : []
+}
+
 // The routing cases, counted once. Both readers of this file used to have
 // their own copy of this parse, and they did not agree.
 export function routingCases () {

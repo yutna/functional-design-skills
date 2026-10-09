@@ -72,6 +72,12 @@ jobs:
       - name: Parse every Elixir example
         run: node scripts/validate-examples.mjs --with-elixir
 
+      # A parser cannot tell a real API from an invented one, or a
+      # value from the wrong type. This type-checks every TypeScript
+      # and JavaScript example against the pinned libraries.
+      - name: Type-check every example
+        run: npm run validate:types
+
       # A rule written in the same voice as every other rule gives an agent
       # no way to tell a contract from a preference. This checks the label
       # is there, not that it is the right one.

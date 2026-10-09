@@ -16,7 +16,9 @@
 //
 // What this proves is narrow, and worth stating: it is a parser, not a type
 // checker and not a test. An example can parse and still be wrong. It cannot
-// be wrong in the one way that makes it useless to paste.
+// be wrong in the one way that makes it useless to paste. Checking the
+// TypeScript and JavaScript ones against the libraries they name is
+// validate-types.mjs's job.
 //
 // Elixir needs the Elixir toolchain, so it is opt-in with --with-elixir, and
 // without the flag JavaScript, TypeScript and JSON are what gate. The Ubuntu
@@ -33,8 +35,9 @@
 //   node scripts/validate-examples.mjs --list          every fence and its language
 //   node scripts/validate-examples.mjs --selftest      prove the checks still fire
 
-import { readdirSync, readFileSync, statSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
-import { readMarkdown } from './lib/markdown.mjs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { fencesIn, readMarkdown } from './lib/markdown.mjs'
+import { skillMarkdownFiles } from './lib/pack.mjs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -42,7 +45,6 @@ import { spawnSync } from 'node:child_process'
 import ts from 'typescript'
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)))
-const SKILLS = join(ROOT, 'plugin', 'skills')
 
 const KIND = {
   ts: ts.ScriptKind.TS,
@@ -50,54 +52,10 @@ const KIND = {
   js: ts.ScriptKind.JS,
 }
 
-// House style indents a fence inside a numbered list to the item's content
-// column, so the indent is captured, required again on the closing fence, and
-// stripped from every line before parsing.
-const FENCE = /^([ \t]*)```(\w+)[ \t]*\r?\n([\s\S]*?)^\1```[ \t]*$/gm
-
-function outdent (code, indent) {
-  if (indent === '') return code
-  return code
-    .split('\n')
-    .map((line) => (line.startsWith(indent) ? line.slice(indent.length) : line))
-    .join('\n')
-}
-
-function markdownFiles (dir) {
-  const out = []
-  for (const entry of readdirSync(dir).sort()) {
-    const path = join(dir, entry)
-    if (statSync(path).isDirectory()) out.push(...markdownFiles(path))
-    else if (entry.endsWith('.md')) out.push(path)
-  }
-  return out
-}
-
-function fencesIn (text, file) {
-  const found = []
-  for (const match of text.matchAll(FENCE)) {
-    found.push({
-      file,
-      line: text.slice(0, match.index).split('\n').length,
-      lang: match[2],
-      code: outdent(match[3], match[1]),
-    })
-  }
-  return found
-}
-
 function fences () {
   const found = []
-  for (const path of markdownFiles(SKILLS)) {
-    const text = readMarkdown(path)
-    for (const match of text.matchAll(FENCE)) {
-      found.push({
-        file: path.slice(ROOT.length + 1),
-        line: text.slice(0, match.index).split('\n').length,
-        lang: match[2],
-        code: outdent(match[3], match[1]),
-      })
-    }
+  for (const path of skillMarkdownFiles()) {
+    found.push(...fencesIn(readMarkdown(path), path.slice(ROOT.length + 1)))
   }
   return found
 }

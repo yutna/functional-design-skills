@@ -68,24 +68,27 @@ sequential pipeline. See
 ## Accumulating field errors
 
 ```js
-const validateCustomer = (raw) => {
-  const results = {
-    name: parseName(raw.name),
-    email: parseEmail(raw.email),
-    age: parseAge(raw.age),
-  };
-  const errors = Object.entries(results)
-    .filter(([, r]) => !r.ok)
-    .map(([field, r]) => ({ field, ...r.error }));
+const problemIn = (field, r) => (r.ok ? [] : [{ field, ...r.error }]);
 
-  return errors.length
-    ? err(Object.freeze(errors))
-    : ok(
+const validatePatient = (raw) => {
+  const name = parseName(raw.name);
+  const email = parseEmail(raw.email);
+  const age = parseAge(raw.age);
+
+  return name.ok && email.ok && age.ok
+    ? ok(
         Object.freeze({
-          name: results.name.value,
-          email: results.email.value,
-          age: results.age.value,
+          name: name.value,
+          email: email.value,
+          age: age.value,
         }),
+      )
+    : err(
+        Object.freeze([
+          ...problemIn("name", name),
+          ...problemIn("email", email),
+          ...problemIn("age", age),
+        ]),
       );
 };
 ```
