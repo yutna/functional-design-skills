@@ -119,6 +119,43 @@ things a correct answer contains.
 Reading the answer is the point, not the score. Each session leaves its
 transcript beside the fixture it ran against.
 
+### Grading the answers against a baseline
+
+`eval-scenarios.mjs` reports which skill a session loaded. It does not
+read the answer, and it cannot say whether the pack made the answer
+better. A second runner does both:
+
+```sh
+node scripts/eval-plugin.mjs --dry-run     # build the cases, call nothing
+node scripts/eval-plugin.mjs --tag smoke   # a few scenarios, both arms
+node scripts/eval-plugin.mjs               # every scenario, both arms
+```
+
+It turns each scenario into a case for `claude plugin eval`. The block
+quote is the prompt, the prose under it is the rubric a judge model
+grades the final answer against, and the skill it should reach becomes an
+indicator. Every case runs with the pack loaded and again with no plugin
+at all, so the result is a pair of pass rates and the difference between
+them.
+
+**What it proves:** whether answers written with the pack meet the
+scenario's own criteria more often than answers written without it.
+
+**What it does not prove:** that the judge is right. The rubric was
+written for a person and a model is reading it, a run is one sample of a
+non-deterministic agent, and a difference smaller than the spread between
+repeated runs is not a difference. Read the answers behind any number you
+intend to act on; the result file keeps each one.
+
+The cases are generated into a throwaway copy of the plugin and never
+committed, so `scenarios.md` stays the only place a scenario is written
+down and nothing is added to what `plugin/` ships. Results land in
+`evals/results/`, which git ignores.
+
+It costs money, as the runner above does: every run and every judge call
+is a model call on your account. `--max-cost-usd` sets a ceiling and has
+a default. `--runs`, `--only` and `--ablation none` make a pass cheaper.
+
 ### Running them by hand
 
 The script automates what this section used to ask for, and the manual
