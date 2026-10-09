@@ -4,7 +4,7 @@ description: Use when starting design or review, deciding how much design a task
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.0.3
+  version: 3.0.4
 ---
 
 # Functional Design

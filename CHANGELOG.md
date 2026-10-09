@@ -6,6 +6,128 @@ skills or guidance, a patch one corrects what is already there.
 
 [semantic versioning]: https://semver.org
 
+## 3.0.4
+
+Every example written in a real language was compiled or run, and every
+claim about a tool was checked against the tool. What failed is fixed,
+and the check that does this now runs on every change.
+
+### A Server Action that never asked who was calling
+
+- The lead example of `functional-typescript-react-nextjs` parsed a form
+  and ran a workflow without checking the caller. A Server Action is
+  reachable by a direct POST from anyone, so an agent that copied it
+  wrote an endpoint with no authentication. The rule requiring the check
+  was in the reference file only.
+- "A Server Action is a public endpoint" is a core rule now. The example
+  takes the caller from the session, and the form no longer carries the
+  patient's identifier, which let one patient book for another.
+- The caching section named no function. It names `cacheTag`,
+  `updateTag`, `revalidateTag` and `revalidatePath`, says what the next
+  reader sees after each, and the action calls one. It points at the
+  documentation Next.js 16 ships inside the package, which matches the
+  installed version where the skill may not.
+
+### Examples that did not compile
+
+- `functional-typescript`: an error typed as the global `RangeError`; a
+  validator interface no real schema was assignable to; a pipeline that
+  bound a total function; a `return` outside a function.
+- `functional-typescript-effect`: `Schema.InstantFromSelf` and
+  `Schema.Arbitrary`, which Effect 3 does not have; an error built with
+  the global `RangeError`; a bare type expression; two "styles" of one
+  workflow that were two different programs.
+- `functional-typescript-react`, `-xstate` and `-ts-pattern`: seven
+  fences, among them three before-and-after pairs that redeclared their
+  own names and a pattern catalogue that matched a tuple against an
+  object.
+- `functional-elixir-phoenix`: a mapping that built a struct with a key
+  the struct does not have, and two signatures that were not Elixir.
+- `functional-elixir`: a GenServer with no `init/1`.
+
+### Claims about tools that were not true
+
+- The Elixir pack said the language has no compiler that rejects an
+  illegal state, and that a misspelled struct field is a compile error.
+  On Elixir 1.20 the compiler infers types from patterns and guards and
+  warns; it does not read `@spec`; a misspelled field raises `KeyError`
+  at run time. The pack now asks for `mix compile --warnings-as-errors`
+  beside Dialyzer.
+- `Repo.transaction/2` is deprecated in Ecto 3.14. The Phoenix pack uses
+  `Repo.transact/2`, and its rule about `Ecto.Multi` follows Ecto's own
+  guidance: control flow inside `transact` by default, a multi for steps
+  built at run time.
+- The comparison of schema libraries called Zod the largest of four and
+  ArkType small, and said all three of Zod, Valibot and ArkType have an
+  abort-early mode. Measured, ArkType is the largest and only Valibot
+  has the mode. The examples were Zod 3 with no major named; they are
+  Zod 4 and say so.
+- The JavaScript pack said a type checker over JSDoc reports a missing
+  case. It does only when the `default` branch passes the value to a
+  parameter typed `never`.
+- `Schema.trimmed()` in the Effect pack is a filter and rejected a
+  padded code that the same example in two other libraries normalises.
+- Two statements about XState 5 were wrong: a pending delay is not
+  restored after a restart, and a transition target is not type-checked
+  while `snapshot.matches()` is.
+
+### Rules their own examples broke
+
+- `functional-elixir` forbade every catch-all clause while its `confirm`
+  and every `new/1` ended in one, and recommended an `else` in `with`
+  that Elixir's documentation lists as an anti-pattern. The first rule
+  now covers a domain choice and names a parser of outside input as the
+  opposite case; the second has each step return the pipeline's error.
+- `functional-typescript-ts-pattern` said to end every match with
+  `.exhaustive()` and then called its own `.otherwise()` legitimate. The
+  rule covers a match over a union; a match over a pair is a table.
+- `functional-javascript` asked for construction through functions and
+  showed a class with a public constructor beside its parser, and a
+  `fromDto` that spread whatever arrived into a domain value.
+- `functional-typescript-react` showed a loaded list that could be empty
+  beside a separate empty state; `functional-typescript-xstate` read its
+  context with a cast.
+- `functional-elixir-phoenix` gave one context function three names and
+  two return shapes.
+- `pipe` composed functions in the JavaScript pack and pushed a value in
+  the TypeScript pack. It pushes a value in both.
+
+### What a word-level rename left behind
+
+- Three sentences in which "order", meaning sequence, had been renamed
+  with the domain's orders; a shipping department in a clinic; a product
+  team that had become a treatment team; `OrderDtoV2` beside
+  `BookingDto`; and a clinic booking routed to a courier.
+- `validate-prose.mjs` catches those three idioms now; the others were
+  found by reading.
+
+### Checks that would have caught this
+
+- `scripts/validate-types.mjs` type-checks every TypeScript, TSX and
+  JavaScript example against libraries pinned in `package.json`, under
+  the compiler options the TypeScript pack recommends, and resolves
+  every library member named in prose. What an example assumes is
+  declared in a prelude under `example-types/`, outside the plugin; a
+  prelude may only declare, and is itself checked. One hundred and
+  twenty-seven examples in twenty-two files pass.
+- The Elixir examples are parsed in continuous integration, which now
+  installs the toolchain. Asking for the parse on a machine without
+  Elixir printed a skip and reported every fence as parsed, and a stray
+  `end` in one fence killed the parser and reported every fence as
+  parsed. Both fail now.
+- `validate-prose.mjs` catches three more idioms that a rename fills
+  with a domain noun, and `validate-counts.mjs` holds three more counts.
+- `validate-skills.mjs` fails when the names and descriptions of the
+  skills outgrow a ceiling that only comes down, because Claude Code
+  drops descriptions from a listing that overflows its budget. It also
+  fails on a manifest key Claude Code does not document: `plugin.json`
+  carried one, and `claude plugin validate --strict` rejected the plugin
+  for it.
+- `scripts/eval-plugin.mjs` grades the answers to the scenarios with the
+  pack loaded and with no plugin at all, through `claude plugin eval`.
+  It is tooling only: no result from it is claimed in this release.
+- `negative-test.mjs` goes from forty-one guards to fifty-five.
+
 ## 3.0.3
 
 A pack that teaches a library now says which major its shapes target,
