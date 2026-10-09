@@ -125,22 +125,23 @@ A form should report every problem at once, which is applicative
 validation.
 
 ```tsx
+const problemIn = <T,>(field: string, r: Result<T, string>): FieldError[] =>
+  r.ok ? [] : [{ field, problem: r.error }];
+
 const parseBookingForm = (
   form: FormData,
 ): Result<BookingRequest, readonly FieldError[]> => {
-  const results = {
-    customer: parseCustomerId(form.get("customer")),
-    quantity: parseQuantity(form.get("quantity")),
-    code: parseTreatmentCode(form.get("code")),
-  };
-  const errors = Object.entries(results)
-    .filter(([, r]) => !r.ok)
-    .map(([field, r]) => ({ field, problem: r.error }));
-  return errors.length ? err(errors) : ok(assemble(results));
+  const slot = parseSlotId(form.get("slot"));
+  const treatment = parseTreatmentCode(form.get("treatment"));
+  return slot.ok && treatment.ok
+    ? ok({ slot: slot.value, treatment: treatment.value })
+    : err([...problemIn("slot", slot), ...problemIn("treatment", treatment)]);
 };
 ```
 
 Each error carries its field, so the form can highlight the right input.
+The patient is not a field. Who is booking comes from the session, and a
+patient sent with the form would be a claim the action cannot trust.
 See
 [applicative-validation.md](../../functional-handling-errors-with-results/references/applicative-validation.md).
 
