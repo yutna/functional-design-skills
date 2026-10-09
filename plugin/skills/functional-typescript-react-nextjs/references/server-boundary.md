@@ -40,9 +40,12 @@ Props crossing the boundary are serialised, so they are DTOs whether you
 call them that or not.
 
 ```tsx
-// server component
-const bookings = await loadBookings(customerId); // domain values
-return <BookingList bookings={bookings.map(toListItem)} />;
+// app/bookings/page.tsx, a server component
+export default async function BookingsPage() {
+  const patient = await signedInPatient(); // redirects when signed out
+  const bookings = await loadBookings(patient); // domain values
+  return <BookingList bookings={bookings.map(toListItem)} />;
+}
 ```
 
 `toListItem` is the outward mapping: plain, serialisable, and shaped for
@@ -59,6 +62,8 @@ An action is a workflow with an HTTP shape: a command in, a result out.
 
 ```tsx
 "use server";
+
+import { updateTag } from "next/cache";
 
 type FormState =
   | { tag: "Idle" }
@@ -78,9 +83,10 @@ export async function confirmBookingAction(
   if (!parsed.ok) return { tag: "Invalid", errors: parsed.error };
 
   const result = await confirmBooking(deps)(session.patient, parsed.value);
-  return result.ok
-    ? { tag: "Confirmed", reference: result.value.reference }
-    : { tag: "Rejected", reason: result.error };
+  if (!result.ok) return { tag: "Rejected", reason: result.error };
+
+  updateTag(`bookings:${session.patient}`); // shell: what went stale
+  return { tag: "Confirmed", reference: result.value.reference };
 }
 ```
 
@@ -164,10 +170,48 @@ two will disagree in ways users notice.
 ## Caching and revalidation
 
 Caching is a shell concern. Decide, per data source, how staleness is
-handled, and write it down next to the fetch. An action that changes data
-must invalidate what it affected; that invalidation is part of the
-action's contract, and forgetting it is the most common cause of a screen
-that shows old data after a successful write.
+handled, and write it down next to the read: in Next.js 16 that is a
+`cacheTag` inside the function that caches it.
+
+```ts
+export async function loadBookings(patient: PatientId) {
+  "use cache";
+  cacheTag(`bookings:${patient}`);
+  return bookingStore.forPatient(patient);
+}
+```
+
+An action that changes data must invalidate what it affected; that
+invalidation is part of the action's contract, and forgetting it is the
+most common cause of a screen that shows old data after a successful
+write. Three functions from `next/cache` do it, and they differ in what
+the next reader sees:
+
+- **`updateTag(tag)`** expires the tag at once, so whoever made the
+  change sees it on the next render. It works only in a Server Action,
+  and the action above calls it.
+- **`revalidateTag(tag, "max")`** marks the tag stale and refreshes it in
+  the background, so the next reader may still be served the old value.
+  It also works in a Route Handler, which is where a webhook arrives.
+  The second argument is required.
+- **`revalidatePath(path)`** invalidates everything a route cached. It
+  answers "I cannot say what went stale", so prefer a tag.
+
+```ts
+// app/api/clinic-import/route.ts: nobody is waiting to see this one
+export async function POST() {
+  revalidateTag("appointment-board", "max");
+  return new Response(null, { status: 204 });
+}
+```
+
+These shapes are the Cache Components model, which a project turns on
+with `cacheComponents: true` in `next.config.ts`. The package carries
+its own documentation: when `node_modules/next/dist/docs/` exists, read
+`01-app/01-getting-started/09-revalidating.md` there before writing
+cache code, and `01-app/02-guides/caching-without-cache-components.md`
+when the project has that option off. It matches the installed version,
+which this page may not.
 
 ## Testing across the boundary
 

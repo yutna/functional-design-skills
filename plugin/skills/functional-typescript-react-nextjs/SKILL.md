@@ -84,6 +84,8 @@ A Server Action written as a workflow:
 ```tsx
 "use server";
 
+import { updateTag } from "next/cache";
+
 export async function confirmBooking(
   _prev: FormState,
   formData: FormData,
@@ -95,9 +97,10 @@ export async function confirmBooking(
   if (!parsed.ok) return { tag: "Invalid", errors: parsed.error };
 
   const result = await runConfirmBooking(deps)(session.patient, parsed.value);
-  return result.ok
-    ? { tag: "Confirmed", reference: result.value.reference }
-    : { tag: "Rejected", reason: result.error };
+  if (!result.ok) return { tag: "Rejected", reason: result.error };
+
+  updateTag(`bookings:${session.patient}`);
+  return { tag: "Confirmed", reference: result.value.reference };
 }
 ```
 
@@ -105,6 +108,12 @@ Work out who is calling, parse at the boundary, decide purely, return a
 value the form can render. The caller's identity comes from the session
 and never from the form. Whether this patient may confirm this booking
 is a rule, so the workflow decides it, and `Rejected` carries the answer.
+
+Once the write has happened, the action says what went stale.
+`updateTag` expires the patient's bookings at once, so the next render
+shows the new one; `revalidateTag` is the one for a change nobody is
+waiting to see. Both are in
+[server-boundary.md](references/server-boundary.md).
 
 The `(prevState, formData)` signature is what `useActionState`
 calls, so the client reads
