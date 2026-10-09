@@ -42,13 +42,16 @@ Parallel regions are for parts of one lifecycle that are genuinely
 independent and genuinely simultaneous.
 
 ```ts
-const appointment = {
+const appointment = createMachine({
   type: "parallel",
   states: {
     payment: { initial: "unpaid", states: { unpaid: {}, paid: {} } },
-    attendance: { initial: "expected", states: { expected: {}, arrived: {} } },
+    attendance: {
+      initial: "expected",
+      states: { expected: {}, arrived: {} },
+    },
   },
-};
+});
 ```
 
 A patient can pay before or after arriving, and the two orders are
@@ -102,9 +105,10 @@ things do not survive the round trip:
 - **A running actor.** It was not part of the state; it was work in
   flight. On restore the machine re-enters the state and invokes
   again, so that invocation must be safe to repeat.
-- **A pending delay.** The clock restarts. If the deadline is a
-  business fact rather than a debounce, put the timestamp in context
-  and compute from it, instead of relying on the timer.
+- **A pending delay.** The timer is not restored, so the delayed
+  transition does not fire. If the deadline is a business fact rather
+  than a debounce, put the timestamp in context and compute from it,
+  instead of relying on the timer.
 
 ## What stays outside the machine
 
