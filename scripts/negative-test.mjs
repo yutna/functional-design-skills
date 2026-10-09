@@ -13,11 +13,11 @@
 // Usage: node scripts/negative-test.mjs
 
 import {
-  chmodSync, cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync,
-  statSync, symlinkSync, unlinkSync, writeFileSync,
+  chmodSync, copyFileSync, cpSync, mkdirSync, mkdtempSync, readdirSync,
+  readFileSync, rmSync, statSync, symlinkSync, unlinkSync, writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
 
@@ -73,6 +73,15 @@ const CASES = [
     ['description: Use when ', 'description: This skill covers '], 'must open with "Use when "'],
   ['a description past this pack\'s length limit', SKILL,
     ['description: Use when ', `description: Use when ${'x'.repeat(200)} `], "this pack's limit is"],
+  // The description stays inside its own limit; it is the sum that goes over.
+  // The clause is longer than the headroom the listing has, so if the ceiling
+  // is ever left standing far above the listing this stops tripping, which
+  // is the cue to bring the ceiling down.
+  ['one more description that fits alone but overflows the listing',
+    join('plugin', 'skills', 'functional-composing-functions', 'SKILL.md'),
+    [ANOTHER_DESCRIPTION,
+      `${ANOTHER_DESCRIPTION} or when small steps will not line up end to end`],
+    'over the ceiling'],
   ['a second level-one heading', SKILL,
     ['## Overview', '# Overview'], 'level-one headings, expected 1'],
   ['a link to a reference that is not there', SKILL,
@@ -89,6 +98,12 @@ const CASES = [
     ['"version": "', '"version": "0.'], 'plugin.json: "version"'],
   ['a marketplace entry left behind', join('.claude-plugin', 'marketplace.json'),
     ['"version": "', '"version": "0.'], 'marketplace.json:'],
+  // The field this guard was written for: left in plugin.json after the
+  // runtime it belonged to was dropped, and ignored by Claude Code at load.
+  ['a plugin manifest key Claude Code does not document',
+    join('plugin', '.claude-plugin', 'plugin.json'),
+    ['"skills": "./skills/"', '"skills": "./skills/",\n  "interface": {}'],
+    'is not a key Claude Code documents'],
   ['a lock file whose version disagrees with what it resolves to',
     'package-lock.json',
     ['"version": "2.9.1"', '"version": "3.0.0"'],
@@ -135,6 +150,20 @@ const CASES = [
     join('evals', 'README.md'),
     [SCENARIO_SENTENCE, 'holds a good number of problems'],
     'was rewritten', 'validate-counts.mjs'],
+  // The two cases above break a count the evals state about themselves. This
+  // one breaks a count a skill states about its own table, which is counted
+  // from the Markdown rather than read off a directory listing.
+  ['a skill that miscounts its own table of exceptions',
+    join('plugin', 'skills', 'functional-choosing-types-or-plain-data', 'SKILL.md'),
+    ['It has five exceptions', 'It has six exceptions'],
+    'says "six" genericFacts, but there are', 'validate-counts.mjs'],
+  // The other way a count goes wrong: not the wrong number but none. Renaming
+  // the heading leaves nothing under it to count, and a zero compared with
+  // the sentences below would be a number like any other. It has to throw.
+  ['a count that read nothing, because its heading was renamed',
+    join('plugin', 'skills', 'functional-choosing-types-or-plain-data', 'SKILL.md'),
+    ['## What the generic route costs', '## What the generic route costs us'],
+    'found no numbered items under', 'validate-counts.mjs'],
   ['a bibliographic reference in a tracked file', SKILL,
     ['## Pattern', '## Pattern\n\nStated in Chapter 7 of the other book.'],
     'this pack cites no sources', 'validate-prose.mjs'],
@@ -411,6 +440,81 @@ for (const script of SCRIPTS) {
   }
 }
 rmSync(empty, { recursive: true, force: true })
+
+// The same floor with the toolchain missing rather than the files. Asking for
+// Elixir on a machine without it used to print a skip and then report every
+// Elixir fence as parsed. The PATH below holds a link to node and nothing
+// else, so the one thing it lacks is the thing under test. The script itself
+// is launched by absolute path, so a link that cannot be made is not fatal.
+const bin = mkdtempSync(join(tmpdir(), 'fds-bin-'))
+const nodeLink = join(bin, basename(process.execPath))
+try {
+  symlinkSync(process.execPath, nodeLink)
+} catch {
+  try {
+    copyFileSync(process.execPath, nodeLink)
+  } catch { /* the run does not need it */ }
+}
+// Windows spells the variable Path, and a second spelling would be ignored.
+const pathKey = Object.keys(process.env)
+  .find((key) => key.toLowerCase() === 'path') ?? 'PATH'
+// Asks the example check for Elixir with `bin` as the whole of PATH.
+function askForElixir () {
+  const result = spawnSync(
+    process.execPath,
+    [join(ROOT, 'scripts', 'validate-examples.mjs'), '--with-elixir'],
+    { encoding: 'utf8', env: { ...process.env, [pathKey]: bin } },
+  )
+  return { status: result.status, text: `${result.stdout}${result.stderr}` }
+}
+
+// A refusal is an exit of 1 and the reason, not merely any failure: a crash
+// would also exit non-zero and prove nothing about the check.
+function expectRefusal (what, { status, text }, reason) {
+  if (status === 1 && text.includes(reason)) {
+    process.stdout.write(`floor ok validate-examples.mjs --with-elixir ${what}\n`)
+    proved++
+  } else {
+    process.stderr.write(
+      `floor FAIL validate-examples.mjs --with-elixir ${what} -> exited ` +
+        `${status}, expected 1 and "${reason}", got:\n${text}\n`,
+    )
+    failures++
+  }
+}
+
+expectRefusal(
+  'refuses to pass with no elixir on PATH',
+  askForElixir(),
+  'none is on PATH, so no Elixir fence was parsed',
+)
+
+// The other way to have no Elixir: it is there, answers --version, and then
+// dies without parsing anything, as a BEAM that cannot start would. The parse
+// script exits 0 whatever it finds, so any other ending means it did not get
+// through the fences; an empty stdout used to read as nothing wrong in them.
+// A shell script stands in for the dying elixir, and Windows cannot spawn one
+// under that name, so there the case is reported as skipped, not as proved.
+if (process.platform === 'win32') {
+  process.stdout.write(
+    'floor skip validate-examples.mjs --with-elixir refuses to pass when ' +
+      'elixir dies: Windows cannot spawn a shell script as elixir\n',
+  )
+} else {
+  const fake = join(bin, 'elixir')
+  writeFileSync(
+    fake,
+    '#!/bin/sh\nif [ "$1" = "--version" ]; then echo "Elixir 9.9.9"; exit 0; fi\n' +
+      'exit 1\n',
+  )
+  chmodSync(fake, 0o755)
+  expectRefusal(
+    'refuses to pass when elixir dies',
+    askForElixir(),
+    'did not finish, so no Elixir fence can be called parsed',
+  )
+}
+rmSync(bin, { recursive: true, force: true })
 
 // The installer, run for real. Continuous integration only ever passed it
 // --dry-run, which writes nothing and therefore proves nothing about the

@@ -112,6 +112,15 @@ rejected.
   `functional-design-skills`. The installer reads it to tell "already
   installed" from "another pack owns this name", which is the difference
   between a skip and silently missing skills.
+- **The skill listing has a ceiling, and it only comes down.** Claude Code
+  puts every skill's name and description in context on every turn and
+  caps that listing at one per cent of the context window, 8,000
+  characters where it cannot tell. Past the cap it drops descriptions,
+  least-used first, and a skill listed by name alone is rarely chosen.
+  This pack's listing is already that size on its own, before anything
+  else the user has installed. `validate-skills.mjs` sums the names and
+  descriptions and fails when the total passes its ceiling, so a longer
+  description has to be paid for by a shorter one.
 - **A substantial paragraph belongs to one skill.** Where two skills need
   the same point, one states it and the other links to it. Checked
   between every pair of skills, not only where the names say they are
@@ -249,6 +258,9 @@ was then audited and reported clean.
 ## Adding a skill
 
 1. Create `plugin/skills/<name>/SKILL.md` with the frontmatter above.
+1. Pay for its place in the listing. The new name and description add
+   to a total that has a ceiling, so shorten other descriptions by as
+   much as this one adds; `npm test` fails until the total fits.
 1. Add routing cases for it in `evals/routing-cases.md`, in the wording
    someone actually said.
 1. Run `npm test`. Coverage gates; if the new skill does not reach the

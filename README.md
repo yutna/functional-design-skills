@@ -254,9 +254,9 @@ Worth knowing before relying on it.
   example in a real language is handed to that language's compiler, so
   one that cannot be pasted fails the build. An example that parses can
   still be wrong: nothing here type-checks it, runs it, or knows
-  whether the library it names behaves as shown. Elixir needs the
-  Elixir toolchain, which continuous integration has not got, so those
-  fences are checked only by whoever runs `--with-elixir` locally.
+  whether the library it names behaves as shown. Elixir fences are
+  parsed in continuous integration, which installs the toolchain for
+  that step; locally they are parsed only when you pass `--with-elixir`.
 - **The neutral notation is checked by nobody.** Around three quarters
   of the code blocks in the pack are `text`, the notation the core
   skills share, and no parser exists for it. Those blocks are held to

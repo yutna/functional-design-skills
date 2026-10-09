@@ -193,10 +193,10 @@ function validateKeys (id, frontmatter) {
   }
 }
 
-// The version is recorded in forty-three places: package.json, two manifests,
-// and the metadata block of every skill. Nothing in the packaging tooling
-// keeps them in step, so a release that updates forty-two of them ships a
-// skill claiming to be the previous one.
+// The version is recorded in package.json, in two manifests, and in the
+// metadata block of every skill. Nothing in the packaging tooling keeps them
+// in step, so a release that misses one ships a skill claiming to be the
+// previous version.
 function validateVersion (id, frontmatter) {
   const version = frontmatter.metadata?.version
   if (version === undefined) {
@@ -400,6 +400,67 @@ function validateManifestVersions () {
   }
 }
 
+// Every top-level key plugin.json may carry: the rows of the Fields table in
+// the plugin manifest reference, last checked on 2026-10-09 at
+// code.claude.com/docs/en/plugins/manifest-reference. That page says an
+// unrecognised top-level key is stripped and the plugin loads anyway, and
+// that `claude plugin validate` reports it as a warning, which only --strict
+// turns into a failure. Continuous integration has no `claude` to run it
+// with, so this does the same job from the documented list, the way
+// ALLOWED_KEYS does for frontmatter. Without it an `interface` object
+// outlived the runtime it was written for, because loading it never failed
+// and nothing in this repository looked.
+//
+// Only the top level is read: `experimental` is a container whose shape the
+// page says may still change. marketplace.json is a different document with
+// a schema of its own, and is left alone.
+const MANIFEST_KEYS = new Set([
+  '$schema',
+  'name',
+  'displayName',
+  'version',
+  'description',
+  'author',
+  'homepage',
+  'repository',
+  'license',
+  'keywords',
+  'metadata',
+  'icon',
+  'documentationUrl',
+  'supportUrl',
+  'privacyPolicyUrl',
+  'termsOfServiceUrl',
+  'defaultEnabled',
+  'dependencies',
+  'settings',
+  'userConfig',
+  'types',
+  'channels',
+  'skills',
+  'commands',
+  'agents',
+  'hooks',
+  'mcpServers',
+  'lspServers',
+  'outputStyles',
+  'workflows',
+  'experimental',
+])
+
+function validateManifestKeys () {
+  const plugin = readJson('plugin/.claude-plugin/plugin.json')
+  for (const key of Object.keys(plugin)) {
+    if (!MANIFEST_KEYS.has(key)) {
+      errors.push(
+        `plugin/.claude-plugin/plugin.json: "${key}" is not a key Claude ` +
+          'Code documents. Claude Code strips it at load and ' +
+          'claude plugin validate warns about it, so remove it.',
+      )
+    }
+  }
+}
+
 // A package.json beside a package-lock.json at the plugin's root makes
 // `claude plugin install` run npm on the machine of everyone who installs it,
 // pulling this repository's dev tooling for no benefit. Keep both outside.
@@ -508,6 +569,44 @@ function validateDistinctDescriptions (ids) {
       fail(id, `description is identical to ${seen.get(text)}`)
     }
     seen.set(text, id)
+  }
+}
+
+// Claude Code puts every skill's name and description into the model's
+// context on every turn, and holds that listing to a character budget: one
+// per cent of the context window, 8,000 characters where the window is not
+// known. Past the budget it keeps every name and drops descriptions,
+// starting with the skills invoked least, and a skill listed by its name
+// alone has lost the keywords it is chosen by.
+//
+// This pack's listing came to 8,063 characters on its own when this check
+// was written, before anything else the user has installed, and nothing
+// measured it, so nothing stopped it growing. The ceiling is this pack's own
+// number, not the platform's: it sits just above where the listing stood, so
+// a longer description has to be paid for by a shorter one. It is meant to
+// come down, never up.
+const LISTING_CEILING = 8100
+
+// Counted so the summary can say it, and so a run that read no skill cannot
+// report a listing of zero as one that fits.
+let listingChars = 0
+
+// Summed over all the skills at once, like the check above: the listing is
+// one string, so no single skill is the one that overflowed it.
+function validateListingSize (ids) {
+  for (const id of ids) {
+    const { frontmatter } = readSkill(id)
+    // A skill with no readable frontmatter is reported once by validateSkill.
+    if (frontmatter === null) continue
+    listingChars += frontmatter.name.length + frontmatter.description.length
+  }
+  if (listingChars > LISTING_CEILING) {
+    errors.push(
+      `plugin/skills/: the names and descriptions total ${listingChars} ` +
+        `characters, which is over the ceiling of ${LISTING_CEILING} by ` +
+        `${listingChars - LISTING_CEILING}. Shorten a description to pay ` +
+        'for a longer one; the ceiling comes down, never up.',
+    )
   }
 }
 
@@ -633,6 +732,7 @@ for (const id of skillIds) {
 }
 validateLinks()
 validateManifestVersions()
+validateManifestKeys()
 validateNoPackageFilesInPlugin()
 validateExactDependencies()
 validateLockVersions()
@@ -642,6 +742,7 @@ validateParentPack(skillIds)
 validateStackVersion(skillIds)
 if (errors.length === 0) {
   validateDistinctDescriptions(skillIds)
+  validateListingSize(skillIds)
 }
 
 for (const warning of warnings) {
@@ -671,9 +772,19 @@ if (packsChecked === 0) {
   )
   process.exit(1)
 }
+if (listingChars === 0) {
+  process.stderr.write(
+    'error no skill contributed a name and a description to the listing, so ' +
+      'nothing measured how large it is\n',
+  )
+  process.exit(1)
+}
 process.stdout.write(
   `ok    ${skillIds.length} skill(s) valid at ${EXPECTED_VERSION}\n`,
 )
 process.stdout.write(
   `      ${packsChecked} library pack(s) name the major they target\n`,
+)
+process.stdout.write(
+  `      listing is ${listingChars} of ${LISTING_CEILING} characters\n`,
 )

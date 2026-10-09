@@ -18,9 +18,14 @@
 // checker and not a test. An example can parse and still be wrong. It cannot
 // be wrong in the one way that makes it useless to paste.
 //
-// Elixir needs the Elixir toolchain, which continuous integration does not
-// install, so it is opt-in with --with-elixir and JavaScript, TypeScript and
-// JSON are what gate.
+// Elixir needs the Elixir toolchain, so it is opt-in with --with-elixir, and
+// without the flag JavaScript, TypeScript and JSON are what gate. The Ubuntu
+// job in continuous integration installs the toolchain and passes the flag,
+// so there Elixir gates too; the Windows job installs none, and on your own
+// machine the fences are parsed only when you ask. Asking on a machine with no
+// Elixir on PATH fails: a run that parsed no Elixir has measured nothing, and
+// printing "ok" for it is worse than a red build. So does an Elixir that
+// starts and then dies before it has been through every fence.
 //
 // Usage:
 //   node scripts/validate-examples.mjs                 js, ts, tsx, json
@@ -132,15 +137,30 @@ function haveElixir () {
 // running anything.
 function elixirErrors (list) {
   if (list.length === 0) return []
+  // Reached only by a caller that asked for Elixir; selftest skips for itself
+  // before it gets here. This used to print a skip and return no errors,
+  // which counted every Elixir fence as parsed on a machine that parsed none.
+  // A check that measured nothing has failed, not passed.
   if (!haveElixir()) {
-    process.stdout.write('skip  elixir fences: no elixir on PATH\n')
-    return []
+    process.stderr.write(
+      'error Elixir was asked for with --with-elixir and none is on PATH, ' +
+        'so no Elixir fence was parsed\n',
+    )
+    process.exit(1)
   }
   const work = mkdtempSync(join(tmpdir(), 'fds-examples-'))
   try {
     list.forEach((fence, index) => {
       writeFileSync(join(work, `${index}.exs`), fence.code)
     })
+    // The message of a parse error is a string for most errors and a pair of
+    // strings for some -- a stray `end` gives {"unexpected reserved word: ",
+    // ""} on Elixir 1.20.4 -- with the token to go between them. Printing a
+    // pair raised, the script died on the first one, and every fence after it
+    // went unparsed while the run reported ok. A row is one line of three
+    // tab-separated fields, so whitespace in a message is collapsed. This is
+    // a template literal, so the source says \\t and \\s to hand Elixir a \t
+    // and a \s; a bare \s would reach it as a plain s.
     writeFileSync(join(work, 'parse.exs'), `
       dir = System.argv() |> List.first()
       dir
@@ -153,11 +173,35 @@ function elixirErrors (list) {
           {:ok, _} -> :ok
           {:error, {meta, message, token}} ->
             line = if is_list(meta), do: Keyword.get(meta, :line, 1), else: meta
-            IO.puts("\#{index}\\t\#{line}\\t\#{message}\#{inspect(token)}")
+            text =
+              case message do
+                {before, rest} -> "\#{before}\#{token}\#{rest}"
+                _ -> "\#{message}\#{inspect(token)}"
+              end
+            one_line = String.replace(text, ~r/\\s+/, " ")
+            IO.puts("\#{index}\\t\#{line}\\t\#{one_line}")
         end
       end)
     `)
     const result = spawnSync('elixir', [join(work, 'parse.exs'), work], { encoding: 'utf8' })
+    // The script above exits 0 whatever it finds, so any other ending means
+    // it did not get through the list, and an empty stdout would otherwise
+    // read as a list with nothing wrong in it. process.exit skips the finally
+    // below, so the directory is removed here first.
+    if (result.error !== undefined || result.status !== 0) {
+      rmSync(work, { recursive: true, force: true })
+      let detail = (result.error?.message ?? result.stderr).trim()
+      if (detail === '') {
+        detail = result.signal
+          ? `killed by ${result.signal}`
+          : `exit status ${result.status}`
+      }
+      process.stderr.write(
+        'error the Elixir parser did not finish, so no Elixir fence can be ' +
+          `called parsed\n${detail}\n`,
+      )
+      process.exit(1)
+    }
     return result.stdout.trim().split('\n').filter(Boolean).map((row) => {
       const [index, line, message] = row.split('\t')
       return { fence: list[Number(index)], line: Number(line), message }
@@ -178,6 +222,10 @@ const SELFTEST = [
     '# T\n\n1. Step\n\n   ```ts\n   const f = (): number => 1;\n   ```\n'],
   ['an ellipsis inside an Elixir struct', true,
     '# T\n\n```elixir\n%Appointment{...status: at}\n```\n', 'elixir'],
+  // Elixir reports this one as a pair of strings, not a string. Printing the
+  // pair killed the parser, so a stray end hid every fence after it.
+  ['a stray end, whose message Elixir returns as a pair', true,
+    '# T\n\n```elixir\ndef f do\n  :ok\nend\nend\n```\n', 'elixir'],
   ['malformed JSON', true, '# T\n\n```json\n{ "a": }\n```\n'],
   ['a language nothing here can parse', false,
     '# T\n\n```text\nthis is notation, not code\n```\n'],
@@ -188,8 +236,8 @@ function selftest () {
   let failures = 0
   for (const [label, shouldFail, doc, lang] of SELFTEST) {
     // A case that needs a toolchain this machine has not got is skipped, not
-    // failed. Continuous integration has no Elixir, and a self-test that
-    // passes only where it was written is worse than none.
+    // failed. The Windows job has no Elixir, and a self-test that passes
+    // only where it was written is worse than none.
     if (lang === 'elixir' && !haveElixir()) {
       process.stdout.write(`selftest skip: ${label} (no elixir on PATH)\n`)
       continue

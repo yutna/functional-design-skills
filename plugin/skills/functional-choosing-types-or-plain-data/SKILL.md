@@ -174,7 +174,7 @@ Both directions, because both failures are real.
 
 ## Common mistakes
 
-- **Reading this skill as permission.** It has four exceptions and each
+- **Reading this skill as permission.** It has five exceptions and each
   one is an observable fact. "This is verbose" is not one of them.
 - **Choosing per project.** A project-wide decision is always wrong for
   some of its values. Decide per value.
@@ -203,5 +203,5 @@ Both directions, because both failures are real.
   they agree.
 - [schema-as-data.md](references/schema-as-data.md) is how to take the
   generic route without losing the guarantees.
-- [decision-worked.md](references/decision-worked.md) works three real
+- [decision-worked.md](references/decision-worked.md) works four real
   decisions through, naming the fact that settled each.

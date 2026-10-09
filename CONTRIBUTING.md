@@ -52,6 +52,10 @@ node scripts/eval-routing.mjs --profile full  # also score the "When to use" sec
   `when_to_use` together at 1,536; the tighter limit is this pack's own,
   because a description that does not fit on two terminal lines has
   stopped being a routing table entry.
+- The names and descriptions of all the skills together stay under the
+  ceiling in `scripts/validate-skills.mjs`. The platform lists them on
+  every turn and drops descriptions once the listing outgrows its
+  budget, so a description that grows is paid for by one that shrinks.
 - Every Markdown file passes `markdownlint` under its default rules,
   with no configuration file, no inline directives, and no custom rules.
 - Cross-references between skills are sibling-relative
@@ -85,16 +89,19 @@ node scripts/eval-routing.mjs --profile full  # also score the "When to use" sec
 1. Write `plugin/skills/<name>/SKILL.md` with a `description` that
    states triggers only, in the vocabulary someone would use for the
    problem rather than for the solution.
-2. Add routing cases for it in
+2. Pay for its place in the listing: shorten other descriptions by as
+   much as the new name and description add. The total has a ceiling,
+   and `npm test` fails until it fits.
+3. Add routing cases for it in
    [evals/routing-cases.md](evals/routing-cases.md), in the wording
    someone actually said.
-3. Run `npm test`. Coverage gates: if the skill does not reach the top
+4. Run `npm test`. Coverage gates: if the skill does not reach the top
    three for its own cases, the description is missing the words people
    use, and the description is what to fix.
-4. Run `--noise` and read whose territory the new description overlaps.
+5. Run `--noise` and read whose territory the new description overlaps.
    Two skills that could both claim a task means neither will be chosen
    reliably, and that is the failure mode no syntax check can see.
-5. Add a scenario to [evals/scenarios.md](evals/scenarios.md) if the
+6. Add a scenario to [evals/scenarios.md](evals/scenarios.md) if the
    skill has a direction that could invert — a rule that could become an
    escape hatch needs a case that must refuse it, not only one that must
    apply it.

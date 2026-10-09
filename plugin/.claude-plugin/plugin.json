@@ -18,17 +18,5 @@
     "code-review",
     "architecture"
   ],
-  "skills": "./skills/",
-  "interface": {
-    "displayName": "Functional Design Skills",
-    "shortDescription": "Design rules for codebases written in a functional style",
-    "longDescription": "Diagnose what a design costs, model a domain so illegal states cannot be built, compose workflows out of total functions with errors as values, keep effects at the edges, and move imperative code toward all of it. Language packs translate the rules into JavaScript, TypeScript, React and Next.js, and Elixir and Phoenix.",
-    "developerName": "Yutthana Siphuengchai",
-    "capabilities": [
-      "Interactive",
-      "Read",
-      "Write"
-    ],
-    "websiteURL": "https://github.com/yutna/functional-design-skills"
-  }
+  "skills": "./skills/"
 }

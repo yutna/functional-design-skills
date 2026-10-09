@@ -51,6 +51,27 @@ jobs:
       - name: Parse every code example
         run: npm run validate:examples
 
+      # Elixir parses its own examples and the runner has no Elixir, so the
+      # step above leaves those fences alone. They were checked only by
+      # whoever remembered --with-elixir on their own machine, which meant a
+      # broken example could merge unseen. The versions are quoted because
+      # the action's README asks for strings: an unquoted 1.20 loses its
+      # trailing zero. Only this job installs it. A fence parses the same on
+      # every platform, and the windows job below is for what only Windows
+      # can prove.
+      - name: Install Erlang/OTP and Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: '29'
+          elixir-version: '1.20'
+
+      # The flag is passed here and not in the npm script, because the
+      # windows job runs that script too and has no Elixir to give it. This
+      # parses the JavaScript, TypeScript and JSON again as well; the flag
+      # only adds the Elixir fences.
+      - name: Parse every Elixir example
+        run: node scripts/validate-examples.mjs --with-elixir
+
       # A rule written in the same voice as every other rule gives an agent
       # no way to tell a contract from a preference. This checks the label
       # is there, not that it is the right one.
