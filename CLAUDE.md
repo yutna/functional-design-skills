@@ -258,6 +258,9 @@ was then audited and reported clean.
 ## Adding a skill
 
 1. Create `plugin/skills/<name>/SKILL.md` with the frontmatter above.
+1. Pay for its place in the listing. The new name and description add
+   to a total that has a ceiling, so shorten other descriptions by as
+   much as this one adds; `npm test` fails until the total fits.
 1. Add routing cases for it in `evals/routing-cases.md`, in the wording
    someone actually said.
 1. Run `npm test`. Coverage gates; if the new skill does not reach the

@@ -193,10 +193,10 @@ function validateKeys (id, frontmatter) {
   }
 }
 
-// The version is recorded in forty-three places: package.json, two manifests,
-// and the metadata block of every skill. Nothing in the packaging tooling
-// keeps them in step, so a release that updates forty-two of them ships a
-// skill claiming to be the previous one.
+// The version is recorded in package.json, in two manifests, and in the
+// metadata block of every skill. Nothing in the packaging tooling keeps them
+// in step, so a release that misses one ships a skill claiming to be the
+// previous version.
 function validateVersion (id, frontmatter) {
   const version = frontmatter.metadata?.version
   if (version === undefined) {
