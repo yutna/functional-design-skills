@@ -24,7 +24,11 @@ process should hold only what genuinely needs to outlive a request.
 defmodule Clinic.Scheduling.HoldRegistry do
   use GenServer
 
+  @impl true
+  def init(holds), do: {:ok, holds}
+
   # shell: receives a message, calls a pure function, keeps the result
+  @impl true
   def handle_call({:hold, slot, now}, _from, state) do
     case Holds.take(state, slot, now) do        # pure
       {:ok, hold, next} -> {:reply, {:ok, hold}, next}

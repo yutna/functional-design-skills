@@ -112,7 +112,7 @@ together and the outbox table is the jobs table.
 Ecto.Multi.new()
 |> Ecto.Multi.update(:booking, changeset)
 |> Oban.insert(:notify, NotifyWorker.new(%{booking_id: id}))
-|> Repo.transaction()
+|> Repo.transact()
 ```
 
 Nothing extra to build, and the guarantee is the same one this section

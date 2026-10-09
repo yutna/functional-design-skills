@@ -48,13 +48,20 @@ That is a DTO, not a domain model.
 defmodule Clinic.Scheduling.Store.AppointmentRow do
   use Ecto.Schema
 
+  @primary_key {:id, Ecto.UUID, autogenerate: true}
   schema "appointments" do
     field :patient_id, Ecto.UUID
+    field :doctor_id, Ecto.UUID
+    field :slot_id, Ecto.UUID
     field :status, :string
     field :held_at, :utc_datetime
     field :confirmed_at, :utc_datetime
+    field :cancelled_at, :utc_datetime
+    field :cancel_reason, :string
     timestamps()
   end
+
+  @type t :: %__MODULE__{}
 end
 
 # mapping, the only place both shapes appear
@@ -62,20 +69,26 @@ end
         {:ok, Appointment.t()} | {:error, :corrupt_row}
 def to_domain(%AppointmentRow{status: "held", held_at: at} = row)
     when not is_nil(at) do
-  {:ok,
-   %Appointment{
-     id: row.id,
-     patient_id: row.patient_id,
-     status: {:held, at}
-   }}
+  Appointment.restore(%{
+    id: row.id,
+    patient: row.patient_id,
+    doctor: row.doctor_id,
+    slot: row.slot_id,
+    status: {:held, at}
+  })
 end
+
+# the other statuses get a clause each
 
 def to_domain(_), do: {:error, :corrupt_row}
 ```
 
 `to_domain` returns a result because the database can hold rows the
 domain forbids, usually written by an earlier version of the code.
-Defaulting instead of failing reintroduces the illegal state. See
+Defaulting instead of failing reintroduces the illegal state. The struct
+is still never built outside its module: `Appointment.restore/1` is the
+constructor for a stored appointment, so a rule added to the module later
+binds stored rows as well as new input. See
 [functional-crossing-io-boundaries](../../functional-crossing-io-boundaries/SKILL.md).
 
 For a small project where the schema and the domain type genuinely
@@ -120,10 +133,11 @@ Separate the write path from the read path.
 
 ```elixir
 # write: goes through the domain
-def book_appointment(params, deps)
+@spec book_appointment(map(), deps()) ::
+        {:ok, Appointment.t(), [event()]} | {:error, booking_error()}
 
 # read: queries directly, returns a view struct
-def list_upcoming(doctor_id) :: [AppointmentListItem.t()]
+@spec list_upcoming(Doctor.Id.t()) :: [AppointmentListItem.t()]
 ```
 
 Reconstructing a domain struct to render a list is wasted work and
@@ -134,16 +148,21 @@ they matter.
 ## Transactions
 
 ```elixir
-Repo.transaction(fn ->
+Repo.transact(fn ->
   with {:ok, appt} <- load(id),
        {:ok, confirmed} <- Appointment.confirm(appt, now),
        {:ok, _} <- save(confirmed) do
-    confirmed
-  else
-    {:error, reason} -> Repo.rollback(reason)
+    {:ok, confirmed}
   end
 end)
 ```
+
+`Repo.transact/2` commits when the function returns `{:ok, value}` and
+rolls back when it returns `{:error, reason}`, and it returns that same
+tuple. A failing step therefore ends the `with`, undoes the transaction
+and reaches the caller, with no `else` and no `Repo.rollback/1`.
+`Repo.transact/2` needs Ecto 3.13; on an older 3.x the same function is
+written with `Repo.transaction/2` and `Repo.rollback/1`.
 
 One aggregate per transaction. The pure function in the middle knows
 nothing about the transaction and cannot start or commit one. See
@@ -151,11 +170,14 @@ nothing about the transaction and cannot start or commit one. See
 
 For concurrent updates, use `Ecto.Changeset.optimistic_lock/2` rather
 than a database lock: read with a version, apply the pure transition,
-write conditionally, and re-read on conflict.
+write conditionally, and re-read on conflict. A conflict raises
+`Ecto.StaleEntryError` from `Repo.update/2`; passing `:stale_error_field`
+returns the error on the changeset instead.
 
-Past two steps, `Ecto.Multi` says the same thing with the failure
-handling built in. Each step is named, each step sees what the earlier
-ones produced, and the first failure rolls the rest back.
+`Ecto.Multi` describes the same transaction as a value. Reach for it
+when the set of steps is built at run time, or when the caller has to
+learn which step failed: each step is named, each step sees what the
+earlier ones produced, and the first failure rolls the rest back.
 
 ```elixir
 Ecto.Multi.new()
@@ -165,10 +187,10 @@ Ecto.Multi.new()
 end)
 |> Ecto.Multi.update(:saved, &changeset_for(&1.confirmed))
 |> Ecto.Multi.insert(:outbox, &event_for(&1.confirmed))
-|> Repo.transaction()
+|> Repo.transact()
 ```
 
-`Repo.transaction/1` on a multi returns `{:ok, changes}` with every
+`Repo.transact/2` on a multi returns `{:ok, changes}` with every
 step's result under its name, or
 `{:error, failed_step, value, changes_so_far}` — so the caller learns
 which step failed rather than only that something did.

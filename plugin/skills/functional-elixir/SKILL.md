@@ -12,9 +12,12 @@ metadata:
 ## Overview
 
 Elixir gives immutability, pattern matching, and pipelines by default, so
-much of this pack is already the idiom. What it does not give is a
-compiler that rejects an illegal state, so the enforcement lives in
-structs with enforced keys, constructor functions, and Dialyzer.
+much of this pack is already the idiom. What it gives only in part is a
+compiler that rejects an illegal state. On Elixir 1.20 the compiler
+infers types from patterns and guards and warns about a call that can
+never succeed, but a warning does not stop the build and it does not
+read `@spec`. So the enforcement lives in structs with enforced keys,
+constructor functions, a build that fails on warnings, and Dialyzer.
 
 It also gives processes, which are the only thing in the language that
 holds state over time. Deciding what is a process is therefore the same
@@ -44,7 +47,8 @@ Not for: Erlang runtime tuning, release configuration, or Phoenix.
 | `Result<T, E>`      | `{:ok, term}` or `{:error, term}`     |
 | `Option<T>`         | `{:ok, term}` or `:error`, or `nil`   |
 | `>=>` composition   | `with` expression                     |
-| `>>` composition    | The pipe operator                     |
+| `\|>` pipe          | The pipe operator                     |
+| `>>` composition    | A function that pipes its argument    |
 | Exhaustive match    | Function clauses with no catch-all    |
 | Boundary parse      | A `new/1` function                    |
 | Mutable cell        | A process, and nothing else           |
@@ -53,15 +57,21 @@ Not for: Erlang runtime tuning, release configuration, or Phoenix.
 
 1. Rule. **`@enforce_keys` on every domain struct.** A struct with optional
    keys is a record of maybes.
-2. Rule. **Construct through `new/1`**, returning `{:ok, struct}` or
-   `{:error, reason}`. Never build a domain struct with a literal outside
-   its module.
+2. Rule. **Construct through the module's own functions**, `new/1` for
+   outside input, returning `{:ok, struct}` or `{:error, reason}`. Never
+   build a domain struct with a literal outside its module.
 3. Default. **Tagged tuples for choices**, matched by function clauses
    rather than by `case` inside one clause.
-4. Rule. **No catch-all clause on a domain function.** An unmatched value
-   should raise `FunctionClauseError`, which is a loud, findable bug.
-5. Default. **`with` for pipelines that can fail**, and an `else` that
-   names each failure rather than one catch-all.
+4. Rule. **No catch-all clause over a domain choice.** When the clauses
+   match the cases of a tagged tuple, or one struct per case, a case
+   nobody wrote should raise `FunctionClauseError`, which is a loud,
+   findable bug. A parser of outside input is the opposite case: its
+   last clause takes everything else and returns the error.
+5. Default. **`with` for pipelines that can fail, each step returning the
+   error the pipeline returns**, so a failure passes straight through and
+   no `else` is needed. Where one step's error has to be translated, wrap
+   that step in a private function: an `else` that matches the errors of
+   several steps has to guess which step produced which.
 6. Default. **The default is no process.** Reach for one when something
    must be able to fail without taking the rest down with it, or when
    work must be serialised per entity. A GenServer around a value with
@@ -69,14 +79,19 @@ Not for: Erlang runtime tuning, release configuration, or Phoenix.
 7. Rule. **Crash on a bug, return a tuple on a business outcome.** A
    slot already taken is `{:error, :slot_unavailable}`. A nil that
    should have been impossible is a crash, and the supervisor's job.
-8. Default. **`@spec` on every public function, and run Dialyzer in CI.**
-   Without it the specs are comments.
+8. Default. **`@spec` on every public function, with Dialyzer and
+   `mix compile --warnings-as-errors` in CI.** The compiler reports what
+   it can infer from patterns and guards, as warnings, and does not read
+   specs; Dialyzer reads them. Without both, a spec is a comment and a
+   type warning is a line in a log.
 
 ## Pattern
 
 ```elixir
 defmodule Clinic.Scheduling.Appointment do
   alias Clinic.Scheduling.{Doctor, Patient, Slot}
+
+  @hold_seconds 120
 
   @enforce_keys [:id, :patient, :doctor, :slot, :status]
   defstruct [:id, :patient, :doctor, :slot, :status]
@@ -97,46 +112,63 @@ defmodule Clinic.Scheduling.Appointment do
   @spec confirm(t(), DateTime.t()) ::
           {:ok, t()} | {:error, :not_held | :hold_expired}
   def confirm(%__MODULE__{status: {:held, held_at}} = appt, now) do
-    if DateTime.diff(now, held_at) <= 120 do
+    if DateTime.diff(now, held_at) <= @hold_seconds do
       {:ok, %{appt | status: {:confirmed, now}}}
     else
       {:error, :hold_expired}
     end
   end
 
-  def confirm(%__MODULE__{}, _now), do: {:error, :not_held}
+  def confirm(%__MODULE__{status: {:confirmed, _}}, _now),
+    do: {:error, :not_held}
+
+  def confirm(%__MODULE__{status: {:cancelled, _, _}}, _now),
+    do: {:error, :not_held}
 end
 ```
 
 The first clause matches only a held appointment, so an illegal
-transition cannot reach the body. The status tuple carries the timestamp
-that belongs to each state, which removes the nullable
-`confirmed_at`, `cancelled_at` columns from the domain type. See
+transition cannot reach the body. The other two statuses are written out
+so that a status added later raises here until someone decides what
+confirming it means. The status tuple carries the timestamp that belongs
+to each state, which removes the nullable `confirmed_at`, `cancelled_at`
+columns from the domain type. See
 [functional-modeling-state-machines](../functional-modeling-state-machines/SKILL.md).
 
 ## Pipelines with `with`
 
 ```elixir
+@type booking_error ::
+        {:invalid, term()} | :patient_not_found | :slot_unavailable
+
 @spec book(map(), deps()) ::
         {:ok, Appointment.t()} | {:error, booking_error()}
 def book(params, deps) do
   with {:ok, command} <- BookCommand.new(params),
-       {:ok, patient} <- deps.find_patient.(command.patient),
-       {:ok, hold} <- deps.hold_slot.(command.slot),
-       {:ok, appt} <- Appointment.new(command, patient, hold) do
-    {:ok, appt}
-  else
-    {:error, :patient_not_found} = e -> e
-    {:error, :slot_unavailable} = e -> e
-    {:error, %Ecto.Changeset{} = cs} -> {:error, {:invalid, cs}}
+       {:ok, patient} <- find_patient(deps, command.patient),
+       {:ok, hold} <- deps.hold_slot.(command.slot) do
+    Appointment.new(command, patient, hold)
+  end
+end
+
+defp find_patient(deps, id) do
+  case deps.find_patient.(id) do
+    {:ok, _patient} = found -> found
+    {:error, :not_found} -> {:error, :patient_not_found}
   end
 end
 ```
 
 `with` is the railway composition of
 [functional-handling-errors-with-results](../functional-handling-errors-with-results/SKILL.md).
-Name each failure in `else`; a single `_ -> {:error, :failed}` throws
-away everything the error channel was carrying.
+A step that does not match ends the `with`, and its value is the result,
+so a step that already returns the pipeline's error needs no `else`. The
+patient lookup answers `{:error, :not_found}`, which does not say what
+was missing, so `find_patient/2` turns it into
+`{:error, :patient_not_found}` beside the call that knows. An `else` over
+the whole pipeline would have to guess which step an error came from, and
+a single `_ -> {:error, :failed}` throws away everything the error
+channel was carrying.
 
 ## Structs or plain maps
 
@@ -166,20 +198,23 @@ and nothing more. See [otp.md](references/otp.md).
 ## Red flags
 
 - A struct with no `@enforce_keys`
-- A domain function with a catch-all `_` clause
+- A catch-all `_` clause over a domain choice
 - `with ... else _ -> {:error, :error}`
+- A `with` whose `else` matches the errors of more than one step
 - A GenServer holding state that a database or a caller could hold
 - A supervision strategy chosen without saying what depends on what
 - `try/rescue` around domain logic
 - `nil` used to mean three different things
 - `@spec` absent, or Dialyzer not run
+- A build that passes with compiler warnings
 
 ## Common mistakes
 
 - **A GenServer per entity by default.** Use one when the state has a
   lifecycle, a mailbox, or supervision needs. Otherwise it is a mutable
   variable with a process around it.
-- **Catch-all clauses.** They convert a missing case into a wrong answer.
+- **Catch-all clauses over a domain choice.** They convert a missing case
+  into a wrong answer.
 - **`{:error, :error}`.** An error atom with no information forces the
   caller to guess.
 - **Expecting a restart to restore work in flight.** It restores the

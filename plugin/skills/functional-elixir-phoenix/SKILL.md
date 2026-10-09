@@ -45,14 +45,17 @@ Not for: the Elixir language, OTP, routing, or deployment.
    belongs in the domain, where it can be tested without Ecto.
 4. Default. **One assign for the screen state**, as a tagged tuple.
    Several booleans permit screens that cannot exist.
-5. Rule. **No business rules in a controller or a LiveView.** They parse
-   the request or event, call the context, and store the outcome.
+5. Rule. **No business rules in a controller or a LiveView.** They hand
+   the request's or the event's params to the context and store the
+   outcome.
 6. Default. **Return events; let the shell broadcast them.** Broadcasting
    from inside a context couples the decision to every subscriber and
    makes it untestable.
-7. Default. **`Ecto.Multi` once a transaction has more than two steps**,
-   so the sequence and its failure cases are a value rather than nested
-   control flow.
+7. Default. **`Repo.transact/2` around a `with` for a transaction's
+   steps.** A failing step ends the `with`, rolls the transaction back
+   and reaches the caller. Reach for `Ecto.Multi` when the set of steps
+   is built at run time, or when the caller has to learn which step
+   failed.
 
 ## Pattern
 
@@ -68,21 +71,27 @@ def changeset(params) do
   |> validate_length(:reason, max: 200)
 end
 
-# domain: receives values that are already valid
-def book(%BookCommand{} = command, deps), do: :ok
+# domain: receives a command whose values are already valid
+@spec book(BookCommand.t(), deps()) ::
+        {:ok, Appointment.t(), [event()]} | {:error, booking_error()}
 ```
 
 A changeset accumulates every error at once, which is what a form needs.
 That is applicative validation with an Ecto name; see
 [functional-handling-errors-with-results](../functional-handling-errors-with-results/SKILL.md).
 
+The context function the web layer calls,
+`Scheduling.book_appointment/2`, sits between the two: it runs the
+changeset, builds the command from the valid params, and calls `book/2`.
+
 ## Where each layer stops
 
-- **Controller or LiveView.** Parses the request or the event, calls one
-  context function, renders the outcome. No rules, no queries.
-- **Context.** The public surface of a bounded context. Takes commands,
-  returns `{:ok, value}` or `{:error, reason}`, and returns the events
-  that happened.
+- **Controller or LiveView.** Receives the request or the event, calls
+  one context function with its params, renders the outcome. No rules,
+  no queries.
+- **Context.** The public surface of a bounded context. Parses the
+  params into a command, calls the domain, and returns
+  `{:ok, value, events}` or `{:error, reason}`.
 - **Schema and changeset.** The parser between the database or the form
   and the domain. Nothing depends on it inward.
 - **Domain struct.** Invariants, transitions, decisions. Knows nothing
@@ -128,7 +137,7 @@ be testable with Ecto uninstalled.
 
 - [contexts-and-ecto.md](references/contexts-and-ecto.md) covers
   contexts as bounded contexts, changesets as boundary parsers, and
-  `Ecto.Multi` for a transaction with more than two steps.
+  transactions with `Repo.transact/2` and `Ecto.Multi`.
 - [liveview.md](references/liveview.md) covers assigns as one state
   value, where events are handled, and returning events for the shell
   to broadcast.
