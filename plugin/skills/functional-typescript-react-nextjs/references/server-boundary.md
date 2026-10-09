@@ -62,21 +62,24 @@ An action is a workflow with an HTTP shape: a command in, a result out.
 
 type FormState =
   | { tag: "Idle" }
+  | { tag: "SignedOut" }
   | { tag: "Invalid"; errors: readonly FieldError[] }
   | { tag: "Rejected"; reason: ConfirmBookingError }
-  | { tag: "Placed"; reference: BookingRef };
+  | { tag: "Confirmed"; reference: BookingRef };
 
 export async function confirmBookingAction(
   _prev: FormState,
   form: FormData,
 ): Promise<FormState> {
-  const session = await requireSession(); // shell
+  const session = await currentSession(); // shell: who is calling
+  if (!session) return { tag: "SignedOut" };
+
   const parsed = parseBookingForm(form); // boundary
   if (!parsed.ok) return { tag: "Invalid", errors: parsed.error };
 
-  const result = await confirmBooking(deps)(session.customer, parsed.value);
+  const result = await confirmBooking(deps)(session.patient, parsed.value);
   return result.ok
-    ? { tag: "Placed", reference: result.value.reference }
+    ? { tag: "Confirmed", reference: result.value.reference }
     : { tag: "Rejected", reason: result.error };
 }
 ```
@@ -103,9 +106,11 @@ thing that writes it.
 
 Four rules for actions:
 
-1. **Never trust the client.** An action is a public endpoint. Parse
-   every field and re-check every authorisation decision, whatever the
-   interface allowed.
+1. **Never trust the client.** An action is a public endpoint: it can be
+   called directly, by someone who never loaded the page. Work out who
+   is calling inside the action, parse every field, and let the workflow
+   decide whether this caller may do this. A check made when the page
+   was rendered does not cover the action.
 2. **Return a value, do not throw.** The form renders the result, so the
    failure must be data.
 3. **Keep the rules out.** The action parses, calls the workflow, and
@@ -120,22 +125,23 @@ A form should report every problem at once, which is applicative
 validation.
 
 ```tsx
+const problemIn = <T,>(field: string, r: Result<T, string>): FieldError[] =>
+  r.ok ? [] : [{ field, problem: r.error }];
+
 const parseBookingForm = (
   form: FormData,
 ): Result<BookingRequest, readonly FieldError[]> => {
-  const results = {
-    customer: parseCustomerId(form.get("customer")),
-    quantity: parseQuantity(form.get("quantity")),
-    code: parseTreatmentCode(form.get("code")),
-  };
-  const errors = Object.entries(results)
-    .filter(([, r]) => !r.ok)
-    .map(([field, r]) => ({ field, problem: r.error }));
-  return errors.length ? err(errors) : ok(assemble(results));
+  const slot = parseSlotId(form.get("slot"));
+  const treatment = parseTreatmentCode(form.get("treatment"));
+  return slot.ok && treatment.ok
+    ? ok({ slot: slot.value, treatment: treatment.value })
+    : err([...problemIn("slot", slot), ...problemIn("treatment", treatment)]);
 };
 ```
 
 Each error carries its field, so the form can highlight the right input.
+The patient is not a field. Who is booking comes from the session, and a
+patient sent with the form would be a claim the action cannot trust.
 See
 [applicative-validation.md](../../functional-handling-errors-with-results/references/applicative-validation.md).
 

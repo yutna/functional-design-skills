@@ -46,20 +46,26 @@ Not for: React itself, deployment, or routing configuration.
    invariants the other side is trusting. Parse it back into a domain
    type on arrival. See
    [functional-crossing-io-boundaries](../functional-crossing-io-boundaries/SKILL.md).
-3. Rule. **Secrets and authorisation decisions never cross.** Not the key,
-   not the token, and not the boolean the server computed from them
-   where the client could have computed a different one.
-4. Default. **A Server Action is a workflow**: a command arrives, the pure
+3. Rule. **The server never trusts the client.** A secret stays on the
+   server. An authorisation decision is made on the server each time it
+   matters; its answer may cross, for the screen to show, and the server
+   never takes that answer back as proof.
+4. Rule. **A Server Action is a public endpoint.** It can be called
+   directly, with any arguments, by someone who never loaded the page.
+   It works out who is calling, parses every field, and leaves the
+   workflow to decide whether this caller may do this, whatever the page
+   that rendered the form already checked.
+5. Default. **A Server Action is a workflow**: a command arrives, the pure
    core decides, the shell performs, and the result is returned as data
    the form can render. Its failures are values in that result, not
    thrown.
-5. Default. **Server by default; client where there is interaction.**
+6. Default. **Server by default; client where there is interaction.**
    Marking a component as client-side pulls its whole subtree across,
    so the mark belongs as far down the tree as it can go.
-6. Default. **Revalidation is a decision about a cache, not about a
+7. Default. **Revalidation is a decision about a cache, not about a
    screen.** Name what became stale, invalidate that, and let the
    rendering follow.
-7. Judgement. **An optimistic update is a second source of truth** for as
+8. Judgement. **An optimistic update is a second source of truth** for as
    long as it is pending. Worth it when the operation almost always
    succeeds and the user is waiting; not worth it when reconciling the
    two costs more than the wait.
@@ -82,18 +88,25 @@ export async function confirmBooking(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
+  const session = await currentSession();
+  if (!session) return { tag: "SignedOut" };
+
   const parsed = parseBookingForm(formData);
   if (!parsed.ok) return { tag: "Invalid", errors: parsed.error };
 
-  const result = await runConfirmBooking(deps)(parsed.value);
+  const result = await runConfirmBooking(deps)(session.patient, parsed.value);
   return result.ok
-    ? { tag: "Placed", ref: result.value.reference }
+    ? { tag: "Confirmed", reference: result.value.reference }
     : { tag: "Rejected", reason: result.error };
 }
 ```
 
-Parse at the boundary, decide purely, return a value the form can
-render. The `(prevState, formData)` signature is what `useActionState`
+Work out who is calling, parse at the boundary, decide purely, return a
+value the form can render. The caller's identity comes from the session
+and never from the form. Whether this patient may confirm this booking
+is a rule, so the workflow decides it, and `Rejected` carries the answer.
+
+The `(prevState, formData)` signature is what `useActionState`
 calls, so the client reads
 `useActionState(confirmBooking, { tag: "Idle" })` and gets the state,
 the form action, and a pending flag together — no second piece of state
@@ -104,8 +117,9 @@ that can disagree with the first.
 - A client component high in the tree with a server-only child below it
 - A domain object passed across the boundary rather than a parsed record
 - A rule implemented on both sides so the screen and the server agree
-- An authorisation boolean computed on the server and trusted on the
-  client
+- A Server Action that takes who is calling, or what they may do, from
+  its arguments
+- A permission enforced only by leaving the button out
 - A Server Action that throws instead of returning a failure case
 - Revalidating everything because it is hard to say what went stale
 
@@ -120,6 +134,9 @@ that can disagree with the first.
   waterfall the server could have composed in one pass.
 - **Putting the domain type in the props of a client component.** It is
   serialised, so what arrives is its shape without its guarantees.
+- **Checking the session in the page and not in the action.** The page
+  decides what is drawn. The action is a separate way in, and a caller
+  can reach it without ever loading the page.
 - **Reaching for a global store to share server data.** The server
   already composed it; the store is a second copy that goes stale.
 
