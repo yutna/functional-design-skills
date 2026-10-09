@@ -85,11 +85,12 @@ so check the installed version before pasting the block.
 ```ts
 // money.ts
 declare const brand: unique symbol;
-type Brand<T, B> = T & { readonly [brand]: B };
+type Brand<T, B extends string> = T & { readonly [brand]: B };
 
 export type Satang = Brand<number, "Satang">;
+export type NotSatang = { readonly tag: "NotSatang"; readonly value: number };
 
-export const satang = (n: number): Result<Satang, RangeError> =>
+export const satang = (n: number): Result<Satang, NotSatang> =>
   Number.isInteger(n) && n >= 0
     ? ok(n as Satang)
     : err({ tag: "NotSatang", value: n });
@@ -153,14 +154,15 @@ its failure type honestly. More in
 
 Hand-written parsers are fine for a handful of types. Past that, a schema
 library is the usual answer, and the rule that matters is which type it
-produces.
+produces. The example is Zod 4; check the installed major, because the
+spelling of several checks changed there.
 
 ```ts
 // the schema's inferred type is the DTO, not the domain type
 const BookingDto = z.object({
-  id: z.string().uuid(),
-  treatments: z.array(BookedTreatmentDto).nonempty(),
-  status: z.enum(["draft", "placed", "cancelled"]),
+  id: z.uuid(),
+  treatments: z.array(BookedTreatmentDto).min(1),
+  status: z.enum(["held", "confirmed", "cancelled"]),
 });
 
 // one mapping into the domain, where the guarantees live
@@ -172,8 +174,10 @@ const toBooking = (
 ```
 
 Letting the inferred type _be_ the domain model reintroduces every wire
-compromise: nullable fields, string enums, plain arrays. Some libraries
-can brand and constrain enough to close most of that gap; see
+compromise: nullable fields, string enums, plain arrays. `min(1)` is a
+case in point: the schema checks it and the inferred type is still a
+plain array, so the non-empty list is built in `toBooking`. Some
+libraries can brand and constrain enough to close most of that gap; see
 [schema-libraries.md](references/schema-libraries.md) for which, and for
 how the four common choices compare.
 

@@ -95,6 +95,7 @@ again a compile error.
 ```ts
 type Extract_<T, K extends string> = Extract<T, { tag: K }>;
 type Shipped = Extract_<Shipment, "Shipped">;
+type Delivered = Extract_<Shipment, "Delivered">;
 
 export const deliver = (
   s: Shipped,

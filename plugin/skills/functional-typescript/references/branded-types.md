@@ -115,11 +115,17 @@ export const transfer = (
 ## Rehydrating from a trusted store
 
 Values read back from a database were validated when written. Re-parsing
-is the safe default; where it is genuinely too expensive, keep an unsafe
-constructor internal to the module and name it so nobody reaches for it
-by accident.
+is the safe default. Where that is measured to be too expensive, add an
+unsafe constructor, and name it so nobody reaches for it by accident.
+
+TypeScript cannot say "only the storage mapping may import this", so the
+file exports it and two habits keep it contained: the module's `index.ts`
+does not re-export it, and a lint rule such as ESLint's
+`no-restricted-imports`, naming the function, stops every other file
+importing it.
 
 ```ts
+// treatment-code.ts; index.ts re-exports the type and the parser only
 /** Only for rows this service wrote. Prefer parseTreatmentCode. */
 export const unsafeTreatmentCodeFromStorage = (s: string) => s as TreatmentCode;
 ```

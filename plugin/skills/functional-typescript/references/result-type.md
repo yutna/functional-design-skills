@@ -66,8 +66,13 @@ export function pipe(a: unknown, ...fns: Array<(x: unknown) => unknown>) {
 
 ```ts
 const confirmBooking = (raw: UnvalidatedBooking) =>
-  pipe(validate(raw), bind(price(catalogue)), bind(acknowledge), map(toEvents));
+  pipe(validate(raw), bind(price(catalogue)), map(acknowledge), map(toEvents));
 ```
+
+Its error type is inferred as `ValidationError | PricingError`, because
+`bind` widens as it goes. Where callers need the workflow's own union,
+wrap each step's error with `mapError`, which the next section does by
+hand.
 
 Overloads up to about six arguments cover every real pipeline. Beyond
 that, name intermediate values instead.

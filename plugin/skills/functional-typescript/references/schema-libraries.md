@@ -7,7 +7,9 @@ rules.
 
 **Verify against the installed major version.** These libraries move
 quickly and several of the details below changed at a major boundary.
-Check `package.json` before following any example.
+The examples are Zod 4 and Valibot 1, and the comparison was checked
+against Zod 4, Valibot 1, ArkType 2 and TypeBox 1, which is the `typebox`
+package. Check `package.json` before following any example.
 
 ## Contents
 
@@ -34,29 +36,32 @@ Check `package.json` before following any example.
 
 ## The comparison
 
-| Library | Brand     | Accumulates       | Encode            |
-| ------- | --------- | ----------------- | ----------------- |
-| Zod     | Yes       | Yes               | Version-dependent |
-| Valibot | Yes       | Yes               | Version-dependent |
-| ArkType | Yes       | Yes               | Limited           |
-| TypeBox | Via casts | Via the validator | Separate          |
+| Library | Brand             | Accumulates | Encode           |
+| ------- | ----------------- | ----------- | ---------------- |
+| Zod     | Yes               | Yes         | Codecs, from 4.1 |
+| Valibot | Yes               | Yes         | No               |
+| ArkType | Yes               | Yes         | No               |
+| TypeBox | Via `Type.Unsafe` | Yes         | Codecs           |
 
-| Library | Shape                | Cost note                          |
-| ------- | -------------------- | ---------------------------------- |
-| Zod     | Method chaining      | Largest of the four                |
-| Valibot | Composed functions   | Tree-shakes to very little         |
-| ArkType | Type-like syntax     | Fast validation, small             |
-| TypeBox | JSON Schema builders | Pairs with a JSON Schema validator |
+| Library | Shape                | Cost note                             |
+| ------- | -------------------- | ------------------------------------- |
+| Zod     | Method chaining      | Mid-sized; `zod/mini` is far smaller  |
+| Valibot | Composed functions   | Smallest; tree-shakes to very little  |
+| ArkType | Type-like syntax     | Largest bundle; fastest on valid data |
+| TypeBox | JSON Schema builders | Pairs with a JSON Schema validator    |
 
 **Zod** is the default choice for most teams: the largest ecosystem, the
 best documentation, and enough expressive power for anything here. Its
 cost is bundle size, which matters in a browser and not on a server.
+`zod/mini` is the same library behind a functional API that tree-shakes,
+for when it does.
 
 **Valibot** suits browser bundles specifically. It composes with `pipe`
 rather than chaining, so unused validators are dropped entirely.
 
 **ArkType** suits codebases that value schemas reading like the types
-they describe, and where validation is hot enough that speed matters.
+they describe, and where validation is hot enough that speed matters. It
+is the largest of the four in a bundle, so weigh that in a browser.
 
 **TypeBox** suits systems that must also publish JSON Schema — an
 OpenAPI document, an event registry, a contract with another team. If
@@ -99,21 +104,30 @@ downstream and no consumer has to remember to trim.
 
 ## Accumulating errors
 
-All three of Zod, Valibot and ArkType report every issue by default and
-offer an abort-early mode. Prefer the default at a boundary a person
-will fix, and abort early only where a later check cannot run without an
-earlier one.
+Zod, Valibot and ArkType all report every issue they find, not only the
+first. Stopping early is spelled differently in each. Valibot takes
+`abortEarly`, and `abortPipeEarly` for a single pipe, in the config
+passed to `safeParse`. Zod has no such mode: it marks one check as final
+with `abort: true`. ArkType has no switch for it. Report everything at a
+boundary a person will fix, and stop early only where a later check
+cannot run without an earlier one.
 
 ```ts
-const parsed = BookingDto.safeParse(input);
-if (!parsed.success) {
-  return err(
-    parsed.error.issues.map((i) => ({
-      field: i.path.join("."),
-      problem: i.code,
-    })),
-  );
-}
+type FieldError = { readonly field: string; readonly problem: string };
+
+const parseBookingDto = (
+  input: unknown,
+): Result<BookingDto, readonly FieldError[]> => {
+  const parsed = BookingDto.safeParse(input);
+  return parsed.success
+    ? ok(parsed.data)
+    : err(
+        parsed.error.issues.map((i) => ({
+          field: i.path.join("."),
+          problem: i.code,
+        })),
+      );
+};
 ```
 
 Map the library's issue shape into **your own** error type at this
@@ -126,7 +140,7 @@ The single rule this reference exists for.
 
 ```ts
 // the DTO: nullable, string enums, plain arrays
-type BookingDto = z.infer<typeof BookingDtoSchema>;
+type BookingDto = z.infer<typeof BookingDto>;
 
 // the domain type: separate, with the guarantees
 type Booking = {
@@ -151,20 +165,27 @@ rather than a refactor. See
 
 ## Depending on the interface, not the library
 
-Several of these libraries implement a shared validator interface, which
-lets a module accept "something that validates" without naming which
-library produced it.
+Zod, Valibot and ArkType all implement Standard Schema, a shared
+validator interface published as `@standard-schema/spec`. A module can
+accept "something that validates" without naming which library produced
+it. TypeBox schemas are plain JSON Schema objects and do not carry it.
 
 ```ts
+import type { StandardSchemaV1 } from "@standard-schema/spec";
+
 // the module depends on the interface, not on Zod
-type Validator<T> = { readonly "~standard": StandardSchemaV1<unknown, T> };
-const parseWith = <T>(
-  v: Validator<T>,
+const parseWith = async <T>(
+  schema: StandardSchemaV1<unknown, T>,
   input: unknown,
-): Result<T, Issue[]> => {
-  /* ... */
+): AsyncResult<T, readonly StandardSchemaV1.Issue[]> => {
+  const out = await schema["~standard"].validate(input);
+  return out.issues ? err(out.issues) : ok(out.value);
 };
 ```
+
+`validate` may answer at once or with a promise, so the caller awaits
+it. The issues still carry the library's wording, so map them into your
+own error type before they travel further, as above.
 
 This is the narrow-dependency rule from
 [functional-applying-solid-functionally](../../functional-applying-solid-functionally/SKILL.md)
