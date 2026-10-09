@@ -21,8 +21,8 @@ the mapping generated rather than hand-written.
 ```ts
 import { Schema } from "effect";
 
-const TreatmentCode = Schema.String.pipe(
-  Schema.trimmed(),
+const TreatmentCode = Schema.Trim.pipe(
+  Schema.compose(Schema.Uppercase),
   Schema.pattern(/^[WG]\d{4}$/),
   Schema.brand("TreatmentCode"),
 );
@@ -49,6 +49,11 @@ type BookingEncoded = Schema.Schema.Encoded<typeof Booking>;
 `Schema.Schema.Type` is the domain type: branded, non-empty, constrained.
 `Schema.Schema.Encoded` is the DTO. Keep the second out of the domain
 entirely.
+
+`Schema.Trim` and `Schema.Uppercase` are transformations, so the code is
+normalised as it is decoded. `Schema.trimmed()` has a similar name and
+does something else: it is a filter, and it rejects a padded string
+where `Trim` would have trimmed it.
 
 ## Decoding
 
@@ -105,19 +110,28 @@ When the wire shape and the domain shape genuinely differ, describe the
 transformation rather than writing two mappers.
 
 ```ts
-const InstantFromIso = Schema.transformOrFail(
-  Schema.String,
-  Schema.InstantFromSelf,
-  {
-    decode: (s, _, ast) =>
-      parseIso(s) ??
-      ParseResult.fail(new ParseResult.Type(ast, s, "bad instant")),
-    encode: (i) => ParseResult.succeed(toIso(i)),
-  },
+import { ParseResult, Schema } from "effect";
+
+const Satang = Schema.Int.pipe(
+  Schema.nonNegative(),
+  Schema.brand("Satang"),
 );
+
+// "12.50" on the wire, 1250 in the domain.
+const SatangFromBaht = Schema.transformOrFail(Schema.String, Satang, {
+  strict: true,
+  decode: (text, _, ast) => {
+    const parts = /^(\d+)\.(\d{2})$/.exec(text);
+    return parts
+      ? ParseResult.succeed(Number(parts[1]) * 100 + Number(parts[2]))
+      : ParseResult.fail(new ParseResult.Type(ast, text, "expected 0.00"));
+  },
+  encode: (satang) => ParseResult.succeed((satang / 100).toFixed(2)),
+});
 ```
 
-Both directions in one place means they cannot drift, which is the main
+Both callbacks return a `ParseResult`, never a bare value. Both
+directions sit in one place, so they cannot drift, which is the main
 failure mode of hand-written mappers.
 
 ## Versioning
@@ -158,6 +172,10 @@ See
 ## Testing
 
 ```ts
+import { Arbitrary, Effect, FastCheck as fc, Schema } from "effect";
+
+const arbitraryBooking = Arbitrary.make(Booking);
+
 it("round-trips", () =>
   fc.assert(
     fc.property(arbitraryBooking, (booking) =>
@@ -171,6 +189,9 @@ it("round-trips", () =>
   ));
 ```
 
-`Schema.Arbitrary` can generate values from the schema itself, which
-makes the round-trip property nearly free. Keep stored samples of every
+`Arbitrary.make` generates values from the schema itself, which makes
+the round-trip property nearly free. It builds them for the copy of
+fast-check that Effect re-exports as `FastCheck`, so take `fc` from
+there: an arbitrary handed to a separately installed fast-check of
+another major does not type-check. Keep stored samples of every
 historical payload as well, and assert they still decode.

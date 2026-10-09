@@ -21,7 +21,8 @@ code; the type parameter order and several module names changed at the
 ## The type
 
 ```ts
-Effect.Effect<Success, Error, Requirements>;
+//              Effect.Effect<Success, Error, Requirements>
+type BookSlot = Effect.Effect<Appointment, SlotUnavailable, Slots>;
 ```
 
 Three channels, all in the signature. `Effect<Appointment,
@@ -38,7 +39,9 @@ fail and needs nothing.
 // good: no effect, because there is none
 const feeFor = (standard: Money, category: PatientCategory): Money =>
   category.tag === "Insured" ? category.copay : standard;
+```
 
+```ts
 // bad: uniformity for its own sake
 const feeFor = (
   standard: Money,
@@ -59,12 +62,13 @@ Two styles, both fine; choose one per module.
 // generator style: reads like sequential code
 const book = (cmd: BookAppointment) =>
   Effect.gen(function* () {
-    const slots = yield* Slots;
-    const hold = yield* slots.hold(cmd.slot);
     const patient = yield* findPatient(cmd.patient);
-    return confirm(hold, patient);
+    const hold = yield* holdSlot(cmd.slot, patient);
+    return confirm(hold);
   });
+```
 
+```ts
 // pipe style: point-free composition
 const book = (cmd: BookAppointment) =>
   findPatient(cmd.patient).pipe(
@@ -190,10 +194,14 @@ pure validation that needs no dependencies, and `Effect` once the world
 is involved.
 
 ```ts
-const parseQuantity = (n: number): Either.Either<Quantity, RangeError> =>
+class NotAQuantity extends Data.TaggedError("NotAQuantity")<{
+  readonly value: number;
+}> {}
+
+const parseQuantity = (n: number): Either.Either<Quantity, NotAQuantity> =>
   Number.isInteger(n) && n > 0
     ? Either.right(n as Quantity)
-    : Either.left(new RangeError({ value: n }));
+    : Either.left(new NotAQuantity({ value: n }));
 ```
 
 ## Matching
