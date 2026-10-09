@@ -20,6 +20,9 @@ PRIVATE-NOTES.md
 # parsing the Elixir examples under --with-elixir.
 erl_crash.dump
 
+# Written by scripts/eval-plugin.mjs: one directory per graded run.
+evals/results/
+
 # OS / editor cruft
 .DS_Store
 .vscode/

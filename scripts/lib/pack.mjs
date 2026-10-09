@@ -155,14 +155,42 @@ export function routingCases () {
 // `skill-name`". The prose wraps at eighty characters, so the sentence is
 // matched against whitespace-flattened text: reading the raw block missed
 // six of them, whose "Should" and "reach" had landed on different lines.
-export function scenarios () {
-  const text = readRepoFile(join('evals', 'scenarios.md'))
+//
+// The rest of that prose is what a correct answer has to meet, and it is
+// kept as `criteria`. Only the "Should reach" sentence is left out of it:
+// it is about the route, not the answer, and a judge handed it would grade
+// which skill loaded instead of what was said.
+function criteriaOf (block) {
+  return block
+    .split('\n')
+    .slice(1)
+    .filter((line) => !line.startsWith('>'))
+    .join('\n')
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph
+      .replace(/\s+/g, ' ')
+      .replace(/Should reach [^.]*\./g, '')
+      .trim())
+    .filter((paragraph) => paragraph !== '')
+    .join('\n\n')
+}
+
+// Takes the text rather than reading the file so that the throw below can be
+// shown firing on a scenario made to trigger it.
+export function parseScenarios (text) {
   const found = []
   for (const block of text.split('\n## ').slice(1)) {
     const flat = block.replace(/\s+/g, ' ')
     const number = /^(\d+)\./.exec(flat)
     if (number === null) continue
     const reach = /Should reach ([^.]*)/.exec(flat)
+    const criteria = criteriaOf(block)
+    if (criteria === '') {
+      throw new Error(
+        `evals/scenarios.md: scenario ${number[1]} has no prose after its ` +
+          'block quote, so a case made from it would grade nothing',
+      )
+    }
     found.push({
       id: number[1],
       title: /^\d+\.\s+(.*?)\s+>/.exec(flat)?.[1] ?? '',
@@ -175,10 +203,15 @@ export function scenarios () {
       expected: reach
         ? [...reach[1].matchAll(/`([\w-]+)`/g)].map((m) => m[1])
         : [],
+      criteria,
     })
   }
   if (found.length === 0) {
     throw new Error('evals/scenarios.md: no numbered scenarios found')
   }
   return found
+}
+
+export function scenarios () {
+  return parseScenarios(readRepoFile(join('evals', 'scenarios.md')))
 }
