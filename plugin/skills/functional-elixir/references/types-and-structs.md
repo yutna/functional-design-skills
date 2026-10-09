@@ -37,11 +37,14 @@ defmodule Clinic.Scheduling.Slot.Id do
 
   @opaque t :: %__MODULE__{value: binary()}
 
-  @spec new(binary()) :: {:ok, t()} | {:error, :invalid_slot_id}
+  @spec new(term()) :: {:ok, t()} | {:error, :invalid_slot_id}
   def new(raw) when is_binary(raw) do
-    case Ecto.UUID.cast(raw) do
-      {:ok, uuid} -> {:ok, %__MODULE__{value: uuid}}
-      :error -> {:error, :invalid_slot_id}
+    uuid = ~r/\A[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}\z/i
+
+    if Regex.match?(uuid, raw) do
+      {:ok, %__MODULE__{value: String.downcase(raw)}}
+    else
+      {:error, :invalid_slot_id}
     end
   end
 
@@ -78,10 +81,11 @@ def describe({:card, number, _}), do: CardNumber.mask(number)
 def describe({:transfer, bank, _}), do: BankCode.to_string(bank)
 ```
 
-No catch-all. An unmatched value raises `FunctionClauseError` with the
-value in the message, which is a loud, findable bug rather than a wrong
-answer. That is Elixir's substitute for an exhaustiveness check, and it
-only works if you do not add `def describe(_), do: "unknown"`.
+No catch-all over the choice. An unmatched value raises
+`FunctionClauseError` with the value in the message, which is a loud,
+findable bug rather than a wrong answer. That is Elixir's substitute for
+an exhaustiveness check, and it only works if you do not add
+`def describe(_), do: "unknown"`.
 
 For cases with several fields, a struct per case reads better than a
 wide tuple:
@@ -119,14 +123,16 @@ and it is checkable. Rules that make it worth having:
 
 1. `@spec` on every public function. Private functions benefit less.
 2. Enumerate error atoms in the spec, so callers can see the cases.
-3. Run Dialyzer in CI and treat warnings as failures. A spec nothing
-   checks is a comment that will drift.
+3. Run Dialyzer and `mix compile --warnings-as-errors` in CI, and treat
+   warnings as failures. The compiler reports what it can infer from
+   patterns and guards, as warnings, and does not read specs; Dialyzer
+   reads them. A spec nothing checks is a comment that will drift.
 4. Use `@type` for domain concepts and `@opaque` for wrappers whose
    internals are private.
 
-Dialyzer proves absence of type errors rather than presence of
-correctness, so it will not catch everything a stricter language would.
-It does catch the impossible-match and unreachable-clause mistakes that
+Dialyzer reports only what it can prove will fail, so its silence is not
+a proof and it will not catch everything a stricter language would. It
+does catch the impossible-match and unreachable-clause mistakes that
 follow from a refactor, which is most of the value.
 
 ## Updating nested structs
@@ -156,9 +162,13 @@ booking = update_in(booking.notes, &["late arrival" | &1])
 
 Three things decide which form to write.
 
-**The dot form is for structs.** It is resolved when the module
-compiles, so a misspelled field is a compile error rather than a
-`nil` at run time.
+**The dot form is for structs.** A misspelled field raises `KeyError`
+when the line runs, where a bracket would have answered `nil`. The
+compiler catches some of these and not others. On Elixir 1.20,
+`booking.clnic` on a value matched as `%Booking{}` is a warning, and
+`booking.clinic.adress` compiles in silence unless some caller passes
+the function a struct literal. So test the path rather than trust the
+build.
 
 **The bracket form is for maps and keyword lists.** A struct does not
 implement `Access`, so `booking[:clinic]` raises
