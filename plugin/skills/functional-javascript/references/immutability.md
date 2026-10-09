@@ -154,19 +154,22 @@ A class whose methods return new instances is fine and can be a good way
 to keep a wrapper type opaque.
 
 ```js
+const INTERNAL = Symbol("Quantity");
+
 class Quantity {
   #value;
-  constructor(value) {
+  constructor(token, value) {
+    if (token !== INTERNAL) throw new TypeError("use Quantity.parse");
     this.#value = value;
     Object.freeze(this);
   }
   static parse(n) {
     return Number.isInteger(n) && n > 0
-      ? ok(new Quantity(n))
+      ? ok(new Quantity(INTERNAL, n))
       : err({ tag: "BadQuantity", n });
   }
   plus(other) {
-    return new Quantity(this.#value + other.#value);
+    return new Quantity(INTERNAL, this.#value + other.#value);
   }
   toNumber() {
     return this.#value;
@@ -174,12 +177,15 @@ class Quantity {
 }
 ```
 
-Private fields give real encapsulation. Two things to avoid:
+Private fields give real encapsulation. The constructor is the weak
+point: every instance exposes it as `quantity.constructor`, so leaving
+the class unexported does not close it. The token that only this module
+holds does, and `parse` stays the one way in. Two things to avoid:
 
 - **A class whose methods mutate `this` and return `undefined`**, which
   is the shape every core skill argues against.
 - **`valueOf` as the unwrapper.** It is tempting, and it silently
   restores the defect the wrapper removed: with `valueOf` defined,
-  `quantity + price` coerces both to numbers and compiles, so mixing
+  `quantity + price` coerces both to numbers and runs, so mixing
   two unrelated quantities stops being an error. Name the unwrapper,
   and let the arithmetic be explicit.
