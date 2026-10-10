@@ -100,10 +100,13 @@ import {
 // Two rules keep this list honest: an example or a prelude that imports a
 // package not named here is an error, and a package named here that nothing
 // imports is an error. A @types/ package counts as imported when the package
-// it types is. To add one, `npm install --save-dev --save-exact` it and name
+// it types is, and an alias counts as imported when a resolve directive sends
+// an import to it: `effect-4` is the second major of `effect`, and no fence
+// says its name. To add one, `npm install --save-dev --save-exact` it and name
 // it here in the same change.
 const LIBRARIES = [
   'effect',
+  'effect-4',
   'zod',
   'valibot',
   'ts-pattern',
@@ -1793,6 +1796,25 @@ function selftest () {
         `# T\n\n${fence('ts', 'import { match } from "classic";\nmatch(1);')}`, prelude()),
       expect: (r, d) => r.problems.some((p) => p.file === d.md && p.line === 4 &&
         p.message.includes('classic is not one of the example libraries')),
+    },
+    // The real pair: `Context.Service` is Effect 4's spelling of what Effect 3
+    // calls `Context.Tag`, so the same fence passes against the alias and
+    // fails against `effect`.
+    {
+      label: 'a name only Effect 4 has passes once effect is sent to effect-4',
+      doc: doc('alias',
+        `# T\n\n${fence('ts', 'import { Context } from "effect";\nclass A extends Context.Service<A, { readonly n: number }>()("a") {}')}`,
+        prelude('// @resolve effect effect-4\n')),
+      expect: (r, d) => r.problems.filter((p) => p.file === d.md).length === 0 &&
+        r.imported.has('effect-4') && !r.imported.has('effect'),
+    },
+    {
+      label: 'the same fence without the directive is held to Effect 3 and fails',
+      doc: doc('alias-missing',
+        `# T\n\n${fence('ts', 'import { Context } from "effect";\nclass A extends Context.Service<A, { readonly n: number }>()("a") {}')}`,
+        prelude()),
+      expect: (r, d) => r.problems.some((p) => p.file === d.md && p.line === 5 &&
+        p.code === 'TS2339' && p.message.includes('Service')),
     },
     {
       label: 'a resolve directive also sends a subpath of the module',

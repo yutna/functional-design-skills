@@ -145,6 +145,19 @@ const CASES = [
     join('plugin', 'skills', 'functional-typescript', 'SKILL.md'),
     ['ok(n as Satang)', 'ok(n)'],
     ['functional-typescript/SKILL.md', /TS\d{4}/], 'validate-types.mjs'],
+  // Two files held to Effect 4. One is a reference whose prelude sends its
+  // imports to the alias, so a name Effect 4 does not have fails it by its own
+  // name. The other is SKILL.md, which has to hold on both majors: a name only
+  // Effect 3 has passes the file as it stands and fails under the variant.
+  ['an Effect 4 example that uses the name Effect 3 gave the service class',
+    join('plugin', 'skills', 'functional-typescript-effect', 'references', 'effect-4.md'),
+    ['Context.Service<Slots, {', 'Context.Tag<Slots, {'],
+    ['effect-4.md', /TS\d{4}/], 'validate-types.mjs'],
+  ['an example in SKILL.md that only Effect 3 has',
+    join('plugin', 'skills', 'functional-typescript-effect', 'SKILL.md'),
+    ['const SlotsLive = Layer.effect(', 'const SlotsLive = Layer.scoped('],
+    ['functional-typescript-effect/SKILL.md', '(variant effect-4)'],
+    'validate-types.mjs'],
   ['prose that names a member the library does not have',
     join('plugin', 'skills', 'functional-typescript-effect', 'references', 'schema-boundaries.md'),
     ['`Arbitrary.make`', '`Schema.Arbitrary`'],

@@ -1,5 +1,8 @@
 # Schema at the Boundary
 
+The code on this page is Effect 3, and [effect-4.md](effect-4.md) has
+what differs on 4.
+
 `Schema` describes a transformation between an encoded shape, which is
 what crosses the boundary, and a decoded type, which is what the domain
 uses. That is exactly the two type families the core skill asks for, with
