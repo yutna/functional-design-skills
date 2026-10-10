@@ -29,6 +29,27 @@
 // it one. Names several packs share -- Result and its helpers -- are declared
 // once, in example-types/_shared/, which preludes import.
 //
+// A library whose shapes differ between two majors is installed twice, the
+// second under an alias (`effect-4` is `npm:effect@4.0.2`), and the fences
+// keep saying `from "effect"`, because that is what a reader writes. Two
+// things, both written in the prelude and neither naming any library in this
+// script, send a file's imports to the alias.
+//
+//   A resolve directive. A prelude may open with one comment line per module:
+//   `// @resolve effect effect-4`. In that file's check, an import of the
+//   module or of one of its subpaths, in the prelude, the claims file and the
+//   fences, is read as an import of the package, and so are the names the
+//   prose resolves. The package must be on the list below, and a directive
+//   that rewrites nothing is an error, since the file would then be checked
+//   against nothing it says.
+//
+//   A variant prelude. Beside `SKILL.ts` a file may keep `SKILL.effect-4.ts`,
+//   with an optional `SKILL.effect-4.claims.ts`. Each variant is one more
+//   check of the same fences with that prelude, so a file whose examples hold
+//   on two majors is held to both: `SKILL.ts` for one, and `SKILL.effect-4.ts`,
+//   which opens with the directive above, for the other. A diagnostic from a
+//   variant says which.
+//
 // How a Markdown file becomes a module: the prelude; every import found in
 // any fence, hoisted and de-duplicated; then each fence in order, unchanged
 // except that its imports are gone (hoisted), its `export` modifiers and
@@ -167,9 +188,14 @@ const SUFFIX = {
   'claims-js': '.claims.js',
 }
 
-// The part a file under example-types/ plays, and the Markdown file it
-// stands beside. `_shared` holds declarations preludes import and belongs to
-// no Markdown file.
+// A variant is named in lower-case words joined by hyphens, as `effect-4` is.
+const VARIANT = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+
+// The part a file under example-types/ plays, the Markdown file it stands
+// beside, and the variant it belongs to: `SKILL.effect-4.ts` is the variant
+// `effect-4` of the prelude `SKILL.ts`, and `variant` is null for a prelude
+// that is not one. `_shared` holds declarations preludes import and belongs
+// to no Markdown file.
 function roleOf (path) {
   if (path.endsWith('.md')) return { role: 'ignore' }
   const rest = path.slice(TYPES_PREFIX.length)
@@ -181,17 +207,22 @@ function roleOf (path) {
   const order = ['claims-ts', 'claims-js', 'prelude-js', 'prelude-ts']
   for (const role of order) {
     if (rest.endsWith(SUFFIX[role]) && parts.length > 1) {
-      return {
-        role,
-        md: `${SKILLS_PREFIX}${rest.slice(0, -SUFFIX[role].length)}.md`,
-      }
+      const base = rest.slice(0, -SUFFIX[role].length)
+      // The first dot of the last segment: no skill's Markdown file has one in
+      // its name, so what follows it names a variant.
+      const dot = base.indexOf('.', base.lastIndexOf('/') + 1)
+      const stem = dot === -1 ? base : base.slice(0, dot)
+      const variant = dot === -1 ? null : base.slice(dot + 1)
+      if (variant !== null && !VARIANT.test(variant)) break
+      return { role, md: `${SKILLS_PREFIX}${stem}.md`, variant }
     }
   }
   return { role: 'unknown' }
 }
 
 const stemOf = (md) => md.slice(SKILLS_PREFIX.length, -'.md'.length)
-const preludePath = (md, role) => `${TYPES_PREFIX}${stemOf(md)}${SUFFIX[role]}`
+const preludePath = (md, role, variant = null) =>
+  `${TYPES_PREFIX}${stemOf(md)}${variant === null ? '' : `.${variant}`}${SUFFIX[role]}`
 const skillOf = (md) => md.slice(SKILLS_PREFIX.length).split('/')[0]
 
 // Generated files mirror example-types/, so that a prelude's relative import
@@ -260,7 +291,8 @@ function printImport (source, bindings, typeOnly) {
     `from ${JSON.stringify(source)}`
 }
 
-// Every module specifier a file reaches for, wherever it writes it.
+// Every module specifier a file reaches for, wherever it writes it, with the
+// span of the string that spells it so that a resolve directive can replace it.
 function specifiersOf (sf) {
   const found = []
   const add = (node, literal) => {
@@ -268,6 +300,8 @@ function specifiersOf (sf) {
       found.push({
         specifier: literal.text,
         line: lineOf(sf, node.getStart(sf)) + 1,
+        start: literal.getStart(sf),
+        end: literal.end,
       })
     }
   }
@@ -349,6 +383,88 @@ function declaredNames (sf) {
     }
   }
   return { values, types }
+}
+
+// ---------------------------------------------------------------------------
+// Resolve directives
+
+const DIRECTIVE_LINE = /^\/\/\s*@resolve\b/
+const DIRECTIVE_FORM = /^\/\/ @resolve (\S+) (\S+)\s*$/
+
+// The `// @resolve <module> <package>` lines a prelude opens with, as a map
+// from each module to where it is sent, and what is wrong with them. A
+// directive anywhere else would be read by nobody, and one ignored in silence
+// is a file checked against a package it does not say, so it is reported.
+function readDirectives (file, text, role) {
+  const resolve = new Map()
+  const problems = []
+  const note = (line, message) => problems.push({ file, line, message })
+  let opening = role === 'prelude-ts'
+  text.split(/\r?\n/).forEach((line, index) => {
+    if (!DIRECTIVE_LINE.test(line)) {
+      opening = false
+      return
+    }
+    const at = index + 1
+    if (!opening) {
+      note(at, '@resolve belongs in the opening lines of a TypeScript ' +
+        'prelude, before anything else, and is read nowhere else')
+      return
+    }
+    const found = DIRECTIVE_FORM.exec(line)
+    if (found === null) {
+      note(at, 'a directive reads `// @resolve <module> <package>`, one ' +
+        'module on a line')
+      return
+    }
+    const [, module, target] = found
+    if (!LIBRARIES.includes(target)) {
+      note(at, `@resolve sends ${module} to ${target}, and ${target} is not ` +
+        'one of the example libraries. `npm install --save-dev --save-exact` ' +
+        'it and name it in LIBRARIES in scripts/validate-types.mjs.')
+    } else if (resolve.has(module)) {
+      note(at, `@resolve names ${module} a second time`)
+    } else {
+      resolve.set(module, { target, line: at })
+    }
+  })
+  return { resolve, problems }
+}
+
+// Where a directive sends a specifier, or null where it sends it nowhere:
+// under `@resolve effect effect-4`, `effect` goes to `effect-4` and
+// `effect/Schema` to `effect-4/Schema`.
+function sentSpecifier (specifier, resolve) {
+  for (const [module, { target }] of resolve) {
+    if (specifier === module) return { module, to: target }
+    if (specifier.startsWith(`${module}/`)) {
+      return { module, to: `${target}${specifier.slice(module.length)}` }
+    }
+  }
+  return null
+}
+
+// The text with every specifier a directive reaches rewritten, and how often
+// each module was reached. Only a string changes, never a line break, so the
+// line a diagnostic lands on is still the line the author wrote.
+function resolveText (text, kind, resolve) {
+  const hits = new Map([...resolve.keys()].map((module) => [module, 0]))
+  if (resolve.size === 0) return { text, hits }
+  const edits = []
+  for (const found of specifiersOf(parse('resolve', text, kind))) {
+    if (found.start === undefined) continue
+    const sent = sentSpecifier(found.specifier, resolve)
+    if (sent === null) continue
+    hits.set(sent.module, hits.get(sent.module) + 1)
+    edits.push({
+      start: found.start, end: found.end, text: JSON.stringify(sent.to),
+    })
+  }
+  let resolved = text
+  for (const edit of edits.sort((a, b) => b.start - a.start)) {
+    resolved = resolved.slice(0, edit.start) + edit.text + resolved.slice(edit.end)
+  }
+  return { text: resolved, hits }
 }
 
 // ---------------------------------------------------------------------------
@@ -503,6 +619,9 @@ function readSupport (file, text, role) {
     problems: [
       ...guardProblems(file, text, sf, claims),
       ...(claims ? [] : shapeProblems(file, sf, role)),
+      // A TypeScript prelude's own directives are read, and reported, where
+      // the check that uses them is built.
+      ...(role === 'prelude-ts' ? [] : readDirectives(file, text, role).problems),
     ],
   }
 }
@@ -651,8 +770,9 @@ function analyseFence (fence, kind, freshName) {
 // which file and line the n-th line (from 0) of the text came from, so that a
 // message about the module can be put where a person can act on it. For
 // JavaScript the prelude is not part of the module, since a .js module cannot
-// carry a declaration; the compiler is given it beside the module instead.
-function buildModule ({ md, lang, ext, fences, prelude, claims }) {
+// carry a declaration; the compiler is given it beside the module instead. A
+// variant is built from the same fences and another prelude, and says so.
+function buildModule ({ md, lang, ext, fences, prelude, claims, variant = null }) {
   const lines = []
   const origin = []
   const problems = []
@@ -673,6 +793,7 @@ function buildModule ({ md, lang, ext, fences, prelude, claims }) {
   const freshName = () => `__default${++defaults}`
 
   push(`// Generated by scripts/validate-types.mjs from ${md}. Do not edit.`, md, 1)
+  if (variant !== null) push(`// Variant ${variant}, from ${prelude.file}.`, md, 1)
   if (lang === 'ts') pushText(prelude.text, prelude.file)
 
   const provided = new Map(prelude.bindings)
@@ -768,6 +889,7 @@ function buildModule ({ md, lang, ext, fences, prelude, claims }) {
     md,
     lang,
     ext,
+    variant,
     text: `${lines.join('\n')}\n`,
     origin,
     problems,
@@ -896,7 +1018,7 @@ function checkDocuments ({
 }) {
   const problems = []
   const warnings = []
-  const stats = { examples: 0, files: 0, elided: 0, chains: 0 }
+  const stats = { examples: 0, files: 0, elided: 0, chains: 0, variants: [] }
   const generated = []
   // Every file the compiler is given, and where a line of it came from.
   const registry = new Map()
@@ -930,33 +1052,82 @@ function checkDocuments ({
       if (fences.length === 0) continue
       const preludeRole = `prelude-${lang}`
       const claimsRole = `claims-${lang}`
-      if (doc.files[preludeRole] === undefined) {
-        problems.push({
-          file: doc.md,
-          message: `has no prelude. Add ${preludePath(doc.md, preludeRole)}, ` +
-            'which may be empty, to declare what its ' +
-            `${lang === 'ts' ? 'TypeScript' : 'JavaScript'} examples assume`,
-        })
-        continue
-      }
-      const prelude = readSupport(
-        doc.files[preludeRole].file, doc.files[preludeRole].text, preludeRole,
-      )
-      const claims = doc.files[claimsRole] === undefined
-        ? null
-        : readSupport(doc.files[claimsRole].file, doc.files[claimsRole].text, claimsRole)
-      problems.push(...prelude.problems, ...(claims?.problems ?? []))
-      reaches.push(...prelude.specifiers, ...(claims?.specifiers ?? []))
       const ext = lang === 'js'
         ? '.js'
         : fences.some((f) => f.lang === 'tsx') ? '.tsx' : '.ts'
-      const module = buildModule({ md: doc.md, lang, ext, fences, prelude, claims })
-      module.file = cacheFile(stemOf(doc.md), ext)
-      module.prelude = prelude
-      module.proseText = doc.text
-      problems.push(...module.problems)
-      reaches.push(...module.specifiers)
-      modules.push(module)
+      const kind = ext === '.tsx'
+        ? ts.ScriptKind.TSX
+        : lang === 'js' ? ts.ScriptKind.JS : ts.ScriptKind.TS
+      // The file's own prelude, then one more check of the same fences for
+      // each variant prelude beside it. JavaScript has no variants.
+      const checks = [{ variant: null, files: doc.files }]
+      if (lang === 'ts') {
+        for (const [variant, files] of Object.entries(doc.variants ?? {})) {
+          checks.push({ variant, files })
+        }
+      }
+      for (const { variant, files } of checks) {
+        if (files[preludeRole] === undefined) {
+          problems.push({
+            file: doc.md,
+            message: `has no prelude${variant === null ? '' : ` for its ${variant} variant`}. ` +
+              `Add ${preludePath(doc.md, preludeRole, variant)}, which may be ` +
+              'empty, to declare what its ' +
+              `${lang === 'ts' ? 'TypeScript' : 'JavaScript'} examples assume`,
+          })
+          continue
+        }
+        const own = files[preludeRole]
+        // Only a TypeScript prelude has directives; readSupport reports one
+        // that turns up anywhere else.
+        const directives = lang === 'ts'
+          ? readDirectives(own.file, own.text, preludeRole)
+          : { resolve: new Map(), problems: [] }
+        problems.push(...directives.problems)
+        // Every text the check reads goes through the directives first, and
+        // the modules read what comes out, so nothing after this point has to
+        // know that an import was sent anywhere.
+        const reached = new Map([...directives.resolve.keys()].map((m) => [m, 0]))
+        const through = (text, scriptKind) => {
+          const sent = resolveText(text, scriptKind, directives.resolve)
+          for (const [name, n] of sent.hits) reached.set(name, reached.get(name) + n)
+          return sent.text
+        }
+        const prelude = readSupport(
+          own.file, through(own.text, ts.ScriptKind.TS), preludeRole,
+        )
+        const claims = files[claimsRole] === undefined
+          ? null
+          : readSupport(
+            files[claimsRole].file,
+            through(files[claimsRole].text, ts.ScriptKind.TS),
+            claimsRole,
+          )
+        const read = fences.map((f) => ({ ...f, code: through(f.code, kind) }))
+        for (const [name, { target, line }] of directives.resolve) {
+          if (reached.get(name) > 0) continue
+          problems.push({
+            file: own.file,
+            line,
+            message: `@resolve ${name} ${target} rewrites no import of ` +
+              `${name} in this file's check, so nothing in it is checked ` +
+              `against ${target}. Remove the directive, or import ${name}.`,
+          })
+        }
+        problems.push(...prelude.problems, ...(claims?.problems ?? []))
+        reaches.push(...prelude.specifiers, ...(claims?.specifiers ?? []))
+        const module = buildModule({
+          md: doc.md, lang, ext, fences: read, prelude, claims, variant,
+        })
+        module.file = cacheFile(
+          `${stemOf(doc.md)}${variant === null ? '' : `.${variant}`}`, ext,
+        )
+        module.prelude = prelude
+        module.proseText = doc.text
+        problems.push(...module.problems)
+        reaches.push(...module.specifiers)
+        modules.push(module)
+      }
     }
   }
 
@@ -1030,7 +1201,9 @@ function checkDocuments ({
           sites: [],
         })
       }
-      probes.get(key).sites.push({ file: module.md, line: found.line })
+      probes.get(key).sites.push({
+        file: module.md, line: found.line, variant: module.variant,
+      })
     }
   }
   const probeFiles = []
@@ -1048,7 +1221,10 @@ function checkDocuments ({
 
   const tsModules = modules.filter((m) => m.lang === 'ts')
   for (const module of modules) {
-    register(module.file, module.text, (line) => module.origin[line] ?? module.origin.at(-1))
+    register(module.file, module.text, (line) => ({
+      ...(module.origin[line] ?? module.origin.at(-1)),
+      variant: module.variant,
+    }))
     if (module.lang === 'js') {
       module.preludeFile = cacheFile(stemOf(module.md), '.prelude.ts')
       register(module.preludeFile, module.prelude.text, (line) => ({
@@ -1100,21 +1276,29 @@ function checkDocuments ({
     problems.push(...diagnose(program, roots, whereIn))
   }
 
+  // A fence is one example however many preludes it is checked against; the
+  // further checks are counted apart, so that the total does not grow with them.
   for (const module of modules) {
+    if (module.variant !== null) {
+      stats.variants.push({ md: module.md, variant: module.variant })
+      continue
+    }
     stats.examples += module.examples
     stats.elided += module.elided
   }
-  // One report per defect, in the order a person would read the files.
+  // One report per defect, in the order a person would read the files. The
+  // same defect in two variants is two defects, since each says which.
   const seen = new Set()
   const unique = problems.filter((p) => {
-    const key = JSON.stringify([p.file, p.line, p.code, p.message])
+    const key = JSON.stringify([p.file, p.line, p.code, p.message, p.variant ?? null])
     if (seen.has(key)) return false
     seen.add(key)
     return true
   }).sort((a, b) =>
     (a.file < b.file ? -1 : a.file > b.file ? 1 : 0) ||
     (a.line ?? 0) - (b.line ?? 0) ||
-    (a.message < b.message ? -1 : a.message > b.message ? 1 : 0))
+    (a.message < b.message ? -1 : a.message > b.message ? 1 : 0) ||
+    ((a.variant ?? '') < (b.variant ?? '') ? -1 : (a.variant ?? '') > (b.variant ?? '') ? 1 : 0))
   return { problems: unique, warnings, stats, generated, imported }
 }
 
@@ -1148,20 +1332,24 @@ function loadDocuments () {
     const hasTs = langs.has('ts') || langs.has('tsx')
     const hasJs = langs.has('js')
     if (!hasTs && !hasJs) continue
-    const doc = { md, text, langs: { ts: hasTs, js: hasJs }, files: {} }
+    const doc = {
+      md, text, langs: { ts: hasTs, js: hasJs }, files: {}, variants: {},
+    }
     documents.push(doc)
     byMd.set(md, doc)
   }
   const shared = []
   for (const absolute of exampleTypeFiles()) {
     const file = repoPath(absolute)
-    const { role, md } = roleOf(file)
+    const { role, md, variant } = roleOf(file)
     if (role === 'ignore') continue
     if (role === 'unknown') {
       problems.push({
         file,
         message: 'is not a prelude, a claims file or a shared declaration. A ' +
-          'prelude is named after the Markdown file it stands beside.',
+          'prelude is named after the Markdown file it stands beside, and a ' +
+          'variant of one adds a word of lower-case letters and hyphens ' +
+          'before the extension.',
       })
       continue
     }
@@ -1181,18 +1369,38 @@ function loadDocuments () {
       })
       continue
     }
-    doc.files[role] = { file, text }
+    if (variant === null) {
+      doc.files[role] = { file, text }
+    } else if (lang === 'js') {
+      problems.push({
+        file,
+        message: 'is a variant of a JavaScript prelude. That prelude is ' +
+          'ambient and imports nothing, so there is nothing for a variant ' +
+          'to send elsewhere.',
+      })
+    } else {
+      doc.variants[variant] ??= {}
+      doc.variants[variant][role] = { file, text }
+    }
   }
   return { documents, shared, problems }
 }
 
 // What package.json pins is what node_modules must hold, or the examples are
-// checked against a library nobody asked for.
-function libraryProblems () {
+// checked against a library nobody asked for. An alias is pinned as
+// `npm:<package>@<version>`: the version is the one after the `@`, and the
+// directory must hold that package, not another that happens to carry it.
+const ALIAS = /^npm:(@?[^@]+)@(.+)$/
+
+// `pinned` is the devDependencies of package.json, and `manifestOf(name)` the
+// package.json that node_modules holds under that name, or undefined where
+// nothing is installed. Both come in as values so that --selftest can run the
+// check on a repository that exists nowhere on disk.
+function libraryProblems ({ libraries = LIBRARIES, pinned, manifestOf }) {
   const problems = []
-  const pinned = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).devDependencies ?? {}
   const versions = {}
-  for (const name of LIBRARIES) {
+  const aliases = {}
+  for (const name of libraries) {
     if (pinned[name] === undefined) {
       problems.push({
         file: 'package.json',
@@ -1201,24 +1409,42 @@ function libraryProblems () {
       })
       continue
     }
-    const manifest = join(ROOT, 'node_modules', name, 'package.json')
-    if (!existsSync(manifest)) {
+    const installed = manifestOf(name)
+    if (installed === undefined) {
       problems.push({
         file: 'package.json',
         message: `${name} is pinned and not installed. Run npm ci.`,
       })
       continue
     }
-    versions[name] = JSON.parse(readFileSync(manifest, 'utf8')).version
-    if (versions[name] !== pinned[name]) {
+    const alias = ALIAS.exec(pinned[name])
+    versions[name] = installed.version
+    if (alias !== null) aliases[name] = alias[1]
+    if (installed.version !== (alias === null ? pinned[name] : alias[2])) {
       problems.push({
         file: 'package.json',
-        message: `${name} is pinned to ${pinned[name]} and ${versions[name]} ` +
+        message: `${name} is pinned to ${pinned[name]} and ${installed.version} ` +
           'is installed. Run npm ci.',
       })
     }
+    if (alias !== null && installed.name !== alias[1]) {
+      problems.push({
+        file: 'package.json',
+        message: `${name} is an alias for ${alias[1]} and node_modules holds ` +
+          `${installed.name} under it. Run npm ci.`,
+      })
+    }
   }
-  return { problems, versions }
+  return { problems, versions, aliases }
+}
+
+function readPinned () {
+  return JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).devDependencies ?? {}
+}
+
+function readManifest (name) {
+  const manifest = join(ROOT, 'node_modules', name, 'package.json')
+  return existsSync(manifest) ? JSON.parse(readFileSync(manifest, 'utf8')) : undefined
 }
 
 function writeCache (files) {
@@ -1231,7 +1457,8 @@ function writeCache (files) {
 
 function formatProblem (p) {
   const where = p.line === undefined ? p.file : `${p.file}:${p.line}`
-  return `error ${where}  ${p.code ? `${p.code}: ` : ''}${p.message}`
+  const variant = p.variant ? ` (variant ${p.variant})` : ''
+  return `error ${where}${variant}  ${p.code ? `${p.code}: ` : ''}${p.message}`
 }
 
 function main (argv) {
@@ -1241,7 +1468,9 @@ function main (argv) {
     process.exit(1)
   }
   const loaded = loadDocuments()
-  const libraries = libraryProblems()
+  const libraries = libraryProblems({
+    pinned: readPinned(), manifestOf: readManifest,
+  })
   const documents = only === null
     ? loaded.documents
     : loaded.documents.filter((d) => skillOf(d.md) === only)
@@ -1283,12 +1512,24 @@ function main (argv) {
   for (const name of [...used]) {
     if (LIBRARIES.includes(`@types/${name}`)) used.push(`@types/${name}`)
   }
-  const listed = used.sort().map((name) => `${name}@${libraries.versions[name]}`)
+  // An alias is listed under its own name, which is what the examples import,
+  // beside the package it installs.
+  const listed = used.sort().map((name) =>
+    `${name}@${libraries.versions[name]}` +
+    (libraries.aliases[name] === undefined ? '' : ` (alias of ${libraries.aliases[name]})`))
   process.stdout.write(
     `ok    ${result.stats.examples} example(s) in ${result.stats.files} ` +
       'file(s) type-check\n',
   )
   process.stdout.write(`      ${listed.join(', ')}\n`)
+  if (result.stats.variants.length > 0) {
+    const where = result.stats.variants.map((v) =>
+      `${v.md.slice(SKILLS_PREFIX.length)} as ${v.variant}`)
+    process.stdout.write(
+      `      ${result.stats.variants.length} more check(s) of the same ` +
+        `examples against a variant prelude: ${where.join(', ')}\n`,
+    )
+  }
   if (result.stats.elided > 0) {
     process.stdout.write(
       `      ${result.stats.elided} function(s) shown with only a comment for ` +
@@ -1304,14 +1545,25 @@ function main (argv) {
 // Proving the check fires
 
 function selftest () {
-  const doc = (name, text, files = {}) => {
+  // `variants` maps a variant's name to its files, as `files` does for the
+  // file's own prelude.
+  const doc = (name, text, files = {}, variants = {}) => {
     const md = `${SKILLS_PREFIX}selftest/${name}.md`
     const entry = {}
     for (const [role, body] of Object.entries(files)) {
       entry[role] = { file: preludePath(md, role), text: body }
     }
-    return { md, text, files: entry }
+    const extra = {}
+    for (const [variant, byRole] of Object.entries(variants)) {
+      extra[variant] = {}
+      for (const [role, body] of Object.entries(byRole)) {
+        extra[variant][role] = { file: preludePath(md, role, variant), text: body }
+      }
+    }
+    return { md, text, files: entry, variants: extra }
   }
+  const generatedFor = (r, name) =>
+    r.generated.find((g) => g.file.endsWith(`/selftest/${name}.ts`)).text
   const fence = (lang, code) => `\`\`\`${lang}\n${code}\n\`\`\`\n`
   const prelude = (body = '') => ({ 'prelude-ts': body })
 
@@ -1519,6 +1771,175 @@ function selftest () {
       expect: (r, d) => r.problems.some((p) => p.file === d.files['prelude-js'].file &&
         p.message.includes('ambient prelude')),
     },
+    // The resolve directive and the variants. `classic` is a module that does
+    // not exist, so the fence compiles only if the directive sent it to a
+    // package that does.
+    {
+      label: 'a resolve directive sends an import to the package it names',
+      doc: doc('resolve',
+        `# T\n\n${fence('ts', 'import { match } from "classic";\nconst b: string = match(1).with(1, () => "a").otherwise(() => "b");')}`,
+        prelude('// @resolve classic ts-pattern\n')),
+      expect: (r, d) => {
+        const text = generatedFor(r, 'resolve')
+        return r.problems.filter((p) => p.file === d.md).length === 0 &&
+          text.includes('import { match } from "ts-pattern"') &&
+          !text.includes('"classic"') &&
+          r.imported.has('ts-pattern') && !r.imported.has('classic')
+      },
+    },
+    {
+      label: 'the same import without the directive names no example library',
+      doc: doc('unresolved',
+        `# T\n\n${fence('ts', 'import { match } from "classic";\nmatch(1);')}`, prelude()),
+      expect: (r, d) => r.problems.some((p) => p.file === d.md && p.line === 4 &&
+        p.message.includes('classic is not one of the example libraries')),
+    },
+    {
+      label: 'a resolve directive also sends a subpath of the module',
+      doc: doc('subpath',
+        `# T\n\n${fence('ts', 'import { and } from "classic/guards";\nconst both = and;')}`,
+        prelude('// @resolve classic xstate\n')),
+      expect: (r, d) => r.problems.filter((p) => p.file === d.md).length === 0 &&
+        generatedFor(r, 'subpath').includes('from "xstate/guards"'),
+    },
+    {
+      label: 'a resolve directive reaches an import written in the prelude',
+      doc: doc('prelude-import',
+        `# T\n\n${fence('ts', 'const found = pick(1);')}`,
+        prelude('// @resolve classic ts-pattern\ndeclare const pick: typeof import("classic").match;')),
+      expect: (r, d) => r.problems.filter((p) => p.file === d.md).length === 0 &&
+        generatedFor(r, 'prelude-import').includes('import("ts-pattern")'),
+    },
+    {
+      label: 'a resolve directive naming a package that is not an example library',
+      doc: doc('stranger',
+        `# T\n\n${fence('ts', 'import { Effect } from "effect";\nEffect.succeed(1);')}`,
+        prelude('// @resolve effect left-pad\n')),
+      expect: (r, d) => r.problems.some((p) => p.file === d.files['prelude-ts'].file &&
+        p.line === 1 && p.message.includes('left-pad is not one of the example libraries')),
+    },
+    {
+      label: 'a resolve directive that rewrites nothing',
+      doc: doc('idle', `# T\n\n${fence('ts', 'const a = 1;')}`,
+        prelude('// @resolve classic ts-pattern\n')),
+      expect: (r, d) => r.problems.some((p) => p.file === d.files['prelude-ts'].file &&
+        p.line === 1 && p.message.includes('rewrites no import of classic')),
+    },
+    {
+      label: 'a resolve directive after another line is reported, not ignored',
+      doc: doc('late',
+        `# T\n\n${fence('ts', 'import { match } from "classic";\nmatch(1);')}`,
+        prelude('declare const a: number;\n// @resolve classic ts-pattern\n')),
+      expect: (r, d) => r.problems.some((p) => p.file === d.files['prelude-ts'].file &&
+        p.line === 2 && p.message.includes('opening lines')),
+    },
+    {
+      label: 'a resolve directive in a claims file is reported, not ignored',
+      doc: doc('claims-directive', `# T\n\n${fence('ts', 'const a = 1;')}`,
+        { ...prelude(), 'claims-ts': '// @resolve classic ts-pattern\n' }),
+      expect: (r, d) => r.problems.some((p) => p.file === d.files['claims-ts'].file &&
+        p.line === 1 && p.message.includes('opening lines')),
+    },
+    {
+      label: 'a resolve directive that names a module and no package',
+      doc: doc('malformed', `# T\n\n${fence('ts', 'const a = 1;')}`,
+        prelude('// @resolve classic\n')),
+      expect: (r, d) => r.problems.some((p) => p.file === d.files['prelude-ts'].file &&
+        p.line === 1 && p.message.includes('// @resolve <module> <package>')),
+    },
+    {
+      label: 'two resolve directives for one module',
+      doc: doc('twice-resolved',
+        `# T\n\n${fence('ts', 'import { match } from "classic";\nmatch(1);')}`,
+        prelude('// @resolve classic ts-pattern\n// @resolve classic xstate\n')),
+      expect: (r, d) => r.problems.some((p) => p.file === d.files['prelude-ts'].file &&
+        p.line === 2 && p.message.includes('a second time')),
+    },
+    {
+      label: 'a variant that fails while the file passes, and says which variant',
+      doc: doc('variant',
+        `# T\n\n${fence('ts', 'import { match } from "ts-pattern";\nconst b = match(1).with(1, () => "a").otherwise(() => "b");')}`,
+        prelude(), { other: { 'prelude-ts': '// @resolve ts-pattern valibot\n' } }),
+      expect: (r, d) => {
+        const own = r.problems.filter((p) => p.file === d.md && !p.variant)
+        const other = r.problems.filter((p) => p.file === d.md && p.variant === 'other')
+        return own.length === 0 && other.length === 1 &&
+          (other[0].code === 'TS2305' || other[0].code === 'TS2724') &&
+          other[0].line === 4 &&
+          formatProblem(other[0]).includes(`${d.md}:4 (variant other)`) &&
+          r.stats.examples === 1 && r.stats.variants.length === 1
+      },
+    },
+    {
+      label: 'the same defect under two preludes is reported under each',
+      doc: doc('both-fail',
+        `# T\n\n${fence('ts', 'import { match } from "classic";\nmatch(1);')}`,
+        prelude('// @resolve classic valibot\n'),
+        { other: { 'prelude-ts': '// @resolve classic valibot\n' } }),
+      expect: (r, d) => {
+        const here = r.problems.filter((p) => p.file === d.md && p.code)
+        return here.length === 2 && here.some((p) => !p.variant) &&
+          here.some((p) => p.variant === 'other')
+      },
+    },
+    {
+      label: 'a variant that passes adds a check and not an example',
+      doc: doc('variant-passes',
+        `# T\n\n${fence('ts', 'import { match } from "classic";\nconst b: string = match(1).with(1, () => "a").otherwise(() => "b");')}`,
+        prelude('// @resolve classic ts-pattern\n'),
+        { same: { 'prelude-ts': '// @resolve classic ts-pattern\n' } }),
+      expect: (r, d) => r.problems.filter((p) => p.file === d.md).length === 0 &&
+        r.stats.examples === 1 && r.stats.variants.length === 1 &&
+        generatedFor(r, 'variant-passes.same').includes('// Variant same, from '),
+    },
+    {
+      label: 'a variant reads its own claims file through its own directive',
+      doc: doc('variant-claims', `# T\n\n${fence('ts', 'const a = 1;')}`,
+        prelude(), {
+          other: {
+            'prelude-ts': '// @resolve classic ts-pattern\n',
+            'claims-ts': 'import { match } from "classic";\nconst m = match(1);\n',
+          },
+        }),
+      expect: (r, d) => r.problems.filter((p) => p.file === d.md).length === 0 &&
+        r.problems.length === 0 &&
+        generatedFor(r, 'variant-claims.other').includes('from "ts-pattern"'),
+    },
+    {
+      label: 'a variant that has a claims file and no prelude',
+      doc: doc('variant-orphan', `# T\n\n${fence('ts', 'const a = 1;')}`,
+        prelude(), { other: { 'claims-ts': 'const b = 1;\n' } }),
+      expect: (r, d) => r.problems.some((p) => p.file === d.md &&
+        p.message.includes('has no prelude for its other variant')),
+    },
+    {
+      label: 'prose names are resolved against the variant too',
+      doc: doc('variant-prose',
+        '# T\n\nThe wildcard for any string is `P.string`.\n\n' +
+        `${fence('ts', 'import { P } from "classic";\nconst any = P.string;')}`,
+        prelude('// @resolve classic ts-pattern\n'),
+        { other: { 'prelude-ts': '// @resolve classic valibot\n' } }),
+      expect: (r, d) => {
+        const own = r.problems.filter((p) => p.file === d.md && !p.variant)
+        return own.length === 0 && r.problems.some((p) => p.file === d.md &&
+          p.variant === 'other' && p.line === 3 && p.message.includes('P.string') &&
+          p.message.includes('valibot has no such member'))
+      },
+    },
+  ]
+
+  // Which part a path under example-types/ plays, and which variant of which
+  // prelude it is.
+  const roles = [
+    ['example-types/a/SKILL.ts', 'prelude-ts', 'plugin/skills/a/SKILL.md', null],
+    ['example-types/a/SKILL.effect-4.ts', 'prelude-ts', 'plugin/skills/a/SKILL.md', 'effect-4'],
+    ['example-types/a/SKILL.claims.ts', 'claims-ts', 'plugin/skills/a/SKILL.md', null],
+    ['example-types/a/SKILL.effect-4.claims.ts', 'claims-ts', 'plugin/skills/a/SKILL.md', 'effect-4'],
+    ['example-types/a/references/x.d.ts', 'prelude-js', 'plugin/skills/a/references/x.md', null],
+    ['example-types/a/references/x.claims.js', 'claims-js', 'plugin/skills/a/references/x.md', null],
+    ['example-types/a/references/x.v2.d.ts', 'prelude-js', 'plugin/skills/a/references/x.md', 'v2'],
+    ['example-types/a/SKILL.Bad_Name.ts', 'unknown', undefined, undefined],
+    ['example-types/_shared/result.ts', 'shared', undefined, undefined],
   ]
 
   // Each case runs the whole check on its own document, so a case sees only
@@ -1529,6 +1950,78 @@ function selftest () {
     process.stdout.write(`${ok ? 'selftest ok:' : 'selftest FAIL:'} ${label}\n`)
     if (!ok) {
       for (const p of result.problems) process.stderr.write(`  ${formatProblem(p)}\n`)
+      process.exit(1)
+    }
+  }
+
+  // What package.json pins, against what node_modules holds under the name.
+  const installs = [
+    {
+      label: 'an alias is held to the version after npm:<package>@',
+      pinned: { twin: 'npm:effect@4.0.2' },
+      manifest: { name: 'effect', version: '4.0.2' },
+      expect: (r) => r.problems.length === 0 && r.versions.twin === '4.0.2' &&
+        r.aliases.twin === 'effect',
+    },
+    {
+      label: 'an alias whose installed version is not the pinned one',
+      pinned: { twin: 'npm:effect@4.0.2' },
+      manifest: { name: 'effect', version: '4.0.3' },
+      expect: (r) => r.problems.length === 1 && r.problems[0].message.includes(
+        'twin is pinned to npm:effect@4.0.2 and 4.0.3 is installed'),
+    },
+    {
+      label: 'an alias that holds another package under its name',
+      pinned: { twin: 'npm:effect@4.0.2' },
+      manifest: { name: 'effects', version: '4.0.2' },
+      expect: (r) => r.problems.length === 1 && r.problems[0].message.includes(
+        'twin is an alias for effect and node_modules holds effects'),
+    },
+    {
+      label: 'a plain pin is held to its own version',
+      pinned: { twin: '4.0.2' },
+      manifest: { name: 'twin', version: '4.0.1' },
+      expect: (r) => r.problems.length === 1 && r.problems[0].message.includes(
+        'twin is pinned to 4.0.2 and 4.0.1 is installed'),
+    },
+    {
+      label: 'a library that package.json does not pin',
+      pinned: {},
+      manifest: { name: 'twin', version: '4.0.2' },
+      expect: (r) => r.problems.length === 1 && r.problems[0].message.includes(
+        'twin is on the list of example libraries and is not in devDependencies'),
+    },
+    {
+      label: 'a library that is pinned and not installed',
+      pinned: { twin: '4.0.2' },
+      manifest: undefined,
+      expect: (r) => r.problems.length === 1 && r.problems[0].message.includes(
+        'twin is pinned and not installed'),
+    },
+  ]
+  for (const { label, pinned, manifest, expect } of installs) {
+    const result = libraryProblems({
+      libraries: ['twin'], pinned, manifestOf: () => manifest,
+    })
+    const ok = expect(result)
+    process.stdout.write(`${ok ? 'selftest ok:' : 'selftest FAIL:'} ${label}\n`)
+    if (!ok) {
+      for (const p of result.problems) process.stderr.write(`  ${formatProblem(p)}\n`)
+      process.exit(1)
+    }
+  }
+
+  for (const [path, role, md, variant] of roles) {
+    const found = roleOf(path)
+    const ok = found.role === role && found.md === md && found.variant === variant
+    const what = variant === undefined && md === undefined
+      ? role
+      : `${role}${variant === null ? '' : ` of the ${variant} variant`}`
+    process.stdout.write(
+      `${ok ? 'selftest ok:' : 'selftest FAIL:'} ${path} is read as ${what}\n`,
+    )
+    if (!ok) {
+      process.stderr.write(`  got ${JSON.stringify(found)}\n`)
       process.exit(1)
     }
   }

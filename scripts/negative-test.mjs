@@ -287,6 +287,23 @@ const CREATED = [
     join('example-types', '_shared', 'unused.ts'),
     'export type Unused = string;\n',
     'is imported by no prelude', 'validate-types.mjs'],
+  // A variant is one more check of the same examples with another prelude.
+  // This one sends ts-pattern to a package that has no `match`, so the file
+  // that passes on its own has to fail under it, and the report has to say
+  // which variant it was.
+  ['a variant prelude under which the examples no longer compile',
+    join('example-types', 'functional-typescript-ts-pattern', 'SKILL.other.ts'),
+    '// @resolve ts-pattern valibot\n',
+    ['functional-typescript-ts-pattern/SKILL.md', '(variant other)'],
+    'validate-types.mjs'],
+  ['a variant prelude that stands beside no Markdown file',
+    join('example-types', 'functional-typescript', 'references',
+      'no-such-reference.other.ts'),
+    '',
+    ['stands beside no Markdown file',
+      'It would be for plugin/skills/functional-typescript/references/' +
+      'no-such-reference.md'],
+    'validate-types.mjs'],
 ]
 
 // A defect that is the absence of a file, the other way round: the file is
