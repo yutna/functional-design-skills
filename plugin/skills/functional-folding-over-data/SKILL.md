@@ -102,17 +102,17 @@ updated inside it is a fold's accumulator.
 
 ```text
 type Expr =
-  | Lit of Number
-  | Add of Expr * Expr
-  | Mul of Expr * Expr
+  | Lit of Integer
+  | Add of (Expr, Expr)
+  | Mul of (Expr, Expr)
 
 foldExpr :
-  (Number -> R) -> (R -> R -> R) -> (R -> R -> R) -> Expr -> R
+  (Integer -> R) -> (R -> R -> R) -> (R -> R -> R) -> Expr -> R
 foldExpr lit add mul e =
   match e with
   | Lit n -> lit n
-  | Add a b -> add (go a) (go b)
-  | Mul a b -> mul (go a) (go b)
+  | Add (a, b) -> add (go a) (go b)
+  | Mul (a, b) -> mul (go a) (go b)
   where go = foldExpr lit add mul
 
 evaluate = foldExpr identity (+) (*)

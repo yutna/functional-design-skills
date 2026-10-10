@@ -56,7 +56,7 @@ Distinguish it in the type so retry logic does not have to guess.
 ```text
 type TreatmentError =
   | Transient of { retryAfter: Option<Seconds> }
-  | Permanent of Text
+  | Permanent of String
 ```
 
 Retry belongs at the edge, not inside a domain step. A domain function

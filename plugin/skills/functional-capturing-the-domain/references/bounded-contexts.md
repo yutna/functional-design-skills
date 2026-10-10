@@ -43,7 +43,7 @@ type Customer = { id: CustomerId, name: Name, segment: Segment }
 
 -- shipping context
 type Customer = { id: CustomerId, address: Address,
-                  instructions: Option<Text> }
+                  instructions: Option<String> }
 
 -- billing context
 type Customer = { id: CustomerId, taxId: TaxId, terms: PaymentTerms }

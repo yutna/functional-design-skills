@@ -35,7 +35,11 @@ Not for: designing the domain types themselves.
 ## Core rules
 
 1. Rule. **Make every function total.** Narrow the input type, or widen the
-   output type to `Option` or `Result`. Never leave the gap implicit.
+   output type to `Option` or `Result`. Never leave the gap implicit. A
+   value the input type was meant to exclude is a bug upstream, not a
+   gap here: crash on it, as
+   [functional-defining-errors-out-of-existence](../functional-defining-errors-out-of-existence/SKILL.md)
+   says.
 2. Judgement. **One input, one output, conceptually.** Group related parameters
    into a named record rather than passing six positional arguments.
 3. Default. **Put the varying argument last.** Data last, configuration and

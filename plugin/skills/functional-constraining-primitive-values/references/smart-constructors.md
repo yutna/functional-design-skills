@@ -119,7 +119,7 @@ The error is part of the interface. Two questions decide its shape:
 type EmailError = Empty | MissingAt | TooLong of Integer
 
 -- flat: nobody branches on it, so do not invent cases
-type NoteError = NoteError of Text
+type NoteError = NoteError of String
 ```
 
 Avoid a single `String` error for anything a caller might branch on, and
@@ -167,7 +167,7 @@ anything.
 parseBookedTreatment : RawLine -> Result<BookedTreatment, LineError>
 parseBookedTreatment raw =
   TreatmentCode.parse raw.code
-    |> andThen (\code ->
+    |> bind (\code ->
        Quantity.parse raw.qty
          |> map (\qty -> { code, qty }))
 ```

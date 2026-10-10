@@ -40,10 +40,10 @@ condition is normal.
 
 ```text
 -- deleting a range that does not exist is an error
-delete : Range -> Text -> Result<Text, RangeNotFound>
+delete : Range -> String -> Result<String, RangeNotFound>
 
 -- deleting an empty range simply changes nothing
-delete : Range -> Text -> Text
+delete : Range -> String -> String
 ```
 
 Nothing is lost: a caller that deletes nothing wanted nothing deleted.
@@ -89,6 +89,8 @@ produces damage that is worse and harder to trace.
 4. Default. **Aggregate at the edge.** One place turns errors into responses,
    messages, or retries.
 5. Rule. **Crash on impossible states.** Do not model programmer bugs as values.
+   The function is still total: it returns for every input its type
+   admits, and the crash is for a value that type was meant to exclude.
 6. Rule. **Do not define away a failure the business cares about.** Silently
    returning a default for an unknown treatment code hides a real problem.
 

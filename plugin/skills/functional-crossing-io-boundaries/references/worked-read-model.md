@@ -76,8 +76,8 @@ serialisable as it stands.
 type BoardRow = {
   appointment: AppointmentId,
   time: LocalTime,
-  patientName: Text,
-  doctorName: Text,
+  patientName: String,
+  doctorName: String,
   status: BoardStatus,          -- the screen's vocabulary, not the domain's
   arrived: Boolean,
   balance: Money,
@@ -121,7 +121,7 @@ The write path rejects a row it cannot understand. The read path must
 not.
 
 ```text
-toBoardStatus : Text -> BoardStatus
+toBoardStatus : String -> BoardStatus
 toBoardStatus s =
   match s with
   | "confirmed" -> Upcoming

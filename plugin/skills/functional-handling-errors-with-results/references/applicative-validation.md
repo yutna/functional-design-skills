@@ -81,7 +81,7 @@ type ValidationError = {
 type Problem =
   | Missing
   | TooLong of Integer
-  | BadFormat of Text
+  | BadFormat of String
   | OutOfRange of { min: Decimal, max: Decimal }
 ```
 

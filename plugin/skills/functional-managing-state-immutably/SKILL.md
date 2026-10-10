@@ -69,7 +69,7 @@ Transformation:
 ```text
 addItem : Item -> Cart -> Cart
 addItem item cart =
-  { cart | items = cons item cart.items }
+  { ...cart, items: cons item cart.items }
 
 total : Cart -> Money         -- derived, never stored
 ```

@@ -64,7 +64,7 @@ makeBookingId : Unit -> BookingId
 
 -- abstract factory: a record of constructors
 alias Renderer = {
-  text : Text -> Node,
+  text : String -> Node,
   image : Url -> Node,
 }
 ```
@@ -199,7 +199,7 @@ functional design removes. See
 
 ```text
 defaultOptions : Options
-run { ...defaultOptions, timeout = Seconds 5 }
+run { ...defaultOptions, timeout: Seconds 5 }
 ```
 
 A record with defaults, or a smart constructor that validates. A builder
@@ -235,8 +235,8 @@ structures share unchanged parts.
 **Solves:** representing a small language and evaluating it.
 
 ```text
-type Expr = Lit of Number | Add of Expr * Expr | Mul of Expr * Expr
-eval : Expr -> Number
+type Expr = Lit of Integer | Add of (Expr, Expr) | Mul of (Expr, Expr)
+eval : Expr -> Integer
 ```
 
 A genuine functional pattern, and the basis for the interpretation
