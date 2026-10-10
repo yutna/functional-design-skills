@@ -480,6 +480,12 @@ function validateNoPackageFilesInPlugin () {
 // content change. .npmrc sets save-exact; this catches a hand-edited range.
 const EXACT_VERSION = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/
 
+// An alias installs one package under another name, so that two majors of
+// the same library can be present at once: `effect-4` is `npm:effect@4.0.2`.
+// The rule applies to the version after the last `@`; an alias with a range,
+// or with no version at all, is as loose as a range written without one.
+const ALIAS = /^npm:@?[^@]+@(.+)$/
+
 // A shebang says "run me". Three scripts had one and no executable bit, so
 // ./scripts/validate-rules.mjs was a permission error while its neighbour
 // worked, and nothing said which was intended. The rule is the file's own
@@ -515,7 +521,8 @@ function validateExactDependencies () {
   for (const field of ['dependencies', 'devDependencies', 'overrides']) {
     for (const [name, range] of Object.entries(pkg[field] ?? {})) {
       if (typeof range !== 'string') continue
-      if (!EXACT_VERSION.test(range)) {
+      const version = ALIAS.exec(range)?.[1] ?? range
+      if (!EXACT_VERSION.test(version)) {
         errors.push(
           `package.json: ${field}."${name}" is "${range}"; dependencies are ` +
             'pinned to an exact version, never a range',

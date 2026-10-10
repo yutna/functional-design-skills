@@ -123,6 +123,11 @@ const CASES = [
     'but resolves to'],
   ['a caret range instead of an exact pin', 'package.json',
     ['"yaml": "', '"yaml": "^'], 'pinned to an exact version'],
+  // An alias hides its version behind `npm:name@`, so a check that only
+  // reads the whole string would take any alias for exact.
+  ['a range behind an alias instead of an exact pin', 'package.json',
+    ['"effect-4": "npm:effect@', '"effect-4": "npm:effect@^'],
+    'pinned to an exact version'],
   ['an ellipsis where the language expects code',
     join('plugin', 'skills', 'functional-typescript', 'SKILL.md'),
     ['  /* ... */', '  ...'], 'not the language the fence claims',
