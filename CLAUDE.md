@@ -144,6 +144,11 @@ rejected.
   and a library's shapes move at its major. It must name the major the
   shapes target and tell the reader to verify the installed version; the
   check reads the pack list out of the index and greps for that phrase.
+  The major it names must be the major of a version `package.json` pins,
+  and every pinned major of the library must be named, in that same
+  paragraph, so a pack whose shapes hold on two majors names both. The
+  table of packs and packages is in `scripts/validate-skills.mjs`, and a
+  new library pack adds a row.
   The base packs are out of scope on purpose. `functional-javascript` and
   `functional-elixir` name only long-stable language features, so a
   version caveat over those would be a sentence that earns nothing. A
