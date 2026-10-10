@@ -210,6 +210,22 @@ const CASES = [
     join('scripts', 'validate-skills.mjs'),
     ["packageName: 'next'", "packageName: 'nxt'"],
     'package.json pins no nxt'],
+  // The two lists of example libraries, the one in validate-types.mjs and the
+  // one Dependabot reads, and the line that keeps the entry to new majors.
+  ['an example library that Dependabot is not told to watch',
+    join('.github', 'dependabot.yml'),
+    ['      - dependency-name: effect-4\n', ''],
+    'effect-4 is on the list of example libraries and not in the npm allow list',
+    'validate-types.mjs'],
+  ['a name in the Dependabot allow list that no example uses',
+    join('.github', 'dependabot.yml'),
+    ['      - dependency-name: next\n',
+      '      - dependency-name: next\n      - dependency-name: left-pad\n'],
+    'allow list names left-pad', 'validate-types.mjs'],
+  ['a Dependabot entry that opens a pull request for a patch release',
+    join('.github', 'dependabot.yml'),
+    ['          - version-update:semver-patch\n', ''],
+    'does not ignore version-update:semver-patch', 'validate-types.mjs'],
   ['a core rule with no strictness label', SKILL,
     ['1. Default. **Name the accumulator', '1. **Name the accumulator'],
     'has no strictness label', 'validate-rules.mjs'],
@@ -347,7 +363,7 @@ const REMOVED = [
 ]
 
 const work = mkdtempSync(join(tmpdir(), 'fds-negative-'))
-for (const dir of ['scripts', 'plugin', '.claude-plugin', 'evals', 'example-types']) {
+for (const dir of ['scripts', 'plugin', '.claude-plugin', '.github', 'evals', 'example-types']) {
   cpSync(join(ROOT, dir), join(work, dir), { recursive: true })
 }
 // validate-counts.mjs checks sentences in some of these; the rest are here
@@ -518,9 +534,10 @@ function convertEndings (dir, ending) {
       continue
     }
     // The preludes are checked out with the platform's endings as well, and
-    // validate-types.mjs reads them.
+    // validate-types.mjs reads them, and the Dependabot file beside them.
     const inTypes = path.split(sep).includes('example-types')
-    if (!entry.endsWith('.md') && !inTypes) continue
+    const dependabot = entry === 'dependabot.yml'
+    if (!entry.endsWith('.md') && !inTypes && !dependabot) continue
     writeFileSync(path, readFileSync(path, 'utf8').replace(/\r?\n/g, ending))
   }
 }
@@ -547,7 +564,7 @@ for (const script of SCRIPTS) {
 // And the floor: with nothing to read, every one of these must fail rather
 // than report a clean zero.
 const empty = mkdtempSync(join(tmpdir(), 'fds-empty-'))
-for (const dir of ['scripts', 'plugin', '.claude-plugin', 'evals', 'example-types']) {
+for (const dir of ['scripts', 'plugin', '.claude-plugin', '.github', 'evals', 'example-types']) {
   cpSync(join(ROOT, dir), join(empty, dir), { recursive: true })
 }
 for (const file of TOP_LEVEL) {

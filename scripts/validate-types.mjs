@@ -89,6 +89,7 @@ import {
 } from 'node:fs'
 import { dirname, join, posix, relative, sep } from 'node:path'
 import ts from 'typescript'
+import { parse as parseYaml } from 'yaml'
 import {
   fencesIn, inlineCodeSpans, readMarkdown, readSource,
 } from './lib/markdown.mjs'
@@ -102,8 +103,9 @@ import {
 // imports is an error. A @types/ package counts as imported when the package
 // it types is, and an alias counts as imported when a resolve directive sends
 // an import to it: `effect-4` is the second major of `effect`, and no fence
-// says its name. To add one, `npm install --save-dev --save-exact` it and name
-// it here in the same change.
+// says its name. To add one, `npm install --save-dev --save-exact` it, name it
+// here, and add it to the npm allow list in .github/dependabot.yml in the same
+// change; the run fails when the two lists differ.
 const LIBRARIES = [
   'effect',
   'effect-4',
@@ -1441,8 +1443,76 @@ function libraryProblems ({ libraries = LIBRARIES, pinned, manifestOf }) {
   return { problems, versions, aliases }
 }
 
+// Dependabot is told which npm packages to update by name, and the names are
+// the ones above written a second time. Two lists of the same names drift: a
+// library added to the first and not the second is one whose new major opens
+// no pull request, and a name left in the second after the first drops it
+// opens pull requests for a library no example is checked against. The entry
+// also has to keep ignoring minor and patch updates, which is what makes it
+// "a new major and nothing else"; without that line every release of every
+// example library opens a pull request, which is the noise the rest of npm
+// is left out to avoid. `text` is the file, taken as a value like the rest.
+const DEPENDABOT = '.github/dependabot.yml'
+const SEMVER_IGNORED = ['version-update:semver-minor', 'version-update:semver-patch']
+
+function dependabotProblems ({ libraries = LIBRARIES, text }) {
+  let config
+  try {
+    config = parseYaml(text)
+  } catch (error) {
+    return [{ file: DEPENDABOT, message: `is not valid YAML: ${error.message}` }]
+  }
+  const entry = (config?.updates ?? []).find((u) => u['package-ecosystem'] === 'npm')
+  if (entry === undefined) {
+    return [{
+      file: DEPENDABOT,
+      message: 'has no npm entry, so a new major of an example library opens ' +
+        'no pull request',
+    }]
+  }
+  const problems = []
+  const allowed = (entry.allow ?? []).map((a) => a['dependency-name'])
+  for (const name of libraries) {
+    if (allowed.includes(name)) continue
+    problems.push({
+      file: DEPENDABOT,
+      message: `${name} is on the list of example libraries and not in the ` +
+        'npm allow list, so a new major of it opens no pull request',
+    })
+  }
+  for (const name of allowed) {
+    if (libraries.includes(name)) continue
+    problems.push({
+      file: DEPENDABOT,
+      message: `the npm allow list names ${name}, which is not on the list ` +
+        'of example libraries in scripts/validate-types.mjs, so nothing ' +
+        'checks the pull requests it opens against an example',
+    })
+  }
+  const ignored = (entry.ignore ?? [])
+    .filter((i) => i['dependency-name'] === '*')
+    .flatMap((i) => i['update-types'] ?? [])
+  for (const kind of SEMVER_IGNORED) {
+    if (ignored.includes(kind)) continue
+    problems.push({
+      file: DEPENDABOT,
+      message: `the npm entry does not ignore ${kind} for every dependency, ` +
+        'so it opens a pull request for more than a new major',
+    })
+  }
+  return problems
+}
+
 function readPinned () {
   return JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).devDependencies ?? {}
+}
+
+// The file is read through readSource like every other, so that a checkout
+// with the platform's line endings reaches the YAML parser the way any other
+// does.
+function readDependabot () {
+  const path = join(ROOT, ...DEPENDABOT.split('/'))
+  return existsSync(path) ? readSource(path) : undefined
 }
 
 function readManifest (name) {
@@ -1474,6 +1544,13 @@ function main (argv) {
   const libraries = libraryProblems({
     pinned: readPinned(), manifestOf: readManifest,
   })
+  const config = readDependabot()
+  const dependabot = config === undefined
+    ? [{
+      file: DEPENDABOT,
+      message: 'is missing, so no example library is told of a new major',
+    }]
+    : dependabotProblems({ text: config })
   const documents = only === null
     ? loaded.documents
     : loaded.documents.filter((d) => skillOf(d.md) === only)
@@ -1487,6 +1564,7 @@ function main (argv) {
   const problems = [
     ...(only === null ? loaded.problems : []),
     ...libraries.problems,
+    ...dependabot,
     ...result.problems,
   ]
   if (result.stats.examples === 0) {
@@ -1525,6 +1603,9 @@ function main (argv) {
       'file(s) type-check\n',
   )
   process.stdout.write(`      ${listed.join(', ')}\n`)
+  process.stdout.write(
+    `      all ${LIBRARIES.length} are in the npm allow list in ${DEPENDABOT}\n`,
+  )
   if (result.stats.variants.length > 0) {
     const where = result.stats.variants.map((v) =>
       `${v.md.slice(SKILLS_PREFIX.length)} as ${v.variant}`)
@@ -2029,6 +2110,72 @@ function selftest () {
     process.stdout.write(`${ok ? 'selftest ok:' : 'selftest FAIL:'} ${label}\n`)
     if (!ok) {
       for (const p of result.problems) process.stderr.write(`  ${formatProblem(p)}\n`)
+      process.exit(1)
+    }
+  }
+
+  // The Dependabot entry, against the libraries it has to match.
+  const dependabot = (allow, ignore = SEMVER_IGNORED) => [
+    'version: 2',
+    'updates:',
+    '  - package-ecosystem: github-actions',
+    '    directory: /',
+    '  - package-ecosystem: npm',
+    '    directory: /',
+    '    allow:',
+    ...allow.map((name) => `      - dependency-name: "${name}"`),
+    '    ignore:',
+    '      - dependency-name: "*"',
+    '        update-types:',
+    ...ignore.map((kind) => `          - ${kind}`),
+    '',
+  ].join('\n')
+  const entries = [
+    {
+      label: 'a Dependabot entry that allows exactly the example libraries',
+      text: dependabot(['alpha', 'beta']),
+      expect: (found) => found.length === 0,
+    },
+    {
+      label: 'an example library missing from the Dependabot allow list',
+      text: dependabot(['alpha']),
+      expect: (found) => found.length === 1 &&
+        found[0].message.includes('beta is on the list of example libraries'),
+    },
+    {
+      label: 'a name in the Dependabot allow list that is not an example library',
+      text: dependabot(['alpha', 'beta', 'gamma']),
+      expect: (found) => found.length === 1 &&
+        found[0].message.includes('allow list names gamma'),
+    },
+    {
+      label: 'a Dependabot entry that stops ignoring patch updates',
+      text: dependabot(['alpha', 'beta'], ['version-update:semver-minor']),
+      expect: (found) => found.length === 1 &&
+        found[0].message.includes('does not ignore version-update:semver-patch'),
+    },
+    {
+      label: 'a Dependabot file with no npm entry',
+      text: 'version: 2\nupdates:\n  - package-ecosystem: github-actions\n    directory: /\n',
+      expect: (found) => found.length === 1 && found[0].message.includes('no npm entry'),
+    },
+    {
+      label: 'a Dependabot file that is not YAML',
+      text: 'updates: [unclosed',
+      expect: (found) => found.length === 1 && found[0].message.includes('not valid YAML'),
+    },
+    {
+      label: 'a Dependabot file with the platform line endings',
+      text: dependabot(['alpha', 'beta']).replace(/\n/g, '\r\n'),
+      expect: (found) => found.length === 0,
+    },
+  ]
+  for (const { label, text, expect } of entries) {
+    const found = dependabotProblems({ libraries: ['alpha', 'beta'], text })
+    const ok = expect(found)
+    process.stdout.write(`${ok ? 'selftest ok:' : 'selftest FAIL:'} ${label}\n`)
+    if (!ok) {
+      for (const p of found) process.stderr.write(`  ${formatProblem(p)}\n`)
       process.exit(1)
     }
   }
