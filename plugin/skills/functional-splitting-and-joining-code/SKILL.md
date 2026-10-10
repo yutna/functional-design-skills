@@ -4,7 +4,7 @@ description: Use when deciding whether to split a function or module, when a boo
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.0.3
+  version: 3.0.4
 ---
 
 # Splitting and Joining Code

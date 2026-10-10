@@ -4,7 +4,7 @@ description: Use when callers know how a module works inside, when one data form
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.0.3
+  version: 3.0.4
 ---
 
 # Hiding Information
