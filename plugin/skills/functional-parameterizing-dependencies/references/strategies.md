@@ -1,8 +1,8 @@
 # Three Strategies, One Example
 
-The task: approve a refund if the booking exists, is less than sixty days
-old, and the amount does not exceed the customer's refund allowance for
-the month.
+The task: approve a refund if the booking exists, is no more than sixty
+days old, and the amount does not exceed the patient's refund allowance
+for the month.
 
 ## Contents
 
@@ -16,73 +16,109 @@ the month.
 
 ## Strategy 1: dependency rejection
 
-The shell gathers everything, then a pure function decides.
+A handler reads everything first, then a pure function decides.
 
 ```text
--- pure core: no dependencies at all
+-- core: no dependencies at all
 type RefundContext = {
-  booking: Booking,
-  bookingAge: Days,
+  now: Instant,
+  request: RefundRequest,
+  booking: Option<Booking>,
   usedThisMonth: Money,
   allowance: Money,
 }
 
-decideRefund : RefundContext -> Result<RefundApproved, RefundError>
+approveRefund : RefundContext -> Result<RefundApproved, RefundError>
 ```
 
 ```text
--- shell
-handleRefund request =
-  loadBooking request.bookingId
-    |> combine (loadUsage request.customerId)
-    |> map (toContext now)
-    |> bind decideRefund
+-- shell: the handler's failure type has a case for each way it can fail
+type RefundFailure =
+  | Refused of RefundError
+  | Unavailable of StoreError
+
+handleApproveRefund :
+  Pool -> Money -> Instant -> RefundRequest
+    -> AsyncResult<RefundApproved, RefundFailure>
+handleApproveRefund pool allowance now request =
+  both
+      (loadBooking pool request.bookingId)
+      (loadUsage pool request.patient (monthOf now))
+    |> mapError Unavailable
+    |> bind (\(booking, used) ->
+         approveRefund
+           { now, request, booking, usedThisMonth: used, allowance }
+           |> mapError Refused)
 ```
 
-**Cost:** the shell fetches the usage even when the booking is too old.
+Recording the approval is the same last step in every strategy, and is
+left out. `both` starts the two reads at once; see
+[effect-alignment.md](../../functional-designing-workflow-pipelines/references/effect-alignment.md).
+
+**Cost:** the usage is read even when the booking is too old.
 **Benefit:** the decision is a pure function of plain data. It can be
 tested exhaustively, replayed against historical data, and reviewed by a
 domain expert.
 
-Prefer this whenever the extra fetching is affordable, which is more
+Prefer this whenever the extra reading is affordable, which is more
 often than people expect.
 
 ## Strategy 2: dependency parameterization
 
-The decision fetches as it goes, through function types it declares.
+The rules become two pure functions, and the handler reads between them
+through capabilities it takes as parameters.
 
 ```text
-alias LoadBooking = BookingId -> Async<Option<Booking>>
-alias LoadUsage = CustomerId -> Month -> Async<Money>
-
-approveRefund :
-  LoadBooking -> LoadUsage -> Instant -> RefundRequest
-    -> AsyncResult<RefundApproved, RefundError>
+-- core: each check is a rule, and neither reads anything
+checkAge : Instant -> Option<Booking> -> Result<Booking, RefundError>
+checkAllowance :
+  Money -> Money -> Booking -> RefundRequest
+    -> Result<RefundApproved, RefundError>
 ```
 
-**Cost:** the core is now asynchronous and needs two stubs in tests.
-**Benefit:** nothing is fetched that the decision does not reach, and the
-sequence of checks is expressed once.
+```text
+-- shell: the capabilities are declared in the domain's words
+alias LoadBooking = BookingId -> AsyncResult<Option<Booking>, StoreError>
+alias LoadUsage = PatientId -> Month -> AsyncResult<Money, StoreError>
 
-This is the default for workflow steps where a later lookup depends on an
-earlier decision.
+handleApproveRefund :
+  LoadBooking -> LoadUsage -> Money -> Instant -> RefundRequest
+    -> AsyncResult<RefundApproved, RefundFailure>
+handleApproveRefund loadBooking loadUsage allowance now request =
+  loadBooking request.bookingId
+    |> mapError Unavailable
+    |> bind (checkAge now >> mapError Refused)
+    |> bind (\booking ->
+         loadUsage request.patient (monthOf now)
+           |> mapError Unavailable
+           |> bind (\used ->
+                checkAllowance allowance used booking request
+                  |> mapError Refused))
+```
+
+**Cost:** a stub for each capability in the handler's tests, and the
+order of reads becomes code to test.
+**Benefit:** nothing is read that the decision does not reach. The usage
+is read only when the age check has passed.
+
+Use it when one of the three conditions in rule 1 of
+[the skill](../SKILL.md#core-rules) holds.
 
 ## Strategy 3: interpretation
 
 The core returns instructions; the shell performs them.
 
 ```text
-type RefundDecision =
-  | Approve of { amount: Money, instructions: List<Instruction> }
-  | Reject of RefundError
-
 type Instruction =
-  | CreditAccount of { customer: CustomerId, amount: Money }
-  | NotifyCustomer of { to: EmailAddress, template: TemplateId }
+  | CreditAccount of { patient: PatientId, amount: Money }
+  | NotifyPatient of { patient: PatientId, template: TemplateId }
   | RecordAudit of AuditEntry
 
-decideRefund : RefundContext -> RefundDecision
+planRefund :
+  RefundContext -> Result<NonEmptyList<Instruction>, RefundError>
 ```
+
+The amount appears once, in the instruction that credits it.
 
 **Cost:** an extra type, and a shell that interprets it.
 **Benefit:** the effects are values. They can be logged, tested by
@@ -94,32 +130,36 @@ cares about.
 
 ## Choosing
 
-| Question                             | Points to        |
-| ------------------------------------ | ---------------- |
-| All data can be fetched up front     | Rejection        |
-| A later fetch depends on a decision  | Parameterization |
-| The effects are a business artefact  | Interpretation   |
-| Over-fetching is expensive           | Parameterization |
-| Decisions must be replayable         | Rejection        |
-| Effects must be auditable one by one | Interpretation   |
-| A simple two-step workflow           | Rejection        |
+| Question                               | Points to        |
+| -------------------------------------- | ---------------- |
+| All data can be read up front          | Rejection        |
+| What to read depends on a rule         | Parameterization |
+| Reading it all measured too costly     | Parameterization |
+| A check must pass before a read        | Parameterization |
+| Decisions must be replayable           | Rejection        |
+| The effects must be stored or audited  | Interpretation   |
+| A simple two-step workflow             | Rejection        |
 
 ## Time, randomness and identifiers
 
-All three are dependencies. Treat them exactly the same way.
+All three reach the core as values, as the skill's rule 7 says.
 
 ```text
--- reject: pass the value
+-- pass the value
 isExpired : Instant -> Quote -> Boolean
 
--- parameterize: pass the source, when many values are needed
-alias NextId = Unit -> BookingId
-createTreatments : NextId -> List<Draft> -> List<BookedTreatment>
+-- many identifiers: derive them from one value
+lineIdAt : BookingId -> Integer -> LineId
+
+-- or let the handler draw them between two pure functions
+countNeeded : List<Draft> -> Integer
+assignIds : List<TreatmentId> -> List<Draft> -> List<BookedTreatment>
+drawTreatmentIds : Integer -> Async<List<TreatmentId>>
 ```
 
-Prefer passing the value. A workflow usually needs one timestamp, taken
-once at the edge, and using the same instant throughout is also more
-correct than sampling the clock repeatedly.
+Prefer passing the value. A command usually needs one instant, read once
+for it, and using the same instant throughout is also more correct than
+sampling the clock repeatedly.
 
 ## Configuration
 
@@ -139,16 +179,17 @@ input and cannot be tested twice with different settings in one process.
 
 ## The composition root
 
-One function, at the edge, builds the wired workflows. It is the only
-place that knows about both the domain and the infrastructure.
+One function, at the edge, builds the wired handlers. It is the only
+place that knows about both the domain and the infrastructure, and it
+takes only what the handlers use.
 
 ```text
-buildApp pool client clock =
+buildApp pool allowance =
   {
     confirmBooking =
-      confirmBooking (checkTreatment client) (getPrice client) (saveBooking pool),
+      handleConfirmBooking pool,
     approveRefund =
-      approveRefund (loadBooking pool) (loadUsage pool),
+      handleApproveRefund (loadBooking pool) (loadUsage pool) allowance,
   }
 ```
 
