@@ -6,6 +6,60 @@ skills or guidance, a patch one corrects what is already there.
 
 [semantic versioning]: https://semver.org
 
+## 3.1.0
+
+The Effect pack serves Effect 4 as well as Effect 3, and the checks hold
+it to both.
+
+### A pack that taught one major to projects on another
+
+- `functional-typescript-effect` said its shapes target Effect 3.
+  Effect 4.0.0 was published on 2026-10-01 and spells the service
+  declaration, every schema constraint, decoding, the union, the retry
+  schedule and the configuration readers differently, so an agent that
+  followed the pack in a project on Effect 4 wrote code that does not
+  compile.
+- `SKILL.md` now starts by asking which major is installed, and says
+  which page is for which. Its own examples hold on both majors. The one
+  line of its lead example that differs, the service declaration, is
+  left to the references.
+- `references/effect-4.md` is new: a mapping from each Effect 3 name to
+  what replaces it, and a compiled example for each shape that moved. It
+  ends at the documentation Effect 4 ships inside the package, which
+  matches the installed version where the page may not.
+- The three existing references stay Effect 3, and each says so in its
+  first lines.
+
+### Checks that hold a pack to the major it names
+
+- Effect 4 is pinned beside Effect 3 under the alias `effect-4`.
+  `validate-types.mjs` can read a file's imports as another package,
+  when its prelude opens with `// @resolve effect effect-4`, and can
+  check one Markdown file against a second prelude. The examples keep
+  saying `from "effect"`, and `SKILL.md` is type-checked twice.
+- `validate-skills.mjs` only looked for the words "installed version" in
+  a library pack. It now compares the major each pack names with the
+  major `package.json` pins, in both directions.
+- Dependabot proposes a new major of a library the examples are checked
+  against, and nothing else in npm. An alias is left out of its list,
+  because Dependabot does not rewrite one, and `effect` ignores the
+  major the alias already holds. The type check fails when that list
+  and its own differ.
+- `negative-test.mjs` goes from fifty-five guards to sixty-nine.
+
+### What was run, beyond the checks
+
+- The three Effect 3 references were type-checked against Effect 4.0.2.
+  Every error the compiler reported is an entry in the mapping or
+  follows from one.
+- The examples of `effect-4.md` were read from the page and run against
+  4.0.2. The schema normalises and rejects as the page says, the custom
+  transformation holds both ways, the retry makes four attempts, and the
+  round-trip property passes on the page's schema and fails on one that
+  loses case.
+
+No skill is added, renamed or removed.
+
 ## 3.0.4
 
 Every example written in a real language was compiled or run, and every
