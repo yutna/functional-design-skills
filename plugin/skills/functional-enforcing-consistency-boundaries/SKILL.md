@@ -11,10 +11,10 @@ metadata:
 
 ## Overview
 
-Some rules must hold at every instant: a booking's total equals the sum of
-its treatments; a booking never double-books a room. Others may lag: a
-customer's loyalty points can catch up with their purchases a second
-later. Deciding which is which, and drawing a boundary around each set of
+Some rules must hold at every instant: no two bookings for one clinician
+overlap in time; a room is never booked twice for one slot. Others may
+lag: a patient's loyalty points can catch up with their paid treatments a
+second later. Deciding which is which, and drawing a boundary around each set of
 rules that must hold together, is what makes a system both correct and
 able to scale.
 
@@ -40,22 +40,22 @@ Two different kinds of domain type, with different equality:
 
 | Kind   | Equality                       | Example               |
 | ------ | ------------------------------ | --------------------- |
-| Entity | Same identifier, whatever else | `Booking`, `Customer` |
+| Entity | Same identifier, whatever else | `Booking`, `Patient`  |
 | Value  | Same contents, no identifier   | `Money`, `Address`    |
 
 Consequences worth acting on:
 
 - An entity's identifier is assigned once and never changes. Two bookings
   with the same contents are still two bookings.
-- A value is replaced, never mutated. Changing a customer's address means
+- A value is replaced, never mutated. Changing a patient's address means
   a new `Address` value, not an edit to the old one.
 - Do not give a value an identifier because storage wants a primary key.
   That is a storage concern; map it at the edge.
 
 ## Core rules
 
-1. Default. **List the invariants first.** Write each rule as a sentence. "A
-   booking's total equals the sum of its treatments."
+1. Default. **List the invariants first.** Write each rule as a sentence. "No
+   two bookings for one clinician overlap in time."
 2. Rule. **Group by invariant, not by relationship.** Data that must be
    consistent together lives in the same aggregate. A foreign key is not a
    reason to group.
@@ -76,32 +76,39 @@ Consequences worth acting on:
 Boundary drawn around a relationship:
 
 ```text
--- one aggregate holding a customer and every booking they ever made
-type Customer = { id: CustomerId, profile: Profile,
-                  bookings: List<Booking> }
+-- one aggregate holding a patient and every booking they ever made
+type Patient = { id: PatientId, profile: Profile,
+                 bookings: List<Booking> }
 ```
 
-Confirming one booking now loads and rewrites every booking. Two bookings confirmed
-at once conflict, though they share no rule. Nothing here needs to be
-consistent across bookings.
+Confirming one booking now loads and rewrites every booking. Two bookings
+confirmed at once conflict, though they share no rule. Nothing here needs
+to be consistent across one patient's bookings.
 
 Boundary drawn around invariants:
 
 ```text
--- aggregate: a booking and its treatments, because the total rule spans them
-type Booking = { id: BookingId, customer: CustomerId,
-               treatments: NonEmptyList<BookedTreatment> }
-total : Booking -> Money
+-- aggregate: a clinician's day, because the no-overlap rule spans every
+-- booking made into it
+type ClinicianDay = { clinician: ClinicianId, day: Date,
+                      allocations: List<Allocation> }
+type Allocation = { booking: BookingId, slot: TimeRange }
+allocate : Allocation -> ClinicianDay -> Result<ClinicianDay, Overlap>
 
--- separate aggregate: the customer, referenced by identifier
-type Customer = { id: CustomerId, profile: Profile,
-                  credit: CreditLimit }
+-- separate aggregate: the booking, referenced above by identifier
+type Booking = { id: BookingId, patient: PatientId,
+                 treatments: NonEmptyList<BookedTreatment> }
+
+-- separate aggregate: the patient, referenced by identifier
+type Patient = { id: PatientId, profile: Profile,
+                 credit: CreditLimit }
 ```
 
-The booking's rule holds inside its own transaction. Concurrent bookings do
-not conflict. The credit-limit rule spans both aggregates, so it becomes
-an explicit step in the workflow, with an explicit answer for what
-happens when it is violated after the fact.
+The overlap rule holds inside the clinician's day, in its own transaction.
+Bookings into different clinicians' days do not conflict. The credit-limit
+rule spans the patient and the booking, so it becomes an explicit step in
+the workflow, with an explicit answer for what happens when it is violated
+after the fact.
 
 ## Rules that span aggregates
 

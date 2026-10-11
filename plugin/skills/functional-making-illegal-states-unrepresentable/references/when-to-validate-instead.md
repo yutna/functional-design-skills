@@ -38,7 +38,7 @@ abandoned; a booking may not.
 
 ```text
 type DraftBooking = {
-  customer: Option<CustomerId>,
+  patient: Option<PatientId>,
   treatments: List<DraftTreatment>,
   updatedAt: Instant,
 }
@@ -61,12 +61,14 @@ the value.
 ```text
 -- cannot be a type: it depends on availability right now
 checkAvailability :
-  GetAvailability -> Booking -> AsyncResult<Booking, Unavailable>
+  Availability -> Booking -> Result<AvailableBooking, Unavailable>
 ```
 
 These are workflow steps returning `Result`, not type invariants. The
 signal is that the rule mentions time, another system, or state that
-lives elsewhere.
+lives elsewhere. The step itself is pure: the handler reads the
+availability first and passes the value in, so the step takes no
+capability.
 
 ## Rules that change more often than the code
 
@@ -77,11 +79,12 @@ Represent the rule as data, and the check as a function over it.
 ```text
 type CreditPolicy = { limit: Money, requiresApprovalAbove: Money }
 checkCredit :
-  CreditPolicy -> Customer -> Booking -> Result<Booking, CreditError>
+  CreditPolicy -> Patient -> Booking
+    -> Result<CreditCheckedBooking, CreditError>
 ```
 
 The type still prevents the structural mistakes: `Money` is not a float,
-`Customer` is not a string. What varies stays data.
+`Patient` is not a string. What varies stays data.
 
 ## Rules that would make the type unreadable
 
@@ -89,8 +92,9 @@ A type can encode that a list is sorted, that two dates are ordered, that
 a matrix is square. Each such encoding costs readability, and readers of
 this codebase pay it forever.
 
-Rule of thumb: encode the constraints the domain experts name in
-conversation. Everything else is a test's job.
+Rule of thumb: a constraint earns a type when the domain experts name it
+in conversation, or when the code checks it in more than one place.
+Otherwise it is an assertion and a test.
 
 ```text
 -- the domain says: "a booking can't end before it starts"
@@ -98,8 +102,9 @@ type DateRange = DateRange of { from: Date, to: Date }
 dateRange : Date -> Date -> Result<DateRange, RangeError>
 ```
 
-That is worth a type, because it appears in ten places. A constraint that
-appears once, deep inside one function, is worth an assertion and a test.
+That is worth a type on both counts: the experts say it, and it appears in
+ten places. A constraint that nobody names and that appears once, deep
+inside one function, is worth an assertion and a test.
 
 ## Keeping checks contained
 

@@ -28,15 +28,15 @@ parse : String -> Result<TreatmentCode, TreatmentCodeError>
 ```
 
 Both do identical work. They differ in what survives it. The first
-returns one bit and hands back the same `String` it was given, so
+returns one bit and leaves the caller holding the same `String`, so
 everything downstream holds a value that is no different from an
 unchecked one. The type cannot tell the caller that the check happened,
 so the caller cannot rely on it, and the honest response is to check
 again.
 
 That is where duplicated validation comes from. It is not carelessness;
-it is the only safe reading of a signature that took a `String` and
-gave a `String` back.
+it is the only safe reading of a check that leaves the caller holding
+the same `String`.
 
 The second returns a **narrower type**. The evidence the check produced
 is now carried by the value itself, so no function downstream can be
@@ -79,7 +79,8 @@ module TreatmentCode
   value : TreatmentCode -> String        -- unwrap, for the edge only
 ```
 
-Three exports: the type, the parser, the unwrapper. Nothing else. Callers
+Four exports: the type, its error type, the parser, the unwrapper.
+Nothing else. Callers
 cannot build one any other way, so every `TreatmentCode` in the system
 satisfies the rules.
 
@@ -131,7 +132,7 @@ avoid a twelve-case enum where nobody branches at all. See
 | Variant           | Signature                | Use                    |
 | ----------------- | ------------------------ | ---------------------- |
 | Parse             | `String -> Result<T, E>` | Untrusted input        |
-| Total constructor | `Nat -> T`               | When no input can fail |
+| Infallible        | `Nat -> T`               | When no input can fail |
 | Clamping          | `Integer -> T`           | When the domain says   |
 |                   |                          | out of range means the |
 |                   |                          | nearest legal value    |
@@ -165,7 +166,9 @@ anything. Each parser keeps its own error, and the step lifts both into
 the one it returns.
 
 ```text
-type LineError = BadCode of CodeError | BadQuantity of QuantityError
+type LineError =
+  | BadCode of TreatmentCodeError
+  | BadQuantity of QuantityError
 
 parseBookedTreatment : RawLine -> Result<BookedTreatment, LineError>
 parseBookedTreatment raw =
@@ -174,7 +177,7 @@ parseBookedTreatment raw =
     |> bind (\code ->
        Quantity.parse raw.qty
          |> mapError BadQuantity
-         |> map (\qty -> { code, qty }))
+         |> map (\quantity -> { code, quantity }))
 ```
 
 Collecting several parse errors at once, rather than stopping at the

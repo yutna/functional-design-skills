@@ -55,16 +55,16 @@ add : Money -> Money -> Result<Money, CurrencyMismatch>
 multiply : Money -> Percent -> Money        -- rounding rule inside
 ```
 
-`multiply` is total because the rounding rule makes it so. `add` is not,
-because two currencies genuinely cannot be added, and pretending
-otherwise produces wrong invoices.
+`multiply` cannot fail because the rounding rule settles every case.
+`add` can, because two currencies genuinely cannot be added, and
+pretending otherwise produces wrong invoices.
 
-Where a system is single-currency, say so in the type and get totality
-back:
+Where a system is single-currency, say so in the type and make addition
+infallible again:
 
 ```text
-type Baht = Baht of Integer            -- satang, the minor unit
-add : Baht -> Baht -> Baht
+type Satang = Satang of Integer        -- the minor unit of the baht
+add : Satang -> Satang -> Satang
 ```
 
 ## Quantities and rates

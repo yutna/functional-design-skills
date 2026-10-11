@@ -30,9 +30,13 @@ type FieldSpec =
   | Choice of NonEmptyList<String>
   | DateOnly
 
-type Schema = { version: SchemaVersion, fields: Map<FieldKey, FieldSpec> }
+type FormTemplate = {
+  id: TemplateId,
+  version: SchemaVersion,
+  fields: Map<FieldKey, FieldSpec>,
+}
 
-validate : Schema -> Map<FieldKey, JsonValue>
+validate : FormTemplate -> Map<FieldKey, JsonValue>
          -> Result<ValidatedAnswers, List<FieldError>>
 ```
 
@@ -54,12 +58,14 @@ ran.
 ```text
 -- accepts anything, returns something that has been checked
 parseAnswers :
-  Schema -> Json -> Result<ValidatedAnswers, List<FieldError>>
+  FormTemplate -> Json -> Result<ValidatedAnswers, List<FieldError>>
 ```
 
 `ValidatedAnswers` is a single-case wrapper over the map. It carries no
-extra structure. Its entire job is to be a type that only `parseAnswers`
-can produce, so downstream code cannot be handed a raw map by mistake.
+extra structure. Its entire job is to be a type that only functions in
+the module that owns it can produce (`parseAnswers`, and the steps it is
+built from, such as `validate` and `readAnswers`), so downstream code
+cannot be handed a raw map by mistake.
 
 That one wrapper is not a concession to the other school. It is what makes
 the check unskippable, and every generic-route design needs it. Without
@@ -82,11 +88,17 @@ module FieldKeys where
   all = [emailAddress, companyName, ...]
 ```
 
+Constants are for the keys that code reads or branches on, such as the one
+behind `emailOf`. The keys an admin defines are not named in code, so they
+get no constant: they are read from the template at run time, and `all`
+means the template's keys there.
+
 `FieldKey` itself is a single-case wrapper, for the same reason ids are:
 it stops a `UserId` being passed where a key was wanted. Wrapping the key
 type is cheap and it does not make the document typed.
 
-The `all` list is load-bearing: it is what the coverage tests iterate.
+The `all` list is load-bearing: it is what the coverage tests iterate over
+the keys that code names.
 
 ## Accessors, not paths
 
@@ -119,11 +131,12 @@ Where code branches on the generic content, the tag discipline from
 [static-and-dynamic.md](../../functional-modeling-with-algebraic-types/references/static-and-dynamic.md)
 applies unchanged: exact tag values from one module, an explicit loud
 failure for an unknown tag, and one test per dispatch site driven by the
-list of legal tags.
+list of the cases it dispatches on. `renderField` dispatches on the cases of
+`FieldSpec`, so the list is one sample spec for each case.
 
 ```text
-for each key in FieldKeys.all:
-  assert renderField (specFor key) does not raise
+for each spec in sampleSpecs:        -- one for each case of FieldSpec
+  assert renderField spec does not raise
 ```
 
 This test is not optional on this route. It is the compiler's job, moved.
@@ -134,24 +147,29 @@ This is the consequence people miss, and it is the largest real cost of
 the generic route.
 
 When the schema is fused into the type, changing a shape is a code change,
-and every stored value is migrated at deploy time or the deploy fails.
+and the compiler lists the code to update. Stored values are still old
+rows, and the typed route reads them through a function that returns
+`Result`; see
+[Persistence](../../functional-modeling-state-machines/references/transitions.md#persistence).
 When the schema is a separate value, stored data was written against
-_whatever schema was current then_, and nothing forces a migration.
+_whatever schema was current then_, and nothing forces a migration: no
+deploy fails to say that old data is unread.
 
 So the schema carries a version, and every stored document records the
 version it was written against.
 
 ```text
-type StoredResponse = {
-  schemaVersion: SchemaVersion,
+type StoredSubmission = {
+  templateId: TemplateId,
+  templateVersion: SchemaVersion,
   answers: Map<FieldKey, JsonValue>,
 }
 
-readResponse :
-  Schema -> StoredResponse -> Result<ValidatedAnswers, ReadError>
+readAnswers :
+  FormTemplate -> StoredSubmission -> Result<ValidatedAnswers, ReadError>
 ```
 
-`readResponse` is pure. The handler loads the document, loads the schema
+`readAnswers` is pure. The handler loads the document, loads the schema
 that the document names by its version, and passes both in:
 
 ```text
@@ -159,20 +177,22 @@ type ReadFailure =
   | Unreadable of ReadError
   | Unavailable of StoreError
 
-alias LoadSchema = SchemaVersion -> AsyncResult<Schema, StoreError>
-alias LoadResponse = ResponseId -> AsyncResult<StoredResponse, StoreError>
+alias LoadTemplate =
+  TemplateId -> SchemaVersion -> AsyncResult<FormTemplate, StoreError>
+alias LoadSubmission =
+  SubmissionId -> AsyncResult<StoredSubmission, StoreError>
 
-handleReadResponse :
-  LoadSchema -> LoadResponse -> ResponseId
+handleReadAnswers :
+  LoadTemplate -> LoadSubmission -> SubmissionId
     -> AsyncResult<ValidatedAnswers, ReadFailure>
-handleReadResponse loadSchema loadResponse id =
-  loadResponse id
+handleReadAnswers loadTemplate loadSubmission id =
+  loadSubmission id
     |> mapError Unavailable
     |> bind (\stored ->
-         loadSchema stored.schemaVersion
+         loadTemplate stored.templateId stored.templateVersion
            |> mapError Unavailable
-           |> bind (\schema ->
-                readResponse schema stored |> mapError Unreadable))
+           |> bind (\template ->
+                readAnswers template stored |> mapError Unreadable))
 ```
 
 Two rules follow:
@@ -206,10 +226,13 @@ usually one field.
 Before shipping a generic representation, all of these are true:
 
 1. One parse, at the boundary, returning `Result`.
-2. Its output is a distinct type nothing else can construct.
-3. Keys are constants in one module, with an `all` list.
+2. Its output is a distinct type that only the module owning it can
+   construct.
+3. Keys that code reads are constants in one module, with an `all` list;
+   keys the template defines are read from the template.
 4. Reads go through named accessors, not path literals.
-5. Every dispatch site has a coverage test driven by `all`.
+5. Every dispatch site has a coverage test driven by the list of the cases
+   it dispatches on.
 6. The schema has a version and stored data records it.
 7. Upgrade-on-read is one composed function, not scattered checks.
 

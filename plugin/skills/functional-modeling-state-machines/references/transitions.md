@@ -17,15 +17,20 @@ this time. It belongs inside the transition function, and its failure is
 a case of that transition's error type.
 
 ```text
-accept : Instant -> CustomerId -> Sent -> Result<Accepted, AcceptError>
-type AcceptError = Expired of Instant | NotAuthorised of CustomerId
+accept :
+  Instant -> PatientId -> BookingId -> Sent
+    -> Result<Accepted, AcceptError>
 ```
+
+`PastExpiry of Instant` and `NotAuthorised of PatientId` are the two
+guard failures, cases of the `AcceptError` declared in
+[SKILL.md](../SKILL.md#pattern).
 
 Two rules:
 
 1. The guard's inputs are parameters. A guard that reads the clock or the
    database from inside makes the transition untestable and impure.
-2. The error names the business reason, not the mechanism. `Expired`,
+2. The error names the business reason, not the mechanism. `PastExpiry`,
    not `GuardFailed`.
 
 Where a guard needs data the state does not carry, pass the data in. The
@@ -33,15 +38,17 @@ handler read it before calling the transition:
 
 ```text
 accept :
-  CustomerCredit -> Instant -> CustomerId -> Sent
+  PatientCredit -> Instant -> PatientId -> BookingId -> Sent
     -> Result<Accepted, AcceptError>
 ```
 
 ## Terminal states
 
-Cancelled, expired, refunded, archived: these are states, and they carry
-data. Modelling them as deletion or as a boolean loses the reason and the
-time, which is exactly what the business will ask about later.
+Cancelled, expired and refunded are states, and they carry data.
+Modelling them as deletion or as a boolean loses the reason and the time,
+which is exactly what the business will ask about later. Archived is a
+state when it has its own data and ends the lifecycle, and a flag when
+the entity continues through its lifecycle afterwards.
 
 ```text
 type Cancelled = { id: QuoteId, reason: CancelReason,
@@ -61,14 +68,16 @@ cancelDraft : CancelReason -> Instant -> Draft -> Cancelled
 cancelSent : CancelReason -> Instant -> Sent -> Result<Cancelled, TooLate>
 ```
 
-They differ: cancelling a sent quote may need to notify the customer, and
+They differ: cancelling a sent quote may need to notify the patient, and
 may be refused after acceptance is pending. Merging them hides that
 difference behind a branch.
 
 If the two really are identical, and will stay identical, one function
-over the union is acceptable. Check the "would they need the same edit"
-test in
-[functional-splitting-and-joining-code](../../functional-splitting-and-joining-code/SKILL.md).
+is acceptable over a choice of just the source states where the command
+is legal (here `Draft` and `Sent`). A function over the whole union makes
+the illegal sources writeable again. Check the "would both need the same
+edit" test in
+[decision-criteria.md](../../functional-splitting-and-joining-code/references/decision-criteria.md).
 
 ## Concurrent commands
 
@@ -138,6 +147,7 @@ Two properties worth testing directly:
   forward, assert there is no path from a later state back to an earlier
   one.
 
-Both are easy to express as property tests over a generated command
-sequence. See
-[functional-testing-functional-code](../../functional-testing-functional-code/SKILL.md).
+The first is shown by an example for each state: one sequence of
+commands that ends in it. The second is a property over generated
+command sequences; see "Stateful property testing" in
+[property-testing.md](../../functional-testing-functional-code/references/property-testing.md).

@@ -25,7 +25,7 @@ place. A `Decimal` and two `if`s.
 | Fact                                | Verdict |
 | ----------------------------------- | ------- |
 | A business rule branches on it      | type    |
-| Getting it wrong costs money        | type    |
+| A wrong decision costs money        | type    |
 | It appears in an exported signature | type    |
 | Field set comes from config         | no      |
 
@@ -35,7 +35,7 @@ is.
 **Design.**
 
 ```text
-type Money = Money of { amount: Decimal, currency: Currency }
+type Money = Money of { minorUnits: Integer, currency: Currency }
 type RefundAmount = RefundAmount of Money
 
 refundAmount :
@@ -101,18 +101,17 @@ submit :
                 -> Result<Submission, List<FieldError>>
 ```
 
-The envelope is fully modelled: five fields, all known, all branched on.
+The envelope is fully modelled: three fields, all known, all branched on.
 The one varying part is the map. `FieldSpec` is a closed choice type
 because developers decide what kinds of field exist, even though
 customers decide which fields exist.
 
 **What it cost.** Everything in the
-[checklist](schema-as-data.md#checklist): a parse, a `ValidatedAnswers`
-wrapper, key constants, accessors, coverage tests, and a stored version.
-**What it bought.** A new customer field is a row, not a release.
+[checklist](schema-as-data.md#checklist). **What it bought.** A new
+customer field is a row, not a release.
 
 **The mistake to avoid here** is going generic on the envelope too.
-`{ templateId: String, data: Json }` throws away five fields that had no
+`{ templateId: String, data: Json }` throws away three fields that had no
 reason to be generic.
 
 ## Case 3 — a report the user configures

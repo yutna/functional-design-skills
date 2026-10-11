@@ -58,6 +58,7 @@ for (const pack of languagePacks) {
 const CHOOSING = 'plugin/skills/functional-choosing-types-or-plain-data'
 const CHOOSING_SKILL = `${CHOOSING}/SKILL.md`
 const CHOOSING_CASES = `${CHOOSING}/references/decision-worked.md`
+const CHOOSING_SCHEMA = `${CHOOSING}/references/schema-as-data.md`
 
 function proseLines (file) {
   return linesOf(stripFences(readRepoFile(file)))
@@ -126,8 +127,9 @@ const FACTS = {
   // itself, counted from its own files; see the note above them.
   workedDecisions: caseHeadings(CHOOSING_CASES),
   genericFacts: tableRowsEndingIn(CHOOSING_SKILL, 'generic'),
-  genericCosts: numberedItemsUnder(
-    CHOOSING_SKILL, '## What the generic route costs'),
+  // The one list of what the generic route costs. No sentence states its
+  // length, so this only has to find the list; a renamed heading throws.
+  genericChecklist: numberedItemsUnder(CHOOSING_SCHEMA, '## Checklist'),
 }
 
 
@@ -193,9 +195,6 @@ const CLAIMS = [
   [CHOOSING_CASES, 'workedDecisions',
     /^## What the ([a-z-]+) cases have in common/m],
   [CHOOSING_SKILL, 'genericFacts', /It\s+has\s+([a-z-]+)\s+exceptions/],
-  [CHOOSING_SKILL, 'genericCosts', /you\s+owe\s+all\s+([a-z-]+)\s+of\s+these/],
-  [CHOOSING_SKILL, 'genericCosts',
-    /pay\s+for\s+all\s+([a-z-]+),\s+model\s+the\s+type/],
 ]
 
 const errors = []

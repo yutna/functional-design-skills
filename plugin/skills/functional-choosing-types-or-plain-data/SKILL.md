@@ -67,7 +67,7 @@ value. Each is a fact about the value, not a judgment about effort.
 | A business rule branches on it               | type    |
 | It appears in an exported signature          | type    |
 | The cases are closed and named by the domain | type    |
-| Getting it wrong costs money or data loss    | type    |
+| A wrong decision costs money or data loss    | type    |
 
 Two of these can be true at once, and then the shape is doing two jobs.
 Split it: see the next section.
@@ -79,17 +79,18 @@ typed envelope around a generic payload.
 
 ```text
 -- the envelope is modelled: these fields are known and branched on
-type FormResponse = {
+type Submission = {
   templateId: TemplateId,
+  templateVersion: SchemaVersion,
   submittedBy: UserId,
-  submittedAt: Instant,
-  answers: Map<FieldKey, JsonValue>,
+  answers: ValidatedAnswers,
 }
 ```
 
 `templateId` is a branded type because code looks it up. `answers` is a
-map because the admin who built the template decided its keys, and no
-code in the system branches on them. Nothing was compromised: every value
+map, wrapped in `ValidatedAnswers` to show the parse ran, because the
+admin who built the template decided its keys, and no code in the system
+branches on them. Nothing was compromised: every value
 got the treatment its own facts called for.
 
 The unit of this decision is a **value, not a module and not a project**.
@@ -98,22 +99,12 @@ The same record routinely has modelled fields and generic ones.
 ## What the generic route costs
 
 The generic route is not the cheap route. It moves the work, it does not
-remove it. Taking it means you owe all four of these:
+remove it. The bill is the
+[checklist](references/schema-as-data.md#checklist) in the reference, and
+it is the only list of what the route costs. A map that entered the
+system unparsed is not data-first; it is untyped.
 
-1. **A schema at the boundary.** One parse, one place, returning
-   `Result`. A map that entered the system unparsed is not data-first; it
-   is untyped.
-2. **Key constants in one module.** String literals for keys, spread
-   across call sites, are the same defect as a status string spread
-   across modules.
-3. **Accessor functions, not path literals.** `answerFor key response`,
-   not `response.answers[key]` written in nine places. This is where the
-   generic route keeps its refactorability.
-4. **A coverage test per dispatch site.** Whatever branches on the data
-   needs a test driven by the list of legal keys, because no compiler
-   will tell you a case is missing.
-
-If you are not going to pay for all four, model the type instead. The
+If you are not going to pay all of it, model the type instead. The
 type is cheaper than a half-done generic representation.
 
 ## The boundary is still a parse
@@ -122,12 +113,14 @@ Generic data belongs outside the parse. Inside it, whatever the parse
 produced is what downstream code trusts.
 
 ```text
--- outside: whatever the sender sent
-parseSubmission : Json -> Result<FormResponse, ParseError>
+-- outside: whatever the sender sent, checked against the template
+submit :
+  FormTemplate -> UserId -> Json
+    -> Result<Submission, List<FieldError>>
 
--- inside: answers is still a map, but FormResponse is not Json,
--- and templateId is not a string
-recordSubmission : FormResponse -> AsyncResult<Unit, StoreError>
+-- past the parse, a shell write: answers is still a map, but a
+-- Submission is not Json, and templateId is not a string
+recordSubmission : Submission -> AsyncResult<Unit, StoreError>
 ```
 
 Generic data drifting inward with no parse is the failure

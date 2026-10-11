@@ -20,7 +20,8 @@ in the abstract can always say what happened.
 
 Everyone who knows part of the process in one place, with one shared
 surface. Developers, domain experts, and whoever handles the exceptions,
-because the exceptions are where the design lives.
+because the exceptions are where the design lives. With no room and no
+experts, see [Running it alone](#running-it-alone).
 
 ## Step 1: events, past tense
 
@@ -29,8 +30,9 @@ event.
 
 ```text
 Booking confirmed
+Confirmation sent
 Payment declined
-Shipment dispatched
+Referral letter sent
 Quote expired
 Refund approved
 ```
@@ -58,18 +60,25 @@ and each maps to a different design:
 | Another event        | A reaction: one workflow feeds another |
 | Time passed          | A scheduled process at the edge        |
 
+A reaction starts from the event, and a scheduled process from a tick,
+the event that the time has come. Each is handled as a command is: one
+trigger in, one workflow, events out.
+
 Write the command for the first case, in the imperative: "Confirm booking",
 "Approve refund".
 
 ## Step 4: group into workflows
 
-A workflow is one command, one unit of work, and the events it produces.
-Draw the box.
+A workflow is one command or one event, one unit of work, and the events
+it produces. Draw the box.
 
 ```text
 Confirm booking  ->  [ confirm booking ]  ->  Booking confirmed
-                                      Acknowledgement sent
 ```
+
+The wall also holds "Confirmation sent". The box lists only what the
+workflow decides, and the sending is the work of the handler that
+receives `BookingConfirmed`, so it stays outside.
 
 If a box has two unrelated commands going in, it is two workflows. If a
 box produces an event that nobody consumes, either the event is not real
@@ -93,19 +102,28 @@ Convert directly, without an intermediate document.
 
 ```text
 -- from the wall
-type BookingRequest = { customer: CustomerId,
-                    treatments: NonEmptyList<BookedTreatment> }
+type ConfirmBooking = { patient: PatientId,
+                        treatments: NonEmptyList<BookedTreatment> }
 
 type BookingConfirmed = { booking: Booking, confirmedAt: Instant }
-type BookingRejected = { reason: RejectionReason }
 
 confirmBooking :
-  BookingRequest -> Result<BookingConfirmed, ConfirmBookingError>
+  Instant -> BookingId -> ConfirmBooking
+    -> Result<BookingConfirmed, ConfirmBookingError>
 ```
 
+The shell supplies the instant and the new identifier, and the command
+carries neither. A refusal is the `Error` of the result, so there is no
+separate rejection type. This is the first sketch of `confirmBooking`,
+in the shape the wall suggests. The pipelines skill refines it: the
+input becomes the form nobody has checked, the function takes the
+catalogue it needs, and the result is a list of events. See
+[pipeline-anatomy.md](../../functional-designing-workflow-pipelines/references/pipeline-anatomy.md).
+
 Then read the types back to the room, in English: "confirming a booking takes
-a customer and at least one treatment, and either places the booking or fails
-with one of these reasons". Every correction at this point costs nothing.
+a patient and at least one treatment, and either confirms the booking or
+fails with one of the errors the type names". Every correction at this
+point costs nothing.
 
 ## What to do with the output
 
@@ -121,3 +139,6 @@ If there is no room and no experts available, run the same steps against
 whatever evidence exists: support tickets, log lines, screen flows, the
 API's endpoints. It is weaker, because it captures the current system
 rather than the business, so mark every assumption for confirmation.
+The read-back goes to the user, with the list of assumptions, and the
+order of substitutes is in
+[working-alone.md](../../functional-design/references/working-alone.md).

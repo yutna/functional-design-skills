@@ -17,7 +17,8 @@ the design goal is to make it equal to the number the business permits.
 | `A -> B`            | count B to the power A |
 
 Records multiply, which is why optional fields are expensive: each one
-doubles the state space, and almost all of the new states are illegal.
+multiplies the state space by the count of its type plus one, and almost
+all of the new states are illegal.
 
 ## Worked count
 

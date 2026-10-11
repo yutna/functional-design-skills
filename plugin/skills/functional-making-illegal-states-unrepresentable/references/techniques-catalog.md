@@ -51,16 +51,21 @@ constructor that rejects empty. Build it once, use it everywhere.
 Permits a negative quantity and a percentage of 400.
 
 ```text
-type BookedTreatment = { quantity: Integer, discountPercent: Decimal }
+type BookedTreatment = { code: TreatmentCode, quantity: Integer,
+                         discountPercent: Decimal }
 ```
 
 ```text
-type Quantity = Quantity of Integer        -- 1..1000
+type Quantity = Quantity of Integer        -- at least 1
 type Percent = Percent of Decimal          -- 0..100
-type BookedTreatment = { quantity: Quantity, discount: Percent }
+type BookedTreatment = { code: TreatmentCode, quantity: Quantity,
+                         discount: Percent }
 
 quantity : Integer -> Result<Quantity, RangeError>
 ```
+
+This file gives `BookedTreatment` a discount here, and a unit price under
+"Two fields that must agree".
 
 See
 [functional-constraining-primitive-values](../../functional-constraining-primitive-values/SKILL.md).
@@ -70,28 +75,28 @@ See
 Permits an email address that is a shopping list.
 
 ```text
-type Customer = { email: String }
+type Patient = { email: String }
 ```
 
 ```text
 type EmailAddress = EmailAddress of String
 parseEmail : String -> Result<EmailAddress, EmailError>
-type Customer = { email: EmailAddress }
+type Patient = { email: EmailAddress }
 ```
 
 ## Two identifiers swapped
 
-Permits `transfer(bookingId, customerId)` when the parameters are the other
-way round.
+Permits `transfer patientId bookingId` called with the arguments the
+other way round.
 
 ```text
-transfer : String -> String -> Result<Unit, Error>
+transfer : String -> String -> AsyncResult<Unit, TransferError>
 ```
 
 ```text
-type CustomerId = CustomerId of Uuid
+type PatientId = PatientId of Uuid
 type BookingId = BookingId of Uuid
-transfer : CustomerId -> BookingId -> Result<Unit, Error>
+transfer : PatientId -> BookingId -> AsyncResult<Unit, TransferError>
 ```
 
 ## Wrong pipeline phase
@@ -116,7 +121,7 @@ identity is a coincidence, and it will end.
 Permits a booking with a silently chosen currency.
 
 ```text
-type Money = { amount: Decimal, currency: Currency }   -- default USD
+type Money = { minorUnits: Integer, currency: Currency }  -- default USD
 ```
 
 Remove the default. If the caller does not know the currency, the caller
@@ -124,15 +129,19 @@ is not ready to build `Money`, and a default hides that.
 
 ## Two fields that must agree
 
-Permits `total` disagreeing with the sum of the treatments.
+Permits `total` disagreeing with the sum of the treatments. Here each
+treatment carries the unit price it was booked at.
 
 ```text
-type Booking = { treatments: NonEmptyList<BookedTreatment>, total: Money }
+type BookedTreatment = { code: TreatmentCode, quantity: Quantity,
+                         unitPrice: Satang }
+type Booking = { treatments: NonEmptyList<BookedTreatment>,
+                 total: Satang }
 ```
 
 ```text
 type Booking = { treatments: NonEmptyList<BookedTreatment> }
-total : Booking -> Money            -- derived, never stored
+total : Booking -> Satang           -- derived, never stored
 ```
 
 Store a derived value only when there is a reason it must be frozen, such
@@ -142,7 +151,7 @@ duplicate; it is a different concept, and it deserves its own name:
 
 ## A state that carries no data
 
-Permits `Pending` with leftover fields from a previous state.
+Permits `Queued` with leftover fields from a previous state.
 
 ```text
 type Job = { state: String, result: Option<Output>,
@@ -163,12 +172,12 @@ alias Money = Decimal
 ```
 
 ```text
-type Money = { amount: Decimal, currency: Currency }
+type Money = { minorUnits: Integer, currency: Currency }
 add : Money -> Money -> Result<Money, CurrencyMismatch>
 ```
 
-Where a system genuinely has one currency, encode that: `type Baht =
-Baht of Decimal`, and addition is total again.
+Where a system genuinely has one currency, encode that: `type Satang =
+Satang of Integer`, and addition cannot fail.
 
 ## Optional that means two different things
 
@@ -184,4 +193,6 @@ type Bio = NotProvided | Provided of NonEmptyString
 type Profile = { bio: Bio }
 ```
 
-Whenever an absent value has more than one meaning, name the meanings.
+Whenever an absent value has two meanings and the business needs only one,
+repair it by making the other meaning unbuildable. `NonEmptyString` removes
+"supplied as empty", so `NotProvided` is the only absence left.
