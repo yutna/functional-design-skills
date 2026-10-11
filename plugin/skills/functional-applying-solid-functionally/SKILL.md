@@ -40,8 +40,9 @@ Not for: naming, or judging interface size in isolation.
 ## Core rules
 
 1. Default. **Split by who asks for the change, not by what the code does.** Two
-   calculations that look alike but answer to different stakeholders belong in
-   different modules, whatever the duplication.
+   calculations that look alike and answer to different stakeholders belong in
+   different modules. They are one decision if one person or one event would
+   change them together, and two if different people would.
 2. Default. **Choose the axis of change before choosing the mechanism.** New
    cases and new operations pull in opposite directions. See the expression
    problem below.

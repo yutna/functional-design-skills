@@ -46,7 +46,15 @@ change them independently.
 
 For each function, name the person who would ask for it to change. Two
 names on one module means two modules, unless one of them is clearly
-downstream of the other.
+downstream of the other. The same test tells two copies of a rule apart:
+one person or one event changing both together makes them one decision,
+which one module owns and the other calls; different people changing
+them makes them two rules that agree today.
+
+The requesters come from an owners file, the issue, or the user's
+description. Where none of them says, ask once. Without an answer, keep
+one module and record the assumption; see
+[working-alone.md](../../functional-design/references/working-alone.md).
 
 ### What SRP does not mean
 
