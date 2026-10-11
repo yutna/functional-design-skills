@@ -93,15 +93,16 @@ reason. Achieving it is a design change, not a testing technique. See
 
 A capability is a function type, so a stub is a function. The stub
 belongs to a handler, since only a handler takes a capability. Here the
-handler reads a price list that a rule names, as in
+handler reads a catalogue that a rule names, as in
 [functional-parameterizing-dependencies](../functional-parameterizing-dependencies/SKILL.md):
 
 ```text
-let stubLoadPriceList = \_ -> done (Ok standardPrices)
+let stubLoadCatalogue = \_ -> done (Ok standardCatalogue)
 
-test "prices a booking from the list its rule names" =
-  let result = await (priceFromList stubLoadPriceList validBooking)
-  in expect result toBe (Ok (priceBooking standardPrices validBooking))
+test "prices a booking from the catalogue its rule names" =
+  let result =
+    await (priceFromCatalogue stubLoadCatalogue validBooking)
+  in expect result toBe (Ok pricedAtStandardRates)
 ```
 
 The stub has the capability's type, so the test compiles only if the

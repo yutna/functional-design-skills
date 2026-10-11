@@ -51,12 +51,14 @@ Not for: naming, or judging interface size in isolation.
 4. Rule. **Keep passed-in functions total and faithful.** A substitute that
    throws where the type says `Result`, or that demands more of its input than
    the type states, breaks every caller written against the type.
-5. Default. **Pass functions, not modules.** `GetPrice = TreatmentCode -> Price`
-   is an interface with one member. A repository record with twenty members
+5. Default. **Pass functions, not modules.**
+   `LoadPrice = TreatmentCode -> AsyncResult<Price, StoreError>` is an
+   interface with one member. A repository record with twenty members
    forces every consumer to depend on all twenty.
-6. Rule. **Point dependencies at the domain.** The domain defines the function
-   types it needs; the shell supplies implementations. Nothing in the domain
-   imports the database, the framework, or the transport.
+6. Rule. **Point dependencies at the domain.** The function types a handler
+   takes are declared in the domain's words; the shell supplies
+   implementations. Nothing in the domain imports the database, the
+   framework, or the transport.
 
 ## The expression problem
 
@@ -108,12 +110,12 @@ Narrow dependencies, defined by the domain:
 
 ```text
 -- declared by the domain, in the domain's words
-alias LoadCatalogue = Unit -> AsyncResult<Catalogue, StoreError>
+alias ReadCatalogue = Unit -> AsyncResult<Catalogue, StoreError>
 alias SaveEvents =
   List<ConfirmBookingEvent> -> AsyncResult<Unit, StoreError>
 
 handleConfirmBooking :
-  LoadCatalogue -> SaveEvents -> Instant -> UnvalidatedBooking
+  ReadCatalogue -> SaveEvents -> Instant -> UnvalidatedBooking
     -> AsyncResult<List<ConfirmBookingEvent>, ConfirmBookingFailure>
 ```
 

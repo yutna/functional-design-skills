@@ -51,8 +51,9 @@ Rules:
 
 ## Timing
 
-Time the whole workflow, and separately every call that leaves the
-process.
+Time the whole handler, and separately every call that leaves the
+process. The workflow performs nothing, so the handler is what takes
+the time.
 
 ```text
 time "booking.total"
@@ -77,7 +78,7 @@ Derive each from the event stream.
 | Indicator         | Derived from                        |
 | ----------------- | ----------------------------------- |
 | Success rate      | Confirmed over requested            |
-| Latency at p99    | Duration of the whole workflow      |
+| Latency at p99    | Duration of the whole handler       |
 | Stuck work        | Held with expiry in the past        |
 | Freshness         | Age of the oldest unprocessed event |
 | Correctness drift | Recomputed total versus recorded    |

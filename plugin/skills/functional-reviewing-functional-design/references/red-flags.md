@@ -189,7 +189,7 @@ logs, caches, or writes.
 
 **Costs.** Untestable, unsafe to memoise or parallelise, surprising.
 
-**Repair.** Pass the capability, or return the intent. See
+**Repair.** Pass the value in, or return an instruction. See
 [functional-separating-pure-core-from-shell](../../functional-separating-pure-core-from-shell/SKILL.md).
 
 ### Wide dependency

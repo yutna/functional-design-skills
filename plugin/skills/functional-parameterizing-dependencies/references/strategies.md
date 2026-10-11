@@ -23,7 +23,7 @@ A handler reads everything first, then a pure function decides.
 type RefundContext = {
   now: Instant,
   request: RefundRequest,
-  booking: Option<Booking>,
+  booking: Booking,
   usedThisMonth: Money,
   allowance: Money,
 }
@@ -34,6 +34,7 @@ approveRefund : RefundContext -> Result<RefundApproved, RefundError>
 ```text
 -- shell: the handler's failure type has a case for each way it can fail
 type RefundFailure =
+  | NotFound
   | Refused of RefundError
   | Unavailable of StoreError
 
@@ -45,14 +46,19 @@ handleApproveRefund pool allowance now request =
       (loadBooking pool request.bookingId)
       (loadUsage pool request.patient (monthOf now))
     |> mapError Unavailable
-    |> bind (\(booking, used) ->
-         approveRefund
-           { now, request, booking, usedThisMonth: used, allowance }
-           |> mapError Refused)
+    |> bind (\(found, used) ->
+         toResult NotFound found
+           |> bind (\booking ->
+                approveRefund
+                  { now, request, booking, usedThisMonth: used, allowance }
+                    |> mapError Refused))
 ```
 
-Recording the approval is the same last step in every strategy, and is
-left out. `both` starts the two reads at once; see
+The handler turns a booking that was not found into a case of its own
+failure type, since the context needs a booking. Recording the approval
+is the same last step in every strategy, and is left out. The handler
+takes the connection: it reads once each and has no path worth a stub.
+`both` starts the two reads at once; see
 [effect-alignment.md](../../functional-designing-workflow-pipelines/references/effect-alignment.md).
 
 **Cost:** the usage is read even when the booking is too old.
@@ -70,7 +76,7 @@ through capabilities it takes as parameters.
 
 ```text
 -- core: each check is a rule, and neither reads anything
-checkAge : Instant -> Option<Booking> -> Result<Booking, RefundError>
+checkAge : Instant -> Booking -> Result<Booking, RefundError>
 checkAllowance :
   Money -> Money -> Booking -> RefundRequest
     -> Result<RefundApproved, RefundError>
@@ -87,6 +93,7 @@ handleApproveRefund :
 handleApproveRefund loadBooking loadUsage allowance now request =
   loadBooking request.bookingId
     |> mapError Unavailable
+    |> bind (toResult NotFound)
     |> bind (checkAge now >> mapError Refused)
     |> bind (\booking ->
          loadUsage request.patient (monthOf now)
@@ -96,8 +103,9 @@ handleApproveRefund loadBooking loadUsage allowance now request =
                   |> mapError Refused))
 ```
 
-**Cost:** a stub for each capability in the handler's tests, and the
-order of reads becomes code to test.
+**Cost:** the handler has paths, so it takes the capabilities and not
+the connection, a test stubs each one, and the order of reads becomes
+code to test.
 **Benefit:** nothing is read that the decision does not reach. The usage
 is read only when the age check has passed.
 
@@ -118,7 +126,9 @@ planRefund :
   RefundContext -> Result<NonEmptyList<Instruction>, RefundError>
 ```
 
-The amount appears once, in the instruction that credits it.
+The amount appears once, in the instruction that credits it. The
+instructions are saved with the refund, so that a relay performs them in
+order and can resume after a restart.
 
 **Cost:** an extra type, and a shell that interprets it.
 **Benefit:** the effects are values. They can be logged, tested by
@@ -134,7 +144,7 @@ cares about.
 | -------------------------------------- | ---------------- |
 | All data can be read up front          | Rejection        |
 | What to read depends on a rule         | Parameterization |
-| Reading it all measured too costly     | Parameterization |
+| A read has a known cost, too high      | Parameterization |
 | A check must pass before a read        | Parameterization |
 | Decisions must be replayable           | Rejection        |
 | The effects must be stored or audited  | Interpretation   |

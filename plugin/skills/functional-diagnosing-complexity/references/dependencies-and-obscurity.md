@@ -29,7 +29,7 @@ Related: [functional-modeling-state-machines](../../functional-modeling-state-ma
 The result depends on something not passed in: a clock, an environment
 variable, module-level state, a random source, the current locale.
 
-**Remove it** by passing the value or the capability as a parameter. A
+**Remove it** by passing the value as a parameter. A
 function that takes `now: Instant` is testable and honest; one that calls
 the clock is neither.
 

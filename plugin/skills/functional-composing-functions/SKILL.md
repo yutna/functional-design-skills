@@ -110,13 +110,13 @@ application is how dependencies are supplied.
 
 ```text
 priceBooking :
-  PriceList -> ValidatedBooking -> Result<PricedBooking, PricingError>
+  Catalogue -> ValidatedBooking -> Result<PricedBooking, PricingError>
 
--- apply the value once; the handler read the price list first
-priceWithList = priceBooking priceList
+-- apply the value once; the handler read the catalogue first
+priceFromCatalogue = priceBooking catalogue
 
 -- the result is exactly the shape a step wants
-priced = validated |> bind priceWithList
+priced = validated |> bind priceFromCatalogue
 ```
 
 This is why parameter order matters: dependencies first, data last. With

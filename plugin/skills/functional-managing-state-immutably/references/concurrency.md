@@ -136,7 +136,7 @@ a single writer.
 not help; the retries pile up. Split the state so unrelated work does not
 share a cell.
 
-**External effects.** Two concurrent workflows can both send an email.
+**External effects.** Two concurrent handlers can both send an email.
 Coordination for effects lives in the shell.
 
 **Liveness.** A retry loop under heavy contention can starve. Bound the

@@ -89,7 +89,7 @@ Order parameters from most stable to least stable:
 4. The data being transformed
 
 ```text
-priceBooking : PricingPolicy -> PriceList -> Instant -> Booking -> Priced
+quoteBooking : PricingPolicy -> PriceList -> Instant -> Booking -> Quote
 
 -- a handler: its capability first, then the context for the call
 handleConfirmBooking :
@@ -98,7 +98,7 @@ handleConfirmBooking :
 ```
 
 Every prefix of the first signature is a useful partially applied
-function, and the final shape `Booking -> Priced` is what a pipeline
+function, and the final shape `Booking -> Quote` is what a pipeline
 wants.
 
 ## When to stop composing
