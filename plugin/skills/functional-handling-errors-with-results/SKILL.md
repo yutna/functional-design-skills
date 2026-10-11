@@ -44,9 +44,14 @@ Not for: failures that can be removed by design, which is
 4. Default. **Short-circuit sequential steps; accumulate independent ones.**
    Bind for a pipeline, applicative combination for a form.
 5. Rule. **Convert exceptions at the boundary.** Libraries throw; wrap them
-   once, at the edge, into your own error type.
-6. Rule. **Never encode failure as a magic value.** No empty string, no `-1`, no
-   null. Those hide the branch the type should show.
+   once, at the edge, into your own error type. An exception the adapter
+   cannot classify is returned as an opaque case that callers do not
+   match on; [error-taxonomy.md](references/error-taxonomy.md) says why.
+6. Rule. **Never return a value that stands for a failure the caller must
+   notice.** No empty string, no `-1`, no null. Those hide the branch the
+   type should show. A default that the operation's definition makes
+   ordinary, and that is documented, is not one; see
+   [functional-defining-errors-out-of-existence](../functional-defining-errors-out-of-existence/SKILL.md).
 7. Rule. **Do not log and rethrow.** Return the error; let the edge decide what
    to log, once.
 
@@ -97,24 +102,25 @@ More in [railway.md](references/railway.md).
 
 ## Short-circuit or accumulate
 
-The choice is about who reads the error.
+The choice depends on what the caller can do with the errors.
 
 **Short-circuit** when the steps are sequential and later steps depend on
 earlier ones. Pricing cannot run if validation failed, so reporting both
 failures is meaningless.
 
-**Accumulate** when the checks are independent and a person will fix
-them. A form with four bad fields should report four problems, not one
-per submission.
+**Accumulate** when the checks are independent and the caller can fix
+them in one pass, whether the caller is a person or a program. A form
+with four bad fields should report four problems, not one per
+submission.
 
 ```text
-validateCustomer :
-  UnvalidatedCustomer -> Result<Customer, NonEmptyList<ValidationError>>
-validateCustomer raw =
-  map3 makeCustomer
+validatePatient :
+  UnvalidatedPatient -> Result<Patient, NonEmptyList<ValidationError>>
+validatePatient raw =
+  map3 makePatient
     (parseName raw.name |> toValidation)
     (parseEmail raw.email |> toValidation)
-    (parseAge raw.age |> toValidation)
+    (parseBirthDate raw.birthDate |> toValidation)
 ```
 
 See

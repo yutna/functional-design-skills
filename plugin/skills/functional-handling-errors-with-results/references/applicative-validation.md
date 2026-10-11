@@ -38,11 +38,11 @@ toValidation : Result<A, E> -> Result<A, NonEmptyList<E>>
 ```
 
 ```text
-validateCustomer raw =
-  map3 makeCustomer
+validatePatient raw =
+  map3 makePatient
     (parseName raw.name |> toValidation)
     (parseEmail raw.email |> toValidation)
-    (parseAge raw.age |> toValidation)
+    (parseBirthDate raw.birthDate |> toValidation)
 ```
 
 ## When to accumulate
@@ -56,8 +56,8 @@ validateCustomer raw =
 | A check whose input needs a prior step | Short-circuit |
 | An expensive check after a cheap one   | Short-circuit |
 
-The test: are the checks independent, and will a human fix them? Both
-yes means accumulate.
+The test: are the checks independent, and can the caller fix them in one
+pass, whether a person or a program? Both yes means accumulate.
 
 ## Mixing both in one workflow
 
@@ -114,7 +114,16 @@ between the two passes, accumulation inside each.
 
 Return errors in the order the fields appear in the form, not in the
 order the checks ran. A user reading a list expects it to match what they
-see on screen. Sort at the edge, by `FieldPath`.
+see on screen. A `FieldPath` does not carry that order, so the edge sorts
+by each field's position in the form definition, the list of fields in
+display order that the edge already holds in order to render the form.
+A repeated group such as `treatments[].quantity` appears in that list
+once, and every error under it takes the group's position.
+
+```text
+sortToForm :
+  List<FieldPath> -> List<ValidationError> -> List<ValidationError>
+```
 
 ## Cost
 

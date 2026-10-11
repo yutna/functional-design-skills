@@ -9,7 +9,7 @@ not ask for.
 ## Contents
 
 - [The rule](#the-rule)
-- [The four sizes](#the-four-sizes)
+- [The sizes](#the-sizes)
 - [Over-applying: what it looks like](#over-applying-what-it-looks-like)
 - [Under-applying: what it looks like](#under-applying-what-it-looks-like)
 - [Deciding in the moment](#deciding-in-the-moment)
@@ -22,7 +22,7 @@ not from how interesting it is.** A type that only one function will ever
 see needs almost nothing. A type that appears in an exported signature
 will be read by everyone, forever, and deserves the full treatment.
 
-## The four sizes
+## The sizes
 
 ### An answer, not code you keep
 
@@ -33,8 +33,9 @@ answers "can we". The output is knowledge.
 - Say in the first line what it is and that it is throwaway.
 - Delete it, or move it out of the source tree.
 
-The one rule that still applies: if you keep it, it stops being this
-size, and you re-classify it.
+An answer-sized script is exempt from everything in this pack until it
+is kept. If you keep it, it stops being this size, and you re-classify
+it.
 
 ### One function, inside a module that already exists
 
@@ -53,8 +54,9 @@ reads.
 
 - **Do:** follow the flow's existing pipeline and stage types; add a new
   case to an existing choice type; extend the error union with the
-  failure the feature really introduces; leave the module slightly
-  better than you found it.
+  failure the feature really introduces; never leave the code worse.
+  [functional-programming-strategically](../../functional-programming-strategically/SKILL.md)
+  says what more a change owes.
 - **Do not:** introduce a bounded context, a new aggregate, a second
   error mechanism, or a boundary mapping that the flow does not have.
 - **Watch for the exception:** if the feature does not fit the flow's
@@ -62,24 +64,33 @@ reads.
   restructure rather than to add a flag. See
   [working-in-existing-code.md](../../functional-programming-strategically/references/working-in-existing-code.md).
 
-### A new module, workflow, or context
+### A new module or workflow
 
 The full loop earns its cost here, because the shape you choose is what
 other code will depend on. This is also where designing it twice pays,
 and where the interface deserves a comment written before the body.
 
+### A new bounded context
+
+The full loop, then the language and boundary work in
+[functional-capturing-the-domain](../../functional-capturing-the-domain/SKILL.md)
+and
+[functional-enforcing-consistency-boundaries](../../functional-enforcing-consistency-boundaries/SKILL.md).
+A context is the largest size, so its public shapes are the ones the
+most code will depend on.
+
 ## Over-applying: what it looks like
 
-| Symptom                              | Right size            |
-| ------------------------------------ | --------------------- |
-| A branded type for a local variable  | A plain value         |
-| An aggregate around a config file    | A record and a parser |
-| A `Result` whose error nobody reads  | Return the value      |
-| A workflow pipeline of two steps     | One function          |
-| A bounded context for one screen     | A module              |
-| Dependency parameters never varied   | Call it directly      |
-| A choice type with one case          | Delete the wrapper    |
-| An interface with one implementation | The concrete thing    |
+| Symptom                                       | Right size            |
+| --------------------------------------------- | --------------------- |
+| A branded type for a local variable           | A plain value         |
+| An aggregate around a config file             | A record and a parser |
+| A `Result` whose error nobody reads           | Return the value      |
+| A workflow pipeline of two steps              | One function          |
+| A bounded context for one screen              | A module              |
+| Dependency parameters never varied            | Call it directly      |
+| A one-case choice type, payload unconstrained | Delete the wrapper    |
+| An interface with one implementation          | The concrete thing    |
 
 Each of these adds interface, a name to learn, and a hop to follow, in
 exchange for nothing. The cost is real and it is paid by every future
@@ -110,9 +121,8 @@ Three questions, in order:
 
 1. **Will anything outside this file depend on the shape?** If no, keep
    it plain. If yes, the type and the name matter.
-2. **Can this hold a value the business forbids?** If yes, fix that,
-   whatever the size of the task. This is the one rule that applies at
-   every size.
+2. **Can this hold a value the business forbids?** If yes, fix that.
+   This applies from the one-function size upward.
 3. **Would a reader need to be told something to use it correctly?** If
    yes, put it in the type, the name, or a comment, in that order.
 

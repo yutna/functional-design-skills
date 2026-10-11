@@ -115,10 +115,16 @@ wants.
 
 Break a chain and name an intermediate value when:
 
-- The chain exceeds about four steps
-- An intermediate value has a name a domain expert would use
+- A chain of unnamed steps exceeds about four. A workflow of named
+  steps may run to six, as
+  [functional-designing-workflow-pipelines](../../functional-designing-workflow-pipelines/SKILL.md)
+  says.
+- An intermediate value has a name the business uses, one found in the
+  specification, the ticket, or the codebase;
+  [working-alone.md](../../functional-design/references/working-alone.md)
+  says where else to ask.
 - The same sub-chain appears twice, in which case name and reuse it
-- A reader has asked what the value at step three is
+- A later step in the chain uses the value again
 
 ```text
 -- clearer than one nine-step chain

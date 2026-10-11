@@ -53,8 +53,10 @@ Reading the rows:
   introduce a wrapper type, an error union, or a boundary the module
   does not already have.
 - **A feature in an existing flow.** The idiom is already decided; your
-  job is to fit it and leave the module no worse. New types only where
-  the feature genuinely introduces a new concept.
+  job is to fit it and never leave the code worse.
+  [functional-programming-strategically](../functional-programming-strategically/SKILL.md)
+  says what more a change owes. New types only where the feature
+  genuinely introduces a new concept.
 - **A new module or workflow.** The full loop below is worth its cost,
   because other code is about to depend on the shape you choose.
 - **A new bounded context.** The loop, plus the language and boundary
@@ -190,37 +192,49 @@ matches the project and use it alongside the core skill.
 | How are errors returned?     | Result values, not exceptions           |
 | How does the core get data?  | A handler reads it, and passes values   |
 | What makes an interface good | It hides far more than it reveals       |
-| Does this shape need a type? | Yes, unless its fields come from config |
+| Does this shape need a type? | Yes, unless a listed fact is true of it |
 | When is a design done?       | When the red-flag audit finds none      |
+
+The facts in the shape row are listed in
+[functional-choosing-types-or-plain-data](../functional-choosing-types-or-plain-data/SKILL.md).
 
 ## Red flags
 
 Each is a place to look, not a verdict. Where this codebase states a rule
 of its own, that rule is the answer; elsewhere a flag becomes a finding
-only with evidence -- a measurement, a reproduced bug, or a failing test.
+only with the evidence listed beside it.
 
-- A design decision was made before anyone named the domain concept
-- A type can represent a state the business forbids
-- A function's signature does not say what it can fail with
-- A module's interface is as complicated as its implementation
-- Only one design was considered
+- A design decision was made before anyone named the domain concept.
+  Evidence: a name in the diff that the specification, the ticket, and
+  the glossary do not use.
+- A type can represent a state the business forbids. Evidence: a value
+  of that type that a stated rule refuses, built in a test or an example.
+- A function's signature does not say what it can fail with. Evidence: a
+  `throw`, a null return, or a swallowed error in the body that the
+  signature does not show.
+- A module's interface is as complicated as its implementation.
+  Evidence: the exported signatures and their documentation take about
+  as many lines as the code behind them.
+- Only one design was considered. Evidence: a new module or workflow
+  whose design notes or pull request text list no alternative. A change
+  that follows the module's existing idiom needs no alternative.
 
 ## Further reading
 
 - [notation.md](references/notation.md) is the neutral notation used by
   every core skill in this pack.
 - [design-loop.md](references/design-loop.md) is a worked pass through
-  the seven steps on one small feature.
-- [principles.md](references/principles.md) is every rule in the pack
-  compressed onto one page, for when there is no time to read a skill.
+  the design loop on one small feature.
+- [principles.md](references/principles.md) is a page of the main
+  rules in the pack, for when there is no time to read a skill.
 - [calibration.md](references/calibration.md) is how much of the pack a
   given task actually warrants, and the cost of getting that wrong.
 - [working-alone.md](references/working-alone.md) is what to do where a
   step asks for an expert, a reviewer, or an owner and there is none to
   ask.
 - [essential-and-accidental.md](../functional-diagnosing-complexity/references/essential-and-accidental.md)
-  is the question to ask before any refactor: did we add this
-  complexity, or is it in the problem?
+  is the test that finds candidates for removal before any refactor: did
+  we add this complexity, or is it in the problem?
 
 ## Worked examples
 
@@ -228,11 +242,11 @@ Five end-to-end walkthroughs. Judgment transfers through these better
 than through rules.
 
 - [design-loop.md](references/design-loop.md) — a small feature through
-  all seven steps.
+  the design loop.
 - [a new workflow](../functional-designing-workflow-pipelines/references/worked-example.md)
   — booking an appointment, from event storming to composed code.
 - [a refactor](../functional-refactoring-toward-functional-design/references/worked-refactor.md)
-  — a legacy service moved in ten commits.
+  — a legacy service moved through the ten moves.
 - [a read model](../functional-crossing-io-boundaries/references/worked-read-model.md)
   — a screen where the aggregate rules do not apply.
 - [a long-running process](../functional-making-effects-reliable/references/worked-long-running.md)
