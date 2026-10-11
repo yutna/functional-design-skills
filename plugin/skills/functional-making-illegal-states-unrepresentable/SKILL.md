@@ -53,7 +53,10 @@ optional, which is the defect this skill exists to remove. See
    cannot receive the wrong phase.
 6. Rule. **Never write a guard for a state the type forbids.** If you feel the
    need, either the type is wrong or the guard is dead code pretending to be
-   safety.
+   safety. Where the type cannot express an invariant, an assertion that
+   crashes is correct; see
+   [functional-defining-errors-out-of-existence](../functional-defining-errors-out-of-existence/SKILL.md).
+   This rule is about the states the type does forbid.
 7. Rule. **Accept representable-but-invalid only at the edge**, where data
    really does arrive that way, and convert immediately.
 
@@ -62,34 +65,45 @@ optional, which is the defect this skill exists to remove. See
 Representable and illegal:
 
 ```text
-type Shipment = {
-  status: String,               -- "pending" | "shipped" | "delivered"
-  trackingNumber: Option<String>,
-  shippedAt: Option<Instant>,
-  deliveredAt: Option<Instant>,
-  failureReason: Option<String>,
+type Appointment = {
+  slot: Instant,
+  status: String,       -- "scheduled" | "checked-in" | "completed"
+                        --   | "missed"
+  checkedInAt: Option<Instant>,
+  completedAt: Option<Instant>,
+  summary: Option<VisitSummary>,
+  missedAt: Option<Instant>,
 }
 ```
 
-This permits a delivered shipment with no tracking number, a pending one
-with a delivery date, and a shipped one with a failure reason. Every
+This permits a completed appointment with no check-in time, a scheduled
+one with a completion time, and a checked-in one marked missed. Every
 report, every screen, and every downstream service must decide what to do
 with each of those.
 
 Unrepresentable:
 
 ```text
-type Shipment =
-  | Pending of { requestedAt: Instant }
-  | Shipped of { tracking: TrackingNumber, shippedAt: Instant }
-  | Delivered of { tracking: TrackingNumber, shippedAt: Instant,
-                   deliveredAt: Instant }
-  | Failed of { reason: FailureReason, failedAt: Instant }
+type Scheduled = { slot: Instant }
+type CheckedIn = { slot: Instant, checkedInAt: Instant }
+type Completed = { slot: Instant, checkedInAt: Instant,
+                   completedAt: Instant, summary: VisitSummary }
+type Missed = { slot: Instant, missedAt: Instant }
+
+type Appointment =
+  | IsScheduled of Scheduled
+  | IsCheckedIn of CheckedIn
+  | IsCompleted of Completed
+  | IsMissed of Missed
 ```
 
-A delivered shipment always has a tracking number and both timestamps,
-because there is no way to construct one without them. No consumer checks
-anything; each simply handles four cases.
+A completed appointment always has a check-in time, a completion time
+and a summary, because there is no way to construct one without them.
+No consumer checks anything; each simply handles four cases. A state
+that a transition takes gets its own named record and the case wraps it,
+as
+[functional-modeling-state-machines](../functional-modeling-state-machines/SKILL.md)
+explains.
 
 ## Technique index
 
@@ -105,6 +119,7 @@ anything; each simply handles four cases.
 | Two fields must agree         | One field, derive the other |
 | A state with no data          | Case with no payload        |
 | Money in mixed currencies     | Currency inside the type    |
+| Optional with two meanings    | Remove one meaning          |
 
 Each is expanded in
 [techniques-catalog.md](references/techniques-catalog.md).
@@ -117,10 +132,12 @@ arrives. The pattern is:
 
 ```text
 -- edge: everything is possible here
-parseShipmentUpdate : Payload -> Result<ShipmentUpdate, ParseError>
+parseAppointmentUpdate :
+  Payload -> Result<AppointmentUpdate, ParseError>
 
 -- inside: nothing is possible except what the domain allows
-applyUpdate : ShipmentUpdate -> Shipment -> Result<Shipment, UpdateError>
+applyUpdate :
+  AppointmentUpdate -> Appointment -> Result<Appointment, UpdateError>
 ```
 
 One place converts the possible into the legal. Everything past it is
