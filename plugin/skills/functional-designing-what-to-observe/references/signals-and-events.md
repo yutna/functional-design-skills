@@ -18,7 +18,7 @@ anything added later, because it was reviewed by someone who understands
 the business.
 
 ```text
-type BookingEvent =
+type BookingSignal =
   | BookingRequested of { key: CommandId, patient: PatientId }
   | SlotHeld of { key: CommandId, slot: SlotId, expires: Instant }
   | BookingConfirmed of { key: CommandId, booking: BookingRef,
@@ -26,8 +26,17 @@ type BookingEvent =
   | BookingRejected of { key: CommandId, reason: BookingError }
 ```
 
+`BookingSignal` is what the shell records, not what the core returns.
+The workflow returns `SlotHeld` and `BookingConfirmed` as events on
+success. A refusal is the `Error` side of its result, and the shell
+builds `BookingRejected` from it. The shell builds `BookingRequested`
+when the command arrives. One function matches on the result and the
+command and records the signals.
+
 Each projection below reads this one stream. Nothing new is invented in
-the domain to serve the operator.
+the domain to serve the operator. The core's events carry no time, since
+the clock reaches it as a parameter, so the shell stamps each signal with
+the time it records it.
 
 ## Counting
 
@@ -37,7 +46,14 @@ follow from it mechanically.
 ```text
 count "booking.requested"
 count "booking.confirmed"
-count "booking.rejected" { reason: tagOf error }
+count "booking.rejected" { reason: rejectionLabel error }
+
+rejectionLabel : BookingError -> String
+rejectionLabel error =
+  match error with
+  | SlotUnavailable -> "slot_unavailable"
+  | PatientNotEligible -> "patient_not_eligible"
+  | Pricing _ -> "pricing"
 ```
 
 Rules:
@@ -46,8 +62,9 @@ Rules:
   stable. Never with the identifiers inside it.
 - Count attempts and outcomes, so a success rate is derivable. A counter
   of failures alone cannot answer "is this worse than usual".
-- Add the counter when the case is added. Exhaustive matching over the
-  error type is what makes that automatic.
+- Add the counter when the case is added. The match in `rejectionLabel`
+  makes that automatic: a new case does not compile until it has a
+  label. A generic helper that reads the case name offers no such check.
 
 ## Timing
 
@@ -73,15 +90,16 @@ See
 ## Indicators worth having
 
 An indicator is a number that tracks something a user would notice.
-Derive each from the event stream.
+Derive each from the signals the shell records, and from the timer
+around the handler.
 
-| Indicator         | Derived from                        |
-| ----------------- | ----------------------------------- |
-| Success rate      | Confirmed over requested            |
-| Latency at p99    | Duration of the whole handler       |
-| Stuck work        | Held with expiry in the past        |
-| Freshness         | Age of the oldest unprocessed event |
-| Correctness drift | Recomputed total versus recorded    |
+| Indicator         | Derived from                         |
+| ----------------- | ------------------------------------ |
+| Success rate      | Confirmed over requested             |
+| Latency at p99    | Duration of the whole handler        |
+| Stuck work        | Held with expiry in the past         |
+| Freshness         | Age of the oldest unprocessed signal |
+| Correctness drift | Recomputed total versus recorded     |
 
 The last two are the ones teams usually lack. Freshness is what tells you
 a consumer has fallen behind before anyone notices stale data, and a
@@ -99,6 +117,11 @@ avoid noise.
 | p99 above budget, sustained        | One slow request     |
 | Oldest unprocessed item over 5 min | Queue depth over 100 |
 | Dead-letter count rising           | A handler threw      |
+
+A fixed threshold on a resource number, such as a queue depth over 100,
+is the bad alert. A sustained trend that a user will feel is not: a
+depth that keeps rising for ten minutes means the oldest item is ageing,
+which the good alert above already measures.
 
 An expected domain outcome is not an incident. `SlotUnavailable` is the
 system working; a rising _rate_ of it may still be worth knowing about,

@@ -37,22 +37,27 @@ Not for: choosing what an interface exposes to callers, which is
 ## Core rules
 
 1. Default. **Write the questions first.** "Why did this booking fail?", "How
-   many bookings are stuck?", "Is checkout slower than yesterday?" The fields
+   many bookings are stuck?", "Is booking confirmation slower than
+   yesterday?" The fields
    follow from the questions; the reverse produces data nobody uses.
 2. Default. **Emit domain events, not log lines.** The workflow already returns
-   what happened. The shell projects those into whatever the platform wants.
-3. Rule. **Log once, at the edge.** A step that logs and returns an error
-   produces two records of one event and buries the useful one.
-4. Default. **Correlate at the edge.** Create one identifier per request or
-   message, carry it as a value, and attach it where records are written. Carry
-   the identifier, never a context object that accumulates.
+   what happened: events on success, and the error on a refusal. The shell
+   projects the result into whatever the platform wants.
+3. Rule. **Record each event once.** A step that logs and returns an error
+   produces two records of one event and buries the useful one. The shell
+   records it, once, where it handles the result.
+4. Default. **Correlate at the edge.** Adopt the identifier the caller sent,
+   and create one only where the work enters the system. Carry it as a value,
+   and attach it where records are written. Carry the identifier, never a
+   context object that accumulates.
 5. Default. **Structured errors are already structured logs.** The error type
    built for callers has the case, the identifiers, and the values. Do not
    flatten it to a sentence before recording it.
-6. Rule. **Never record secrets or personal data.** Decide this at the type
-   level, so a careless serialisation cannot leak it.
-7. Default. **Alert on what users feel**, not on what a machine noticed. Queue
-   depth trending up and the oldest unprocessed item beat processor utilisation.
+6. Rule. **Never record secrets, or personal data beyond an identifier.**
+   Decide this at the type level, so a careless serialisation cannot leak it.
+7. Default. **Alert on what users feel**, not on what a machine noticed. The
+   oldest unprocessed item, or a queue depth that keeps rising, beats processor
+   utilisation. A fixed threshold on a resource number is the alert to avoid.
 
 ## Pattern
 
@@ -73,20 +78,31 @@ what it records was chosen by whoever was debugging that week.
 Observability as a projection of events:
 
 ```text
--- core: unchanged, pure, returns what happened
-priceBooking : Catalogue -> ValidatedBooking -> Result<PricedBooking, Error>
+-- core: pure, and its result says what was decided
+priceBooking :
+  Catalogue -> ValidatedBooking -> Result<PricedBooking, PricingError>
 
-type BookingEvent =
-  | BookingPriced of { booking: BookingId, total: Money, treatments: Integer }
-  | PricingRejected of { booking: BookingId, reason: PricingError }
-
--- shell: one projection, in one place
-record : CorrelationId -> BookingEvent -> Async<Unit>
+-- shell: one projection of both sides of the result, in one place
+recordPricing :
+  CorrelationId -> BookingId -> Result<PricedBooking, PricingError>
+    -> Async<Unit>
+recordPricing correlation booking result =
+  match result with
+  | Ok priced ->
+      emit correlation "booking.priced"
+        { booking, total: priced.total, treatments: size priced.lines }
+  | Error reason ->
+      emit correlation "booking.pricing_rejected"
+        { booking, reason }
 ```
 
 Every record now has the same shape, the same identifiers, and the same
-vocabulary as the business. Adding a field is a change to one type, and
-the compiler lists the projections that must handle it.
+vocabulary as the business. Adding a field is a change to one function.
+A refusal is the `Error` side of the result, so the shell derives its
+record there; the core returns no rejection event. Where a projection
+matches over the cases of the error, as in
+[signals-and-events.md](references/signals-and-events.md), a new case
+does not compile until that projection handles it.
 
 ## What each signal answers
 
@@ -121,7 +137,7 @@ something the operator needs.
 - The same event logged in the step and again at the edge
 - An error flattened to a string before it is recorded
 - A metric labelled with an identifier
-- An alert on a resource number rather than a user-visible symptom
+- An alert on a fixed resource threshold rather than a user-visible symptom
 - An incident report saying "we could not tell from the logs"
 - Personal data or a token in a recorded payload
 - Observability added only to the code that broke last

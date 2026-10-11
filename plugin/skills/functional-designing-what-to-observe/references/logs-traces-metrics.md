@@ -21,9 +21,10 @@ one for another's job is the most common waste.
 
 ## Where the projection is written
 
-The core returns events; something in the shell turns each one into the
-three signals above. That something is one function per signal, and the
-instrumentation library decides only how it is delivered.
+The core returns events, or an error; something in the shell turns each
+result into the three signals above. That something is one function per
+signal, and the instrumentation library decides only how it is
+delivered.
 
 | Stack                  | What the shell calls                        |
 | ---------------------- | ------------------------------------------- |
@@ -45,15 +46,21 @@ log line there.
 
 ## Correlation
 
-One identifier per unit of work, created at the edge, carried as a value.
+One identifier per unit of work, adopted or created at the edge, carried
+as a value.
 
 ```text
 type CorrelationId = CorrelationId of Uuid
 
--- edge: create it, or adopt the one the caller sent
-correlationFor : Request -> CorrelationId
+-- pure: the identifier the caller sent, if there is one
+adoptCorrelation : Request -> Option<CorrelationId>
+
+-- shell: draws a new one, so it has an effect type
+newCorrelation : Unit -> Async<CorrelationId>
 ```
 
+The entry handler uses the adopted identifier, and calls
+`newCorrelation` only when there is none.
 Rules:
 
 1. **Adopt an incoming identifier if there is one**, so a request can be
@@ -82,6 +89,7 @@ has the structure.
 log.error("booking failed: " + show error)
 
 -- good: the case and its fields survive
+-- (BookingSignal is in signals-and-events.md)
 record correlation (BookingRejected { key, reason }) =
   emit {
     event: "booking.rejected",
@@ -138,17 +146,25 @@ Decide this in the type system, not in a code review.
 - Personal data beyond an identifier: names, addresses, health facts
 - Whole request or response bodies from a domain with any of the above
 
+An error's values reach the record through `fieldsOf`. A value in an
+error that can hold personal data, such as a name or a date of birth, is
+wrapped in the redacting type below, so `fieldsOf` renders it redacted.
+
 Ways to enforce it rather than remember it:
 
 ```text
--- a wrapper whose rendering is redacted, everywhere, by construction
+-- a wrapper whose rendering is redacted
 type Secret<T> = Secret of T
 render : Secret<T> -> String
 render _ = "[redacted]"
 ```
 
-If the domain type cannot be rendered, no serialiser can leak it by
-accident. That is the same move as
+`render` redacts only where it is called. The wrapper holds
+everywhere only if it also hides its constructor and hooks the
+language's own printing and serialising protocol, so that a reflective
+serialiser or a plain print reaches `render` and not the value. With
+that done, no serialiser can leak it by accident. That is the same move
+as
 [functional-constraining-primitive-values](../../functional-constraining-primitive-values/SKILL.md):
 put the rule in the type so it cannot be skipped.
 
