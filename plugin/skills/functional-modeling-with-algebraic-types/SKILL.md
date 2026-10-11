@@ -41,10 +41,12 @@ Not for: enforcing value ranges on a single primitive, which is
    only in one state belongs inside that state's case, not beside it.
 3. Default. **Replace booleans that mean something.** A boolean carries one bit
    and no name. A two-case choice type carries a name, and can grow data.
-4. Rule. **Match exhaustively.** Every case handled, no wildcard, so adding a
-   case produces a list of places to think about.
+4. Rule. **Match exhaustively.** Name every case, and let no arm return a
+   value for a case it does not name, so adding a case produces a list of
+   places to think about. A last arm that crashes on an unknown tag
+   returns nothing, so it is outside this rule.
 5. Default. **Compose, do not flatten.** Build big types from small named ones.
-   `Booking` holding `CustomerInfo` and `ShippingAddress` reads better and
+   `Booking` holding `PatientInfo` and `ClinicLocation` reads better and
    changes better than twenty fields in a row.
 6. Rule. **Name every case and every field in the domain's words.** The type is
    the documentation; see
@@ -79,9 +81,11 @@ type Payment =
   | Transfer of { bank: BankCode, reference: TransferRef }
 ```
 
-Sixteen representable states become three. Every field is present exactly
-when it applies, no consumer checks anything, and the compiler or the
-test suite enumerates the cases when a fourth method appears.
+Sixteen combinations of present and absent fields become three shapes.
+Every field is present exactly when it applies, no consumer checks
+anything, and the compiler or the test suite enumerates the cases when
+a fourth method appears. The count with the values included is in
+[type-algebra.md](references/type-algebra.md).
 
 ## Composition
 
@@ -133,7 +137,7 @@ illegal combinations from the code that matters.
 
 - Two or more optional fields whose presence is correlated
 - A comment listing which fields apply in which case
-- A `type` or `kind` field of type string
+- A `type` or `kind` string field, in a language that has a choice type
 - A boolean whose name needs a comment to explain
 - Consumers that check a field before reading another field
 - A wildcard case in a match over a domain type
