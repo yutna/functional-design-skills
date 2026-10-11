@@ -45,8 +45,8 @@ which is
    world learns. That triple is the unit of design. See
    [functional-designing-workflow-pipelines](../functional-designing-workflow-pipelines/SKILL.md).
 4. Rule. **Draw a context boundary wherever a word changes meaning.** If
-   "customer" means a billing account here and a person there, those are two
-   contexts, and the two `Customer` types must be different types.
+   "patient" means a billing account here and a person there, those are two
+   contexts, and the two `Patient` types must be different types.
 5. Rule. **Never share a model by accident.** Every pair of contexts has
    a relationship that was chosen and is written down. Usually it is a
    translation at the border, in one place; a small kernel owned by both

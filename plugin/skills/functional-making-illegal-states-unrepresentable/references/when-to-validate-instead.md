@@ -38,7 +38,7 @@ abandoned; a booking may not.
 
 ```text
 type DraftBooking = {
-  customer: Option<CustomerId>,
+  patient: Option<PatientId>,
   treatments: List<DraftTreatment>,
   updatedAt: Instant,
 }

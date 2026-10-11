@@ -52,7 +52,8 @@ are [functional-designing-workflow-pipelines](../functional-designing-workflow-p
 6. Default. **Keep the union for storage and dispatch only.** Business functions
    take the specific case they operate on.
 7. Default. **Draw the table before writing code.** States down, commands
-   across, cells are the outcome. Cells marked illegal are the illegal transitions.
+   across, cells are the outcome. Cells marked illegal are the illegal
+   transitions.
 
 ## Pattern
 
@@ -137,10 +138,10 @@ The union exists so that storage, transport, and user interfaces can hold
 specific state once, at the point a command arrives:
 
 ```text
-handleAccept :
+dispatchAccept :
   Instant -> PatientId -> BookingId -> Quote
     -> Result<Accepted, AcceptError>
-handleAccept now who booking quote =
+dispatchAccept now who booking quote =
   match quote with
   | IsSent s -> accept now who booking s
   | IsDraft _ -> Error QuoteNotSent

@@ -107,15 +107,17 @@ type ConfirmBooking = { patient: PatientId,
 
 type BookingConfirmed = { booking: Booking, confirmedAt: Instant }
 
-decideConfirmation :
+confirmBooking :
   Instant -> BookingId -> ConfirmBooking
     -> Result<BookingConfirmed, ConfirmBookingError>
 ```
 
 The shell supplies the instant and the new identifier, and the command
 carries neither. A refusal is the `Error` of the result, so there is no
-separate rejection type. This is the shape the wall suggests; the
-pipeline skill gives the full signature in
+separate rejection type. This is the first sketch of `confirmBooking`,
+in the shape the wall suggests. The pipelines skill refines it: the
+input becomes the form nobody has checked, the function takes the
+catalogue it needs, and the result is a list of events. See
 [pipeline-anatomy.md](../../functional-designing-workflow-pipelines/references/pipeline-anatomy.md).
 
 Then read the types back to the room, in English: "confirming a booking takes

@@ -147,6 +147,7 @@ Two properties worth testing directly:
   forward, assert there is no path from a later state back to an earlier
   one.
 
-Both are easy to express as property tests over a generated command
-sequence. See
-[functional-testing-functional-code](../../functional-testing-functional-code/SKILL.md).
+The first is shown by an example for each state: one sequence of
+commands that ends in it. The second is a property over generated
+command sequences; see "Stateful property testing" in
+[property-testing.md](../../functional-testing-functional-code/references/property-testing.md).

@@ -96,11 +96,11 @@ type Contact = Email of EmailAddress | Phone of PhoneNumber
             | Both of { email: EmailAddress, phone: PhoneNumber }
 
 -- composed, still readable at a glance
-type Customer = { name: PersonalName, contact: Contact }
+type Patient = { name: PersonalName, contact: Contact }
 ```
 
 `Both` exists because the domain has three states, not two optional
-fields. Reading the type answers "can a customer have neither?" without
+fields. Reading the type answers "can a patient have neither?" without
 opening a single function.
 
 ## Quick reference

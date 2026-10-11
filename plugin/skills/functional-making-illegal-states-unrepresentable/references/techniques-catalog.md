@@ -75,13 +75,13 @@ See
 Permits an email address that is a shopping list.
 
 ```text
-type Customer = { email: String }
+type Patient = { email: String }
 ```
 
 ```text
 type EmailAddress = EmailAddress of String
 parseEmail : String -> Result<EmailAddress, EmailError>
-type Customer = { email: EmailAddress }
+type Patient = { email: EmailAddress }
 ```
 
 ## Two identifiers swapped
