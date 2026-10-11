@@ -74,14 +74,14 @@ exists to work around a language that cannot match on a value's case.
 Where matching is available, use it.
 
 ```text
-type Shape = Circle of Radius | Rect of W * H | Triangle of B * H
+type Shape = Circle of Radius | Rect of (W, H) | Triangle of (B, H)
 
 area : Shape -> Area
 area s =
   match s with
   | Circle r -> pi * r * r
-  | Rect w h -> w * h
-  | Triangle b h -> b * h / 2
+  | Rect (w, h) -> w * h
+  | Triangle (b, h) -> b * h / 2
 ```
 
 **Observer becomes returned events.** Instead of registering callbacks

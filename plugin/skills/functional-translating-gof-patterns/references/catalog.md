@@ -49,10 +49,12 @@ type Command =
   | ConfirmBooking of BookingRequest
   | CancelBooking of { id: BookingId, reason: Reason }
 
-execute : Command -> AsyncResult<List<Event>, Error>
+decide : Command -> Result<List<BookingEvent>, CommandError>
 ```
 
-Still worth naming. A command as data is the basis of queues, audit
+`decide` is the pure workflow. The handler that receives a `Command` is
+shell: it reads what `decide` needs, calls it, and writes what it
+returns. Still worth naming. A command as data is the basis of queues, audit
 trails, and replay.
 
 ## Factory and Abstract Factory
@@ -89,7 +91,9 @@ runImport : (Row -> Result<A, E>) -> (A -> AsyncResult<Unit, E>)
 ```
 
 Pass the varying steps. Inheritance is not needed and couples the caller
-to a base type.
+to a base type. `runImport` is a handler, so it is shell: the
+`Row -> Result<A, E>` argument is the pure part, and the function itself
+and the write it is given perform the effects.
 
 ## Decorator
 
@@ -187,8 +191,9 @@ structure.
 Exhaustive matching, or a fold that takes one function per case:
 
 ```text
-type Shape = Circle of Radius | Rect of W * H | Triangle of B * H
-foldShape : (Radius -> R) -> (W -> H -> R) -> (B -> H -> R) -> Shape -> R
+type Shape = Circle of Radius | Rect of (W, H) | Triangle of (B, H)
+foldShape :
+  (Radius -> R) -> ((W, H) -> R) -> ((B, H) -> R) -> Shape -> R
 ```
 
 The double dispatch of the object-oriented version exists to work around
