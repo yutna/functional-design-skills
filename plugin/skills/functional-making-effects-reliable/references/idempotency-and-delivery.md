@@ -18,14 +18,19 @@ first attempt and reused on every retry.
 ```text
 type BookingRequest = {
   key: CommandId,          -- created by the client, stable across retries
-  customer: CustomerId,
-  treatments: NonEmptyList<BookedTreatment>,
+  patient: PatientId,
+  slot: SlotId,
+  card: CardToken,
+  amount: Money,
 }
 ```
 
-A key is needed where the command's effects cross a process boundary. A
-command whose whole effect is one transaction in one database needs
-none.
+A key is needed where the command's effects cross a process boundary.
+Where the whole effect is one transaction in one database, a repeat
+matters only if it would be a second effect: a second booking, and not a
+second cancellation. A unique constraint in that transaction is then
+enough, on a key the caller sends or on the fields that identify the
+thing, such as the patient and the slot.
 
 Rules:
 
@@ -50,7 +55,8 @@ The adapter, not the domain function, is what must tolerate repetition.
 ```text
 -- first call performs the charge and records the key
 -- later calls with the same key return the recorded receipt
-charge : EffectKey -> Card -> Money -> AsyncResult<Receipt, ChargeError>
+charge :
+  EffectKey -> CardToken -> Money -> AsyncResult<Receipt, ChargeError>
 ```
 
 Three implementations, in order of preference:
@@ -59,13 +65,13 @@ Three implementations, in order of preference:
 an idempotency key. Pass yours through; do not invent a second scheme on
 top.
 
-**A unique constraint.** Insert a row keyed by the command identifier in
-the same transaction as the effect. A duplicate insert fails, and the
+**A unique constraint.** Insert a row keyed by the effect's key in the
+same transaction as the effect. A duplicate insert fails, and the
 failure is the de-duplication.
 
 ```text
 -- second attempt violates the unique index and returns the first result
-insert into command_log (key, result) values (?, ?)
+insert into effect_log (key, result) values (?, ?)
 ```
 
 **A recorded outcome.** Write the key and the outcome after the effect
@@ -85,7 +91,7 @@ the state change, and relay them afterwards.
 ```text
 saveBookingAndEvents :
   EffectKey -> Booking -> List<BookingEvent>
-    -> AsyncResult<Unit, SaveError>
+    -> AsyncResult<Unit, StoreError>
 -- one transaction: the booking rows and the outbox rows, the key being
 -- the unique key of the outbox rows
 
@@ -127,9 +133,10 @@ A queue elsewhere cannot, and still needs an outbox table:
 On the consumer side of an Elixir stream, `broadway` is the usual
 choice.
 
-The Elixir case is the one worth reading twice: `Oban.insert/3` puts the
-job into an `Ecto.Multi`, so the job row and the state change commit
-together and the outbox table is the jobs table.
+The Elixir case is the one worth reading twice: `Oban.insert/5`, called
+below with its defaults, puts the job insert into an `Ecto.Multi`, so
+the job row and the state change commit together and the outbox table
+is the jobs table.
 
 ```elixir
 Ecto.Multi.new()
@@ -152,15 +159,18 @@ A consumer that is not idempotent turns at-least-once delivery into
 duplicate work.
 
 ```text
-handle : EventId -> Event -> AsyncResult<Unit, HandlerError>
-handle id event =
+receiveOnce : EventId -> Event -> AsyncResult<Unit, HandlerError>
+receiveOnce id event =
   ifNotSeen id (\_ -> process event)
 ```
 
-Options for `ifNotSeen`, matching the adapter options above: a unique
-constraint on the event identifier, a bounded set of recent identifiers,
-or an effect that is naturally idempotent (setting a value rather than
-incrementing one).
+Options for `ifNotSeen`, strongest first: a unique constraint on the
+event identifier, written in the same transaction as the handler's own
+change, as [worked-long-running.md](worked-long-running.md) does; an
+effect that is naturally idempotent (setting a value rather than
+incrementing one); or a bounded set of recent identifiers, which lets
+through a duplicate older than the set and so suits only work that can
+bear one.
 
 Prefer naturally idempotent handlers where the domain allows it.
 `setStatus(paid)` needs no de-duplication; `addPayment(amount)` does.

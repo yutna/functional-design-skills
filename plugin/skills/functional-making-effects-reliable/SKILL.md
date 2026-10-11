@@ -42,7 +42,9 @@ that skill covers the in-process case in full.
 1. Rule. **Give every command whose effects cross a process boundary an
    identity.** A client-supplied key, carried through the workflow, is
    what makes de-duplication possible at all. A command whose whole
-   effect is one transaction in one database needs no key.
+   effect is one transaction in one database is outside this rule: where
+   a repeat of it would matter, a unique constraint in that transaction
+   is enough.
 2. Rule. **Make the effect idempotent, not the decision.** The pure core is
    already safe to repeat; the write, the charge, and the send are not.
    Idempotency belongs in the adapter.
@@ -73,10 +75,10 @@ Unreliable: three effects, three failure points, no identity.
 
 ```text
 -- one error type, StepError, all the way along
-confirmBooking cmd =
-  charge cmd.card cmd.amount         -- may time out after succeeding
-    |> bind (saveBooking cmd)        -- may fail after the charge
-    |> bind publishBookingConfirmed  -- may be lost entirely
+bookPaidAppointment request =
+  charge request.card request.amount   -- may time out after succeeding
+    |> bind (saveBooking request)      -- may fail after the charge
+    |> bind publishBookingConfirmed    -- may be lost entirely
 ```
 
 A timeout on `charge` leaves nobody knowing whether money moved. A
@@ -88,6 +90,7 @@ Reliable: an identity, an idempotent adapter for each effect, and one
 transaction.
 
 ```text
+type CommandId = CommandId of String
 type BookingRequest = { key: CommandId, ... }   -- supplied by the caller
 
 -- each effect gets a key of its own, derived from the command's key
@@ -96,13 +99,14 @@ effectKey : CommandId -> String -> EffectKey
 effectKey (CommandId key) operation = EffectKey (join ":" [operation, key])
 
 -- every adapter takes its effect key and is idempotent on it
-charge : EffectKey -> Card -> Money -> AsyncResult<Receipt, ChargeError>
+charge :
+  EffectKey -> CardToken -> Money -> AsyncResult<Receipt, ChargeError>
 
 -- state and outbox rows written together, relayed afterwards; the key
 -- is the unique key of the outbox rows
 saveBookingAndEvents :
   EffectKey -> Booking -> List<BookingEvent>
-    -> AsyncResult<Unit, SaveError>
+    -> AsyncResult<Unit, StoreError>
 ```
 
 The shell calls `effectKey key "charge"` for the charge and
@@ -133,8 +137,7 @@ down beside the consumer.
 
 | Concern           | Layer                                    |
 | ----------------- | ---------------------------------------- |
-| Command identity  | Created by the caller before the first   |
-|                   | attempt, carried through                 |
+| Command identity  | The caller, before its first attempt     |
 | Idempotency       | The adapter that performs the effect     |
 | Retry and timeout | The shell, bounded                       |
 | De-duplication    | The consumer, on receipt                 |
@@ -143,10 +146,11 @@ down beside the consumer.
 | Backpressure      | The shell, from queue depth              |
 
 The command's key is the one identifier the shell does not generate: a
-key made on the server changes on every retry. The effects in that
-table are the shell's. The decisions about them, when to compensate and
-which deadline applies, are pure and live in `advance`, the transition
-function of the process (see
+key made on the server changes on every retry. The shell performs
+every effect behind that table and bounds every wait. What an outcome
+leads to is decided in the core: `advance`, the transition function of
+the process, says when to compensate and what follows a wait that ran
+out (see
 [compensating-workflows.md](references/compensating-workflows.md)). The
 core stays a function from values to a decision. See
 [functional-separating-pure-core-from-shell](../functional-separating-pure-core-from-shell/SKILL.md).
