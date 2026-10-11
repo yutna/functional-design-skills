@@ -21,8 +21,12 @@ The design rules do not change. What changes is that the compiler now
 enforces most of them, including which dependencies a piece of code
 needs, which is the one thing plain TypeScript cannot check.
 
-**Check the installed version before writing code.** Effect's API has
-changed across major versions; the shapes below target Effect 3.
+**Check the installed version before writing code.** Read the major of
+`effect` from the lock file or from `node_modules/effect/package.json`.
+The examples in this file hold on Effect 3 and on Effect 4. The three
+references are written for Effect 3. On Effect 4, read
+[effect-4.md](references/effect-4.md) first, and then the package's own
+`AGENTS.md`.
 
 ## When to use
 
@@ -35,18 +39,18 @@ Not for: TypeScript without Effect, which has
 
 ## Notation mapping
 
-| Neutral notation      | Effect                                        |
-| --------------------- | --------------------------------------------- |
-| `A -> B`              | A plain function; keep it plain               |
-| `Result<T, E>`        | `Either<T, E>`, or `Effect<T, E>`             |
-| `Option<T>`           | `Option<T>`                                   |
-| `AsyncResult<T, E>`   | `Effect<T, E>`                                |
-| A declared dependency | `Context.Tag`, provided by a `Layer`          |
-| Choice type           | Discriminated union, or `Data.TaggedEnum`     |
-| Single-case wrapper   | `Schema.brand`                                |
-| `>=>` composition     | `Effect.flatMap` in a `pipe`, or `Effect.gen` |
-| Boundary parse        | `Schema.decodeUnknown`                        |
-| Exhaustive match      | `Match.exhaustive`                            |
+| Neutral notation      | Effect                                           |
+| --------------------- | ------------------------------------------------ |
+| `A -> B`              | A plain function; keep it plain                  |
+| `Result<T, E>`        | `Either` on 3, `Result` on 4, or `Effect<T, E>`  |
+| `Option<T>`           | `Option<T>`                                      |
+| `AsyncResult<T, E>`   | `Effect<T, E>`                                   |
+| A declared dependency | A service class, provided by a `Layer`           |
+| Choice type           | Discriminated union, or `Data.TaggedEnum`        |
+| Single-case wrapper   | `Schema.brand`                                   |
+| `>=>` composition     | `Effect.flatMap` in a `pipe`, or `Effect.gen`    |
+| Boundary parse        | `decodeUnknown` on 3, `decodeUnknownEffect` on 4 |
+| Exhaustive match      | `Match.exhaustive`                               |
 
 ## Core rules
 
@@ -68,7 +72,7 @@ Not for: TypeScript without Effect, which has
 ## Pattern
 
 ```ts
-import { Context, Data, Effect, Layer, Schema } from "effect";
+import { Data, Effect, Layer, Schema } from "effect";
 
 // errors: tagged, matchable, in the signature
 class SlotUnavailable extends Data.TaggedError("SlotUnavailable")<{
@@ -79,13 +83,8 @@ class PatientNotFound extends Data.TaggedError("PatientNotFound")<{
   readonly patient: PatientId;
 }> {}
 
-// a dependency, declared by the domain in the domain's words
-class Slots extends Context.Tag("Slots")<
-  Slots,
-  {
-    readonly hold: (slot: SlotId) => Effect.Effect<SlotHold, SlotUnavailable>;
-  }
->() {}
+// a dependency the domain declares in its own words: `Slots`, a service
+// with one operation, `hold`, that fails with `SlotUnavailable`
 
 // the workflow: success, failure, and requirements are all in the type
 const bookAppointment = (
@@ -103,6 +102,10 @@ The signature states the whole contract: what it produces, how it fails,
 and what it needs. That is
 [functional-designing-workflow-pipelines](../functional-designing-workflow-pipelines/SKILL.md)
 with the compiler checking it.
+
+Declaring `Slots` is the one part of this example that differs by major.
+[layers-and-services.md](references/layers-and-services.md) shows it on
+Effect 3, and [effect-4.md](references/effect-4.md) shows it on Effect 4.
 
 ## Providing dependencies
 
@@ -148,10 +151,12 @@ produces a static type. Where other stacks force a choice, here the
 schema _is_ the separated schema and the type at once.
 
 The default is still to model the shape. When a field set is decided
-outside the code — config, tenant, admin — reach for
-`Schema.Record({ key: FieldKey, value: Schema.Unknown })` behind a
-branded wrapper rather than generating a union of every field. The
-envelope stays fully modelled either way. See
+outside the code — config, tenant, admin — reach for a `Schema.Record`
+keyed by `FieldKey`, with `Schema.Unknown` values, behind a branded
+wrapper, rather than generating a union of every field. On Effect 3
+that is `Schema.Record({ key: FieldKey, value: Schema.Unknown })`, and
+[effect-4.md](references/effect-4.md) has the Effect 4 form. The envelope
+stays fully modelled either way. See
 [functional-choosing-types-or-plain-data](../functional-choosing-types-or-plain-data/SKILL.md).
 
 ## Red flags
@@ -170,8 +175,9 @@ envelope stays fully modelled either way. See
 - **Wrapping everything.** Effect is for what touches the world. A
   pricing calculation with no dependencies should have no `Effect` in its
   type.
-- **Losing the error type.** `Effect.orDie` and `catchAll` returning a
-  generic error erase the information the channel exists to carry.
+- **Losing the error type.** `Effect.orDie`, and a catch-all handler that
+  returns a generic error, erase the information the channel exists to
+  carry.
 - **Providing layers deep inside.** Requirements should accumulate
   upward and be satisfied once.
 - **Using `Schema` types as domain types.** The decoded type is a good
@@ -198,3 +204,5 @@ envelope stays fully modelled either way. See
   services, layers, and testing without mocks.
 - [schema-boundaries.md](references/schema-boundaries.md) covers parsing,
   branding, and keeping encoded shapes outside.
+- [effect-4.md](references/effect-4.md) covers what differs on Effect 4:
+  the names that changed, and the shapes that moved with them.

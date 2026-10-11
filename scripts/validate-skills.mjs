@@ -480,6 +480,12 @@ function validateNoPackageFilesInPlugin () {
 // content change. .npmrc sets save-exact; this catches a hand-edited range.
 const EXACT_VERSION = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/
 
+// An alias installs one package under another name, so that two majors of
+// the same library can be present at once: `effect-4` is `npm:effect@4.0.2`.
+// The rule applies to the version after the last `@`; an alias with a range,
+// or with no version at all, is as loose as a range written without one.
+const ALIAS = /^npm:(@?[^@]+)@(.+)$/
+
 // A shebang says "run me". Three scripts had one and no executable bit, so
 // ./scripts/validate-rules.mjs was a permission error while its neighbour
 // worked, and nothing said which was intended. The rule is the file's own
@@ -515,7 +521,8 @@ function validateExactDependencies () {
   for (const field of ['dependencies', 'devDependencies', 'overrides']) {
     for (const [name, range] of Object.entries(pkg[field] ?? {})) {
       if (typeof range !== 'string') continue
-      if (!EXACT_VERSION.test(range)) {
+      const version = ALIAS.exec(range)?.[2] ?? range
+      if (!EXACT_VERSION.test(version)) {
         errors.push(
           `package.json: ${field}."${name}" is "${range}"; dependencies are ` +
             'pinned to an exact version, never a range',
@@ -683,32 +690,34 @@ const VERSION_CAVEAT = /installed (?:major )?version/
 
 let packsChecked = 0
 
-function validateStackVersion (ids) {
+// The packs that teach a library: language packs whose name extends another
+// language pack's. This reuses the name-nesting rule validateParentPack
+// applies, and asks it of the pack list rather than of every skill: only a
+// pack extending another pack is a library delta.
+function libraryPacks (ids) {
   let packs
   try {
     packs = languagePackIds()
   } catch (error) {
     errors.push(error.message)
-    return
+    return []
   }
   const known = new Set(ids)
   const packSet = new Set(packs)
-  for (const id of packs) {
+  return packs.filter((id) => {
     // A pack listed by the index but absent from disk is validate-counts.mjs's
     // error to report; reading it here would throw instead.
-    if (!known.has(id)) continue
-    // Reuses the name-nesting rule validateParentPack applies, and asks it of
-    // the pack list rather than of every skill: only a pack extending another
-    // pack is a library delta.
+    if (!known.has(id)) return false
     const parts = id.split('-')
-    let extendsAPack = false
     for (let i = parts.length - 1; i > 1; i--) {
-      if (packSet.has(parts.slice(0, i).join('-'))) {
-        extendsAPack = true
-        break
-      }
+      if (packSet.has(parts.slice(0, i).join('-'))) return true
     }
-    if (!extendsAPack) continue
+    return false
+  })
+}
+
+function validateStackVersion (ids) {
+  for (const id of libraryPacks(ids)) {
     packsChecked++
     if (VERSION_CAVEAT.test(readMarkdown(join(SKILLS_DIR, id, 'SKILL.md')))) {
       continue
@@ -719,6 +728,133 @@ function validateStackVersion (ids) {
         'version of it. Its shapes move at that library\'s major, so name ' +
         'the major they target and say to verify it -- the phrase this ' +
         'looks for is "installed version".',
+    )
+  }
+}
+
+// Naming a major is not enough: it has to be a major the examples were
+// checked against, and every major they were checked against has to be
+// named. validate-types.mjs type-checks the examples against the libraries
+// package.json pins, so those pins are what a pack may truthfully claim. A
+// pack that says "React 19" while react is pinned at 20 describes a library
+// nobody checked, and a pack that says "Effect 3" while an alias pins Effect 4
+// beside it leaves the reader to guess which of the two its shapes are for.
+//
+// Each row is a pack, the npm package it teaches, and how its SKILL.md
+// writes that package's major: "Effect 3", "XState 5", "Next.js 16". The
+// major is read from the paragraph that tells the reader to check the
+// installed version, which is where the pack says which majors its shapes
+// target; a contrast elsewhere ("XState 4 spelled this differently") is not
+// a claim about the shapes. A pack may name more than one major, and an alias
+// counts as a pin of the package it installs.
+//
+// A new library pack adds a row here. One that has no row, and is not listed
+// as having no npm package, fails, so the table cannot fall behind the packs.
+const PACK_LIBRARIES = [
+  { pack: 'functional-typescript-effect', packageName: 'effect', label: 'Effect' },
+  { pack: 'functional-typescript-ts-pattern', packageName: 'ts-pattern', label: 'ts-pattern' },
+  { pack: 'functional-typescript-xstate', packageName: 'xstate', label: 'XState' },
+  { pack: 'functional-typescript-react', packageName: 'react', label: 'React' },
+  { pack: 'functional-typescript-react-nextjs', packageName: 'next', label: 'Next.js' },
+]
+
+// Library packs with no npm package to pin: Phoenix is an Elixir library, and
+// is held to the version caveat above and nothing more.
+const PACKS_WITHOUT_NPM_PACKAGE = ['functional-elixir-phoenix']
+
+// Every major package.json pins for each package, with the name it is
+// installed under and the version: `effect-4` is `npm:effect@4.0.2`, so it
+// pins Effect at major 4 beside `effect` at 3.
+function pinnedMajors () {
+  const pkg = readJson('package.json')
+  const found = new Map()
+  for (const field of ['dependencies', 'devDependencies']) {
+    for (const [name, spec] of Object.entries(pkg[field] ?? {})) {
+      if (typeof spec !== 'string') continue
+      const alias = ALIAS.exec(spec)
+      const real = alias === null ? name : alias[1]
+      const version = alias === null ? spec : alias[2]
+      const major = Number.parseInt(version, 10)
+      // A range is validateExactDependencies's error to report.
+      if (Number.isNaN(major)) continue
+      const byMajor = found.get(real) ?? new Map()
+      if (!byMajor.has(major)) byMajor.set(major, { name, version })
+      found.set(real, byMajor)
+    }
+  }
+  return found
+}
+
+// The first paragraph outside a code fence that tells the reader to check the
+// installed version, with its line breaks folded so that a major wrapped
+// across two lines still reads as "Effect 3".
+function caveatParagraph (id) {
+  const body = stripFences(readSkill(id).body)
+  const found = body.split(/\n\s*\n/).find((p) => VERSION_CAVEAT.test(p))
+  return found === undefined ? undefined : found.replace(/\s+/g, ' ')
+}
+
+let majorsChecked = 0
+
+function validatePackMajors (ids) {
+  const known = new Set(ids)
+  const pinned = pinnedMajors()
+  for (const { pack, packageName, label } of PACK_LIBRARIES) {
+    if (!known.has(pack)) {
+      errors.push(
+        `scripts/validate-skills.mjs: PACK_LIBRARIES names ${pack}, which is ` +
+          'not a skill. Remove the row.',
+      )
+      continue
+    }
+    const majors = pinned.get(packageName)
+    if (majors === undefined) {
+      fail(
+        pack,
+        `targets ${packageName} according to PACK_LIBRARIES in ` +
+          `scripts/validate-skills.mjs, and package.json pins no ${packageName}`,
+      )
+      continue
+    }
+    const paragraph = caveatParagraph(pack)
+    // validateStackVersion reports a pack with no such paragraph.
+    if (paragraph === undefined) continue
+    majorsChecked++
+    const writes = new RegExp(`\\b${label.replace(/\W/g, '\\$&')} (\\d+)\\b`, 'g')
+    const named = new Set([...paragraph.matchAll(writes)].map((m) => Number(m[1])))
+    const pins = [...majors.keys()].join(' and ')
+    for (const major of named) {
+      if (majors.has(major)) continue
+      fail(
+        pack,
+        `names ${label} ${major} as a major its shapes target, and ` +
+          `package.json pins ${packageName} only at ${pins}. Name the major ` +
+          'the examples were checked against, or change the pin in the same ' +
+          'change.',
+      )
+    }
+    for (const [major, { name, version }] of majors) {
+      if (named.has(major)) continue
+      fail(
+        pack,
+        `does not name ${label} ${major}, the major of ${name}@${version} ` +
+          'that package.json pins. Name every major the shapes were checked ' +
+          'against, in the paragraph that tells the reader to check the ' +
+          'installed version.',
+      )
+    }
+  }
+  const covered = new Set([
+    ...PACK_LIBRARIES.map((row) => row.pack),
+    ...PACKS_WITHOUT_NPM_PACKAGE,
+  ])
+  for (const id of libraryPacks(ids)) {
+    if (covered.has(id)) continue
+    fail(
+      id,
+      'teaches a library, and scripts/validate-skills.mjs says neither which ' +
+        'npm package it targets nor that it has none. A new library pack adds ' +
+        'a row to PACK_LIBRARIES.',
     )
   }
 }
@@ -740,6 +876,7 @@ validateScriptModes()
 validateEvalNames(skillIds)
 validateParentPack(skillIds)
 validateStackVersion(skillIds)
+validatePackMajors(skillIds)
 if (errors.length === 0) {
   validateDistinctDescriptions(skillIds)
   validateListingSize(skillIds)
@@ -772,6 +909,13 @@ if (packsChecked === 0) {
   )
   process.exit(1)
 }
+if (majorsChecked === 0) {
+  process.stderr.write(
+    'error no library pack had a paragraph naming its majors, so nothing ' +
+      'checked that the majors a pack names are the ones package.json pins\n',
+  )
+  process.exit(1)
+}
 if (listingChars === 0) {
   process.stderr.write(
     'error no skill contributed a name and a description to the listing, so ' +
@@ -784,6 +928,9 @@ process.stdout.write(
 )
 process.stdout.write(
   `      ${packsChecked} library pack(s) name the major they target\n`,
+)
+process.stdout.write(
+  `      ${majorsChecked} of them name exactly the majors package.json pins\n`,
 )
 process.stdout.write(
   `      listing is ${listingChars} of ${LISTING_CEILING} characters\n`,

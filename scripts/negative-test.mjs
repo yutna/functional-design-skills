@@ -123,6 +123,11 @@ const CASES = [
     'but resolves to'],
   ['a caret range instead of an exact pin', 'package.json',
     ['"yaml": "', '"yaml": "^'], 'pinned to an exact version'],
+  // An alias hides its version behind `npm:name@`, so a check that only
+  // reads the whole string would take any alias for exact.
+  ['a range behind an alias instead of an exact pin', 'package.json',
+    ['"effect-4": "npm:effect@', '"effect-4": "npm:effect@^'],
+    'pinned to an exact version'],
   ['an ellipsis where the language expects code',
     join('plugin', 'skills', 'functional-typescript', 'SKILL.md'),
     ['  /* ... */', '  ...'], 'not the language the fence claims',
@@ -140,6 +145,19 @@ const CASES = [
     join('plugin', 'skills', 'functional-typescript', 'SKILL.md'),
     ['ok(n as Satang)', 'ok(n)'],
     ['functional-typescript/SKILL.md', /TS\d{4}/], 'validate-types.mjs'],
+  // Two files held to Effect 4. One is a reference whose prelude sends its
+  // imports to the alias, so a name Effect 4 does not have fails it by its own
+  // name. The other is SKILL.md, which has to hold on both majors: a name only
+  // Effect 3 has passes the file as it stands and fails under the variant.
+  ['an Effect 4 example that uses the name Effect 3 gave the service class',
+    join('plugin', 'skills', 'functional-typescript-effect', 'references', 'effect-4.md'),
+    ['Context.Service<Slots, {', 'Context.Tag<Slots, {'],
+    ['effect-4.md', /TS\d{4}/], 'validate-types.mjs'],
+  ['an example in SKILL.md that only Effect 3 has',
+    join('plugin', 'skills', 'functional-typescript-effect', 'SKILL.md'),
+    ['const SlotsLive = Layer.effect(', 'const SlotsLive = Layer.scoped('],
+    ['functional-typescript-effect/SKILL.md', '(variant effect-4)'],
+    'validate-types.mjs'],
   ['prose that names a member the library does not have',
     join('plugin', 'skills', 'functional-typescript-effect', 'references', 'schema-boundaries.md'),
     ['`Arbitrary.make`', '`Schema.Arbitrary`'],
@@ -173,6 +191,53 @@ const CASES = [
     join('plugin', 'skills', 'functional-typescript-xstate', 'SKILL.md'),
     ['installed version', 'current version', 'all'],
     'never tells the reader to check the installed'],
+  // The phrase check above passes for any major. These three are what it
+  // could not see: a major that is not the one pinned, a pinned major that is
+  // not named, and a library pack the table does not know.
+  ['a library pack that names a major nothing pins',
+    join('plugin', 'skills', 'functional-typescript-ts-pattern', 'SKILL.md'),
+    ['target ts-pattern 5.', 'target ts-pattern 4.'],
+    ['names ts-pattern 4 as a major', 'does not name ts-pattern 5']],
+  ['a pack that names only one of the two majors of its library that are pinned',
+    join('plugin', 'skills', 'functional-typescript-effect', 'SKILL.md'),
+    ['Effect 4', 'Effect 3', 'all'],
+    'does not name Effect 4, the major of effect-4@4.0.2'],
+  ['a library pack that the table of packs and their packages does not list',
+    join('scripts', 'validate-skills.mjs'),
+    ["  { pack: 'functional-typescript-xstate', packageName: 'xstate', label: 'XState' },\n", ''],
+    'functional-typescript-xstate: teaches a library, and scripts/validate-skills.mjs says neither'],
+  ['a library pack whose package is not pinned',
+    join('scripts', 'validate-skills.mjs'),
+    ["packageName: 'next'", "packageName: 'nxt'"],
+    'package.json pins no nxt'],
+  // The two lists of example libraries, the one in validate-types.mjs and the
+  // one Dependabot reads, and the line that keeps the entry to new majors.
+  ['an example library that Dependabot is not told to watch',
+    join('.github', 'dependabot.yml'),
+    ['      - dependency-name: zod\n', ''],
+    'zod is on the list of example libraries and not in the npm allow list',
+    'validate-types.mjs'],
+  // An alias is the one library that stays out of the allow list, and the
+  // package it installs has to have the alias's major ignored.
+  ['an alias that Dependabot is told to watch as a package of its own',
+    join('.github', 'dependabot.yml'),
+    ['      - dependency-name: zod\n',
+      '      - dependency-name: zod\n      - dependency-name: effect-4\n'],
+    'allow list names effect-4, which is an alias of effect',
+    'validate-types.mjs'],
+  ['a package offered the major its alias already holds',
+    join('.github', 'dependabot.yml'),
+    ['          - "4.x"\n', '          - "5.x"\n'],
+    'does not ignore 4.x for effect', 'validate-types.mjs'],
+  ['a name in the Dependabot allow list that no example uses',
+    join('.github', 'dependabot.yml'),
+    ['      - dependency-name: next\n',
+      '      - dependency-name: next\n      - dependency-name: left-pad\n'],
+    'allow list names left-pad', 'validate-types.mjs'],
+  ['a Dependabot entry that opens a pull request for a patch release',
+    join('.github', 'dependabot.yml'),
+    ['          - version-update:semver-patch\n', ''],
+    'does not ignore version-update:semver-patch', 'validate-types.mjs'],
   ['a core rule with no strictness label', SKILL,
     ['1. Default. **Name the accumulator', '1. **Name the accumulator'],
     'has no strictness label', 'validate-rules.mjs'],
@@ -282,6 +347,23 @@ const CREATED = [
     join('example-types', '_shared', 'unused.ts'),
     'export type Unused = string;\n',
     'is imported by no prelude', 'validate-types.mjs'],
+  // A variant is one more check of the same examples with another prelude.
+  // This one sends ts-pattern to a package that has no `match`, so the file
+  // that passes on its own has to fail under it, and the report has to say
+  // which variant it was.
+  ['a variant prelude under which the examples no longer compile',
+    join('example-types', 'functional-typescript-ts-pattern', 'SKILL.other.ts'),
+    '// @resolve ts-pattern valibot\n',
+    ['functional-typescript-ts-pattern/SKILL.md', '(variant other)'],
+    'validate-types.mjs'],
+  ['a variant prelude that stands beside no Markdown file',
+    join('example-types', 'functional-typescript', 'references',
+      'no-such-reference.other.ts'),
+    '',
+    ['stands beside no Markdown file',
+      'It would be for plugin/skills/functional-typescript/references/' +
+      'no-such-reference.md'],
+    'validate-types.mjs'],
 ]
 
 // A defect that is the absence of a file, the other way round: the file is
@@ -293,7 +375,7 @@ const REMOVED = [
 ]
 
 const work = mkdtempSync(join(tmpdir(), 'fds-negative-'))
-for (const dir of ['scripts', 'plugin', '.claude-plugin', 'evals', 'example-types']) {
+for (const dir of ['scripts', 'plugin', '.claude-plugin', '.github', 'evals', 'example-types']) {
   cpSync(join(ROOT, dir), join(work, dir), { recursive: true })
 }
 // validate-counts.mjs checks sentences in some of these; the rest are here
@@ -464,9 +546,10 @@ function convertEndings (dir, ending) {
       continue
     }
     // The preludes are checked out with the platform's endings as well, and
-    // validate-types.mjs reads them.
+    // validate-types.mjs reads them, and the Dependabot file beside them.
     const inTypes = path.split(sep).includes('example-types')
-    if (!entry.endsWith('.md') && !inTypes) continue
+    const dependabot = entry === 'dependabot.yml'
+    if (!entry.endsWith('.md') && !inTypes && !dependabot) continue
     writeFileSync(path, readFileSync(path, 'utf8').replace(/\r?\n/g, ending))
   }
 }
@@ -493,7 +576,7 @@ for (const script of SCRIPTS) {
 // And the floor: with nothing to read, every one of these must fail rather
 // than report a clean zero.
 const empty = mkdtempSync(join(tmpdir(), 'fds-empty-'))
-for (const dir of ['scripts', 'plugin', '.claude-plugin', 'evals', 'example-types']) {
+for (const dir of ['scripts', 'plugin', '.claude-plugin', '.github', 'evals', 'example-types']) {
   cpSync(join(ROOT, dir), join(empty, dir), { recursive: true })
 }
 for (const file of TOP_LEVEL) {

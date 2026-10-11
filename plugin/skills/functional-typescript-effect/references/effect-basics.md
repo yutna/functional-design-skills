@@ -1,8 +1,8 @@
 # Effect Basics for Design
 
-Targets Effect 3. Verify against the installed version before writing
-code; the type parameter order and several module names changed at the
-3.0 boundary.
+Targets Effect 3, and [effect-4.md](effect-4.md) has what differs on 4.
+Verify against the installed version before writing code; the type
+parameter order and several module names changed at the 3.0 boundary.
 
 ## Contents
 

@@ -22,6 +22,12 @@ them. It sits outside `plugin/`, so none of it ships, and it is not a
 copy of skill content. A prelude says what an example assumes, never
 what a skill teaches.
 
+A file whose examples hold on two majors of a library is checked against
+both. The second major is installed under an alias (`effect-4` is
+`effect` at its fourth major), and its prelude sits beside the file's own
+as `SKILL.effect-4.ts` and opens with `// @resolve effect effect-4`. The
+examples keep saying `from "effect"` and are checked twice.
+
 There are forty-three skills, and every one is named `functional-something`.
 The prefix is not decoration: skills install flat into
 `~/.claude/skills`, where a name like `hiding-information` is one any
@@ -144,6 +150,11 @@ rejected.
   and a library's shapes move at its major. It must name the major the
   shapes target and tell the reader to verify the installed version; the
   check reads the pack list out of the index and greps for that phrase.
+  The major it names must be the major of a version `package.json` pins,
+  and every pinned major of the library must be named, in that same
+  paragraph, so a pack whose shapes hold on two majors names both. The
+  table of packs and packages is in `scripts/validate-skills.mjs`, and a
+  new library pack adds a row.
   The base packs are out of scope on purpose. `functional-javascript` and
   `functional-elixir` name only long-stable language features, so a
   version caveat over those would be a sentence that earns nothing. A

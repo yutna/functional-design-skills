@@ -1,5 +1,8 @@
 # Services and Layers
 
+The code on this page is Effect 3, and [effect-4.md](effect-4.md) has
+what differs on 4.
+
 A service is a declared dependency; a layer is how one is built. Together
 they are dependency parameterization with the compiler tracking which
 dependencies each piece of code needs.

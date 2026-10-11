@@ -41,6 +41,7 @@
     "@standard-schema/spec": "1.1.0",
     "@types/react": "19.3.0",
     "effect": "3.22.2",
+    "effect-4": "npm:effect@4.0.2",
     "immer": "11.1.21",
     "markdownlint-cli2": "0.23.2",
     "next": "16.4.0",
