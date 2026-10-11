@@ -69,7 +69,7 @@ type at composition, not inside the step.
 
 ```text
 type ConfirmBookingError =
-  | Validation of ValidationError
+  | Validation of NonEmptyList<ValidationError>
   | Pricing of PricingError
 
 confirmBooking =
@@ -84,11 +84,12 @@ type.
 
 ```text
 -- one bad treatment fails the booking
-traverse validateTreatment treatments : Result<List<ValidTreatment>, TreatmentError>
+traverse validateTreatment treatments
+  : Result<List<ValidTreatment>, TreatmentInvalid>
 
 -- report every bad treatment
 traverseAll validateTreatment treatments
-  : Result<List<ValidTreatment>, NonEmptyList<TreatmentError>>
+  : Result<List<ValidTreatment>, NonEmptyList<TreatmentInvalid>>
 ```
 
 Pick by who reads the errors. A machine-to-machine import usually wants
@@ -125,5 +126,17 @@ neighbour is. See
 - **Partial success.** "Three of five imported" is not one `Result`; it
   is a report type with successes and failures inside it. Model it
   explicitly.
+
+  ```text
+  type ImportReport = {
+    imported: List<PatientId>,
+    failed: List<RowFailure>,
+  }
+  ```
+
+  The step that runs the rows builds the report and returns it as a
+  success. The caller decides from the report whether the whole counts
+  as failed, for example when `imported` is empty or when `failed` is
+  longer than the limit the requirement states.
 - **Failures that must not be a value.** A corrupted process state is not
   a business outcome. Crash.

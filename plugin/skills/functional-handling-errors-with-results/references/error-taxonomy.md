@@ -77,10 +77,18 @@ handler at the edge convert it into a generic failure response.
 
 Ask, in order:
 
-1. **Would a domain expert have a word for this?** Yes: domain outcome.
+1. **Do the specification, the ticket, or the codebase already have a
+   name for this?** An error type, a doc, or a glossary entry counts.
+   Yes: domain outcome. Where none can be found, get the name from a
+   person and do not invent one;
+   [working-alone.md](../../functional-design/references/working-alone.md)
+   says who stands in.
 2. **Did data from outside cause it?** Yes: input problem.
 3. **Could the identical call succeed later?** Yes: transient.
 4. **Otherwise:** it is a bug. Crash.
+
+This list is about conditions inside the program. An exception that a
+library throws is first converted at the boundary, below.
 
 ## What errors should carry
 
@@ -118,6 +126,12 @@ classify e =
 
 Past this function, no code knows which driver is in use. That is the
 whole point of the conversion.
+
+An adapter cannot tell a bug in a driver from an outage, so an exception
+it does not recognise is returned as the opaque `Unexpected`, for the
+edge to report and the log to keep. Callers do not match on `Unexpected`,
+and no recovery depends on it. The crash in step 4 is for conditions the
+program itself caused.
 
 ## Logging
 
