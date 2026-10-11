@@ -16,9 +16,10 @@ every use, costs nothing to read, and cannot be skipped. A precise name
 creates an image in the reader's mind of what the thing is; a vague one
 forces them to open the implementation.
 
-Naming is also a design tool. A name that is hard to choose is telling
-you the thing has no clear purpose, and that is a design problem
-discovered cheaply.
+Naming is also a design tool. A name that is hard to choose is usually
+telling you the thing has no clear purpose, and that is a design problem
+discovered cheaply. First check that the domain has no word you do not
+know.
 
 ## When to use
 
@@ -37,18 +38,23 @@ Not for: deciding what to comment, which is
    `size`.
 2. Default. **Name the concept, not the shape.** `pendingInvoices` beats
    `invoiceList`. The reader can see it is a list.
-3. Rule. **One word per concept, everywhere.** Pick `fetch` or `get` or `load`,
-   and never use the other two for the same operation.
-4. Default. **Do not encode the type or the module.**
-   `bookingService.bookingSave` is three redundancies; `Booking.save` says it
-   once.
-5. Default. **Name what it returns, not what it does inside.** `total`, not
-   `calculateAndCacheTotal`.
+3. Default. **One word per concept, everywhere.** Use one verb for one kind of
+   retrieval and one noun for one concept. Two words are allowed when they
+   name different kinds of retrieval, and the table in
+   [naming-rules.md](references/naming-rules.md) fixes which is which.
+4. Default. **Do not encode the type or the module.** `bookingService.bookingSave`
+   repeats the noun and adds a type suffix, two redundancies; `Booking.save`
+   says it once. In a flat module the function name has to carry the noun, so
+   keep `saveBooking` and drop the rest.
+5. Default. **Name what it returns, not what it does inside.** `bookingTotal`,
+   not `calculateAndCacheTotal`. A pure function that only returns a value may
+   be named for it, as a noun.
 6. Default. **Say what a boolean is true of.** `isExpired`,
-   `hasUnpaidTreatments`. Never `flag`, `check`, `status` for a boolean.
-7. Judgement. **Treat difficulty as a signal.** If no good name exists, the
-   thing is doing two jobs or has no clear identity. Fix that instead of
-   settling.
+   `hasUnpaidTreatments`. The names to avoid are listed in
+   [naming-rules.md](references/naming-rules.md).
+7. Judgement. **Treat difficulty as a signal.** First check whether the domain
+   has a word you do not know; if it has, use it. If not, the thing is doing two
+   jobs or has no clear identity. Fix that instead of settling.
 
 ## Pattern
 
@@ -63,9 +69,10 @@ check (x, y)
 Precise names, readable at the call site:
 
 ```text
-priceBooking : ValidatedBooking -> Result<PricedBooking, PricingError>
+priceBooking :
+  Catalogue -> ValidatedBooking -> Result<PricedBooking, PricingError>
 isEligibleForRefund : BookedTreatment -> Boolean
-assertWithinCreditLimit (used, limit)
+isWithinCreditLimit : Money -> CreditLimit -> Boolean
 ```
 
 The signature and the name together say enough that the body is never
@@ -73,13 +80,16 @@ opened out of confusion.
 
 ## The test
 
-Show the name to someone who has not seen the code, and ask what it
-holds or what it does. If they are wrong, or vague, the name is wrong.
-Do not explain the name to them; their first reading is the measurement.
+Write the sentence you would use to explain the thing. If the sentence
+contains a word that is not in the name and cannot be inferred, the name
+is missing information.
 
-A second test that works alone: write the sentence you would use to
-explain the thing. If the sentence contains a word that is not in the
-name and cannot be inferred, the name is missing information.
+A second test needs a reader. If the user is available, ask them to say
+what the bare name means; otherwise give a reader that has not seen the
+code only the name and its signature, as
+[working-alone.md](../functional-design/references/working-alone.md)
+says. If they are wrong, or vague, the name is wrong. Do not explain the
+name to them; their first reading is the measurement.
 
 ## Common vague names and their repairs
 
@@ -104,14 +114,15 @@ More rules, including length and consistency, in
 
 This is valuable information. Work through it in this order:
 
-1. **Two jobs.** Try to name each half. If both names come easily, split
+1. **Missing domain word.** Look for the word in the repository's docs,
+   tests and tickets; if it is not there, ask the user. Often the
+   business has a word nobody wrote down. See
+   [functional-capturing-the-domain](../functional-capturing-the-domain/SKILL.md).
+2. **Two jobs.** Try to name each half. If both names come easily, split
    it. See
    [functional-splitting-and-joining-code](../functional-splitting-and-joining-code/SKILL.md).
-2. **Wrong abstraction.** The thing is a bag of steps rather than a
+3. **Wrong abstraction.** The thing is a bag of steps rather than a
    concept. Look for the concept the domain has a word for.
-3. **Missing domain word.** Ask the experts what they call it. Often they
-   have a word nobody wrote down. See
-   [functional-capturing-the-domain](../functional-capturing-the-domain/SKILL.md).
 4. **It should not exist.** A pass-through, an accidental split, a
    premature abstraction. Delete it and inline.
 
@@ -120,7 +131,8 @@ feedback available, and ignoring it is throwing it away.
 
 ## Red flags
 
-- A name with a number in it
+- A name with a counter in it (`list2`, `doStuff2`); a version suffix on a
+  transfer type is not one
 - A name that needs a comment on the same line to be understood
 - Two names for the same concept in one codebase
 - A name that describes the implementation, not the meaning
@@ -130,16 +142,17 @@ feedback available, and ignoring it is throwing it away.
 
 ## Common mistakes
 
-- **Short names for wide scopes.** A one-letter name is fine in a
-  three-line lambda and wrong for an exported function's parameter.
+- **Short names for wide scopes.** Length follows scope, as the table in
+  [naming-rules.md](references/naming-rules.md) sets out; an exported
+  function's parameter is fully precise.
 - **Long names as a substitute for design.**
   `validateAndNormaliseAndSaveBooking` names three jobs; split them.
 - **Domain words used loosely.** If the business distinguishes "quote"
   from "estimate", the code must too.
 - **Renaming without changing the concept.** A rename that does not make
   the thing clearer is churn.
-- **Consistency with a bad convention forever.** Change it everywhere, or
-  keep it; never half.
+- **Keeping a bad convention in one corner.** Change it everywhere in one
+  commit, or keep it everywhere and write down why.
 
 ## Related skills
 
