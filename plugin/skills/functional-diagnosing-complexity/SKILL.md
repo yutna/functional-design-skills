@@ -12,10 +12,13 @@ metadata:
 ## Overview
 
 Complexity is anything about the structure of a system that makes it hard
-to understand or modify. It is not the difficulty of the problem being
-solved; it is what the code adds on top of that problem. Complexity is
-what you feel, not what you measure: if the people working in a system
-find it hard to change, it is complex, whatever the metrics say.
+to understand or modify. It has two parts: essential complexity, which is
+inherent in the problem, and accidental complexity, which the code adds
+on top of it. Judge it by how hard change is, not by line counts. What
+can be observed is the files a typical change touches (`git log --stat`
+lists them), the files that must be opened to read one function, and
+what the user reports. Where a step below asks for a person's view, see
+[working-alone.md](../functional-design/references/working-alone.md).
 
 Diagnose before you fix. Every complexity has exactly two ultimate causes
 and shows up as exactly three symptoms. Naming the symptom and tracing it
@@ -29,8 +32,10 @@ to its cause tells you which design rule to apply.
 - Estimating a change is guesswork
 - Before proposing any refactor, so the refactor targets a real cause
 
-Not for: performance problems, or code that is merely unfamiliar to you
-but obvious to the people who own it.
+Not for: performance problems, or code that is hard only because its
+domain words are unfamiliar to you. The test is a competent developer
+who is new to this code and fluent in the language and the domain's
+vocabulary.
 
 ## Is this complexity necessary?
 
@@ -38,12 +43,15 @@ Ask this before anything else. Complexity you added should be deleted,
 and refactoring does not delete it — once accidental complexity has a
 clean interface and a test suite, nobody removes it.
 
-State the requirement in the domain expert's words, using no
-implementation nouns. Then list what the code contains that the sentence
-did not mention: flags, caches, orderings, adapters, intermediate
-representations, defensive checks. Everything on that list is
-**accidental** — it is in your solution, not in the problem — and nothing
-in the domain will defend it.
+State the requirement in the business's words, using no implementation
+nouns. The user's request, the tests and the docs are where those words
+are found; see
+[working-alone.md](../functional-design/references/working-alone.md).
+Then list what the code contains that the sentence did not mention:
+flags, caches, orderings, adapters, intermediate representations,
+defensive checks. Each item on that list is a candidate for
+**accidental**: it is in your solution, not in the problem. It is a
+candidate, not a verdict, until the question below has been asked of it.
 
 Almost all accidental complexity has one of three sources.
 
@@ -56,16 +64,15 @@ Almost all accidental complexity has one of three sources.
 
 State is the worst of the three, because it makes the unit of reasoning
 the whole history of the program rather than the function in front of
-you. Two booleans and an optional field are twelve states, not three
+you. Two booleans and an optional boolean are twelve states, not three
 things to remember.
 
-For each accidental item, ask what breaks if it vanishes. Nothing means
-delete it. A performance requirement means keep it, isolate it, and label
-it as accidental. A correctness rule living inside it means move the rule
-into a type, then delete it.
-
-Run the procedure below only on what survives. See
-[essential-and-accidental.md](references/essential-and-accidental.md).
+For each candidate, ask what breaks if it vanishes. The answer sorts it
+into one of four outcomes, set out in
+[essential-and-accidental.md](references/essential-and-accidental.md):
+delete it, keep it for a measured performance need, move the rule it
+carries into a type and then delete it, or keep it because it is a
+boundary or stage type. Run the procedure below on what is left.
 
 ## The three symptoms
 
@@ -91,13 +98,15 @@ information that is required but not visible in the interface.
 **Dependencies.** A dependency exists when code cannot be understood or
 modified in isolation. Dependencies are necessary; the goal is to have
 few, and to make each obvious. In functional code they hide in these
-places, in rough order of how often they bite:
+places:
 
 - Order of calls that the types do not enforce
-- Values read from shared mutable state, module state, or globals
 - Implicit context: clock, locale, timezone, environment, current user
+- Values read from shared mutable state, module state, or globals
 - Types that overlap in shape so a caller can pass the wrong one
 - Duplicated invariants: the same rule enforced in two modules
+- Shape dependencies across a boundary: an internal type serialised
+  directly, so the storage or wire format constrains the domain model
 
 **Obscurity.** Important information is not obvious. Vague names, missing
 documentation of a non-obvious contract, a type whose legal values are
@@ -106,16 +115,18 @@ signature. Obscurity is what turns a dependency into an unknown unknown.
 
 ## Diagnostic procedure
 
-1. State the change that felt hard, in one sentence.
-2. List every file you had to edit, and every file you had to read but
-   not edit. The second list is the more interesting one.
+1. State the change you are about to make, or pick a past change from
+   `git log` that touched the module, in one sentence.
+2. List every file that change edited, and every file you needed to read
+   but not edit. The second list is the more interesting one.
 3. For each file, write why it was involved. If the answer is "it also
    knew about X", you have found a dependency on X.
 4. Classify the pain as amplification, cognitive load, or unknown
    unknowns. If more than one, take them one at a time.
-5. Decide whether the root is a dependency or obscurity. Ask: if this had
-   a perfect name and a comment, would the problem be gone? Yes means
-   obscurity; no means a dependency.
+5. Decide whether the root is a dependency or obscurity. Ask: if every
+   name and comment were perfect, would the dependency still be there?
+   Yes means it is a dependency, and the comment only makes it visible.
+   No means obscurity alone. Both may hold; fix the dependency first.
 6. Look up the fix in the list below and apply that skill.
 
 ## Quick reference
@@ -138,15 +149,18 @@ Once the diagnosis names a cause, this list names the skill.
 No single decision makes a system complex. It accumulates from many small
 concessions, each defensible on its own. That has two consequences:
 
-- A zero-tolerance policy is the only workable one. "Just this once" is
-  how every complex system was built.
-- You cannot fix it in one heroic refactor either. Each change should
-  leave the design a little better than it found it.
+- A zero-tolerance policy for changes that make the design worse is the
+  only workable one. "Just this once" is how every complex system was
+  built.
+- You cannot fix it in one heroic refactor either. What each change owes
+  the code it touches is stated in
+  [functional-programming-strategically](../functional-programming-strategically/SKILL.md).
 
 ## Red flags
 
-- Nobody can say how long a change will take without reading the code
-- The team has a person who "knows how that part works"
+- Recent commits to one module each touch many files (`git log --stat`)
+- The history shows one author for a module, or a comment says only one
+  person knows how that part works
 - A pull request explains itself with "you also have to remember to..."
 - A bug report says a change broke a module the author never opened
 - The same business rule appears in more than one module
@@ -159,8 +173,8 @@ concessions, each defensible on its own. That has two consequences:
   function reduces line count but can raise cognitive load.
 - **Blaming the domain.** Some domains are genuinely intricate. That
   explains essential complexity, never the accidental kind. The check is
-  the one above: state the requirement in the expert's words, and see how
-  much of the code it fails to account for.
+  the one above: state the requirement in the business's words, and see
+  how much of the code it fails to account for.
 - **Refactoring before diagnosing.** A refactor that does not name the
   dependency it removes usually just moves it.
 
