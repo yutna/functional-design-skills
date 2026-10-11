@@ -115,7 +115,7 @@ with pure transitions, and let the shell drive it:
 ```text
 -- core
 advance :
-  Instant -> BookingProcess -> BookingEvent
+  Instant -> BookingProcess -> ProcessEvent
     -> (BookingProcess, List<Instruction>)
 ```
 

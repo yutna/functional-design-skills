@@ -99,7 +99,7 @@ type Instruction =
   | ReleaseSlot of SlotId
 
 advance :
-  Instant -> BookingProcess -> BookingEvent
+  Instant -> BookingProcess -> ProcessEvent
     -> (BookingProcess, List<Instruction>)
 ```
 
@@ -122,7 +122,7 @@ instruction type and a shell that interprets it.
    to an auditor, or replayed.
 2. Default. **Declare a capability's type in the domain's words**, where
    the handler that takes it can see it and no adapter is imported.
-   `LoadPriceList`, not `IPriceListRepository`.
+   `LoadCatalogue`, not `ICatalogueRepository`.
 3. Default. **One function type per capability used**, not one record per
    service. See
    [functional-applying-solid-functionally](../functional-applying-solid-functionally/SKILL.md).

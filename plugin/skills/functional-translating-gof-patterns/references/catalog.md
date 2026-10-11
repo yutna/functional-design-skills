@@ -31,7 +31,7 @@ naming.
 
 ```text
 sortBy : (A -> A -> Ordering) -> List<A> -> List<A>
-priceBooking : (Booking -> Money) -> Booking -> Priced
+roundTotal : RoundingRule -> PricedBooking -> PricedBooking
 ```
 
 A parameter. The function passed in is pure, a pricing or rounding

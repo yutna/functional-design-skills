@@ -100,9 +100,8 @@ handler reads a catalogue that a rule names, as in
 let stubLoadCatalogue = \_ -> done (Ok standardCatalogue)
 
 test "prices a booking from the catalogue its rule names" =
-  let result =
-    await (priceFromCatalogue stubLoadCatalogue validBooking)
-  in expect result toBe (Ok pricedAtStandardRates)
+  expect (priceFromCatalogue stubLoadCatalogue validBooking)
+    toFinishWith (Ok pricedAtStandardRates)
 ```
 
 The stub has the capability's type, so the test compiles only if the

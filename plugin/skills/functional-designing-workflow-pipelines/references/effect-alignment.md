@@ -35,7 +35,7 @@ is `A -> Async<B>`, and is lifted the same way.
 | ------------------ | ------------------ | ------------------------- |
 | `A -> B`           | `A -> Result<B,E>` | `map` on the value        |
 | `A -> Result<B,E>` | `A -> AsyncResult` | `bind`; a `Result` joins  |
-| `A -> Async<B>`    | `A -> AsyncResult` | `map` on the value        |
+| `A -> Async<B>`    | `A -> AsyncResult` | wrap its result in `Ok`   |
 | `Result<B, E1>`    | `Result<B, E2>`    | `mapError`                |
 
 ```text
@@ -61,7 +61,7 @@ composition, not in the step's own definition.
 -- good: honest signature, lifted where the chain is written
 calculateTotal : PricedBooking -> Money
 
--- bad: claims to reach the world, and cannot fail
+-- bad: an effect type on a step that reaches nothing
 calculateTotal : PricedBooking -> Async<Money>
 ```
 
@@ -77,6 +77,7 @@ confirmBooking catalogue now unvalidated =
     |> mapError Validation
     |> bind (priceBooking catalogue >> mapError Pricing)
     |> map (issueConfirmation now)
+    |> map (\booking -> [BookingConfirmed booking])
 ```
 
 The handler that calls the workflow has a failure type of its own, with

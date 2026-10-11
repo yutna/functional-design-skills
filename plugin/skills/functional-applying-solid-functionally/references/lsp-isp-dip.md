@@ -117,7 +117,8 @@ never the reverse.
 ### Where the abstraction lives matters
 
 Declaring `ReadCatalogue` in the storage module and importing it into the
-domain is not inversion; it is the same dependency with an extra hop. The
+handler's module is not inversion; it is the same dependency with an
+extra hop. The
 function type must be declared by the consumer, in the consumer's
 vocabulary.
 

@@ -133,7 +133,10 @@ More on each in
 ## Choosing the steps
 
 Ask the domain expert to describe the process, and take the steps from
-their sentences. Then check each candidate step against three tests:
+their sentences. Where there is no expert to ask,
+[working-alone.md](../functional-design/references/working-alone.md)
+says what stands in for one. Then check each candidate step against
+three tests:
 
 1. **Would an expert name it?** If not, it is an implementation detail,
    and belongs inside another step.

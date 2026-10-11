@@ -37,7 +37,7 @@ type PaymentMethod =
   | Transfer of { bank: BankCode, ref: TransferRef }
 
 -- single-case wrapper: a distinct type over a primitive
-type BookingId = BookingId of String
+type BookingId = BookingId of Uuid
 
 -- a type with a parameter
 type Secret<T> = Secret of T
@@ -122,9 +122,10 @@ function it stands for: `(+)`.
 A few names are used without being declared. `identity` returns its
 argument, `const x` returns `x` whatever it is given, `fold` reduces a
 list to one value, `tryCatch` turns a thrown exception into an `Error`,
-and `crash` stops with a message. Any other name an example uses and
-does not declare, such as `trim` or `sumOf`, is an ordinary function
-that does what its name says.
+`crash` stops with a message, and `done x` is an `Async` that has
+already finished with `x`. Any other name an example uses and does not
+declare, such as `trim` or `sumOf`, is an ordinary function that does
+what its name says.
 
 ## Composition and pipelines
 

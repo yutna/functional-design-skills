@@ -103,13 +103,13 @@ handleConfirmBooking :
   BookingRepository -> Instant -> UnvalidatedBooking
     -> AsyncResult<List<ConfirmBookingEvent>, ConfirmBookingFailure>
 -- BookingRepository has 22 functions; the handler uses two of them,
--- and the domain module now imports the storage module
+-- and its module now imports the storage module
 ```
 
 Narrow dependencies, defined by the domain:
 
 ```text
--- declared by the domain, in the domain's words
+-- declared beside the handler, in the domain's words
 alias ReadCatalogue = Unit -> AsyncResult<Catalogue, StoreError>
 alias SaveEvents =
   List<ConfirmBookingEvent> -> AsyncResult<Unit, StoreError>

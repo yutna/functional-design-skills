@@ -47,8 +47,8 @@ First attempt:
 ```text
 -- Takes the unvalidated booking, checks the fields are present and the
 -- treatment codes exist by calling the catalogue, then works out prices
--- from the price list, applies the customer's discount if they have one,
--- adds tax unless the customer is exempt, and saves the result,
+-- from the price list, applies the patient's discount if they have one,
+-- adds tax unless the patient is exempt, and saves the result,
 -- returning the saved booking or throwing if anything went wrong.
 processBooking : UnvalidatedBooking -> Booking
 ```
@@ -60,7 +60,7 @@ line of code.
 Second attempt, after splitting and typing:
 
 ```text
--- Validates an unvalidated booking against the catalogue, producing a
+-- Checks an unvalidated booking against the catalogue, producing a
 -- booking whose treatment codes are known to exist and whose
 -- quantities are within limits.
 --

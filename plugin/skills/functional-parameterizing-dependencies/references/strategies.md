@@ -35,7 +35,7 @@ approveRefund : RefundContext -> Result<RefundApproved, RefundError>
 -- shell: the handler's failure type has a case for each way it can fail
 type RefundFailure =
   | NotFound
-  | Refused of RefundError
+  | Rejected of RefundError
   | Unavailable of StoreError
 
 handleApproveRefund :
@@ -51,7 +51,7 @@ handleApproveRefund pool allowance now request =
            |> bind (\booking ->
                 approveRefund
                   { now, request, booking, usedThisMonth: used, allowance }
-                    |> mapError Refused))
+                  |> mapError Rejected))
 ```
 
 The handler turns a booking that was not found into a case of its own
@@ -76,9 +76,9 @@ through capabilities it takes as parameters.
 
 ```text
 -- core: each check is a rule, and neither reads anything
-checkAge : Instant -> Booking -> Result<Booking, RefundError>
+checkAge : Instant -> Booking -> Result<RecentBooking, RefundError>
 checkAllowance :
-  Money -> Money -> Booking -> RefundRequest
+  Money -> Money -> RecentBooking -> RefundRequest
     -> Result<RefundApproved, RefundError>
 ```
 
@@ -94,14 +94,17 @@ handleApproveRefund loadBooking loadUsage allowance now request =
   loadBooking request.bookingId
     |> mapError Unavailable
     |> bind (toResult NotFound)
-    |> bind (checkAge now >> mapError Refused)
-    |> bind (\booking ->
+    |> bind (checkAge now >> mapError Rejected)
+    |> bind (\recent ->
          loadUsage request.patient (monthOf now)
            |> mapError Unavailable
            |> bind (\used ->
-                checkAllowance allowance used booking request
-                  |> mapError Refused))
+                checkAllowance allowance used recent request
+                  |> mapError Rejected))
 ```
+
+`checkAge` returns a `RecentBooking`, a type that did not exist before
+it ran, so `checkAllowance` cannot be handed a booking nobody checked.
 
 **Cost:** the handler has paths, so it takes the capabilities and not
 the connection, a test stubs each one, and the order of reads becomes
@@ -126,9 +129,10 @@ planRefund :
   RefundContext -> Result<NonEmptyList<Instruction>, RefundError>
 ```
 
-The amount appears once, in the instruction that credits it. The
-instructions are saved with the refund, so that a relay performs them in
-order and can resume after a restart.
+The amount appears once, in the instruction that credits it. What earns
+this strategy here is that refunds are audited one effect at a time: the
+instructions are saved with the refund, shown to the auditor as they
+stand, and performed by a relay that can resume after a restart.
 
 **Cost:** an extra type, and a shell that interprets it.
 **Benefit:** the effects are values. They can be logged, tested by
@@ -181,7 +185,7 @@ startup, parse it into typed values, and pass those.
 loadConfig : Environment -> Result<Config, ConfigError>
 
 -- domain receives typed values, never keys
-priceBooking : PricingPolicy -> Booking -> Priced
+lateFee : FeePolicy -> Instant -> Booking -> Money
 ```
 
 A domain function that reads an environment variable has an invisible

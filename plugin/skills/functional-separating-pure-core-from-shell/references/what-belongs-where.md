@@ -24,7 +24,6 @@ did not have to.
 
 ```text
 -- before: one pure chain
-priceBooking  : PriceList -> Booking -> Priced
 applyDiscount : Priced -> Priced
 buildReceipt  : Priced -> Receipt
 buildReceipt priced = receiptFor (applyDiscount priced)
@@ -60,9 +59,9 @@ reordering rather than a rewrite: gather first, decide second, perform
 last.
 
 Run the drill upward too. When a function has an effect type, ask
-whether it has one for its own reason or because of something it calls. The second
-kind is the one to fix, and fixing it un-does the drift for every caller
-above at once.
+whether it has one for its own reason or because of something it calls.
+The second kind is the one to fix, and fixing it un-does the drift for
+every caller above at once.
 
 ## The test
 

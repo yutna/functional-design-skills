@@ -112,9 +112,9 @@ validateCustomer :
   UnvalidatedCustomer -> Result<Customer, NonEmptyList<ValidationError>>
 validateCustomer raw =
   map3 makeCustomer
-    (parseName raw.name)
-    (parseEmail raw.email)
-    (parseAge raw.age)
+    (parseName raw.name |> toValidation)
+    (parseEmail raw.email |> toValidation)
+    (parseAge raw.age |> toValidation)
 ```
 
 See

@@ -14,19 +14,20 @@ languages; the shapes do not.
 
 ## The operators
 
-| You have                               | You want             | Operator    |
-| -------------------------------------- | -------------------- | ----------- |
-| `A -> B` and `B -> C`                  | `A -> C`             | compose     |
-| `A -> Result<B,E>`, `B -> Result<C,E>` | `A -> Result<C,E>`   | bind, `>=>` |
-| `A -> Result<B,E>` and `B -> C`        | `A -> Result<C,E>`   | map         |
-| `A -> Result<B,E1>`                    | `A -> Result<B,E2>`  | mapError    |
-| `Result<Result<A,E>,E>`                | `Result<A,E>`        | flatten     |
-| `List<Result<A,E>>`                    | `Result<List<A>,E>`  | sequence    |
-| `A -> Result<B,E>` over a `List<A>`    | `Result<List<B>,E>`  | traverse    |
-| Two independent `Result`s              | One `Result` of both | map2        |
-| `A -> B` and a `Result<A,E>`           | `Result<B,E>`        | map         |
-| `Option<A>`                            | `Result<A,E>`        | toResult    |
-| `A -> B` into an async pipeline        | `A -> Async<B>`      | lift        |
+| You have                               | You want             | Operator     |
+| -------------------------------------- | -------------------- | ------------ |
+| `A -> B` and `B -> C`                  | `A -> C`             | compose      |
+| `A -> Result<B,E>`, `B -> Result<C,E>` | `A -> Result<C,E>`   | bind, `>=>`  |
+| `A -> Result<B,E>` and `B -> C`        | `A -> Result<C,E>`   | map          |
+| `A -> Result<B,E1>`                    | `A -> Result<B,E2>`  | mapError     |
+| `Result<Result<A,E>,E>`                | `Result<A,E>`        | flatten      |
+| `List<Result<A,E>>`                    | `Result<List<A>,E>`  | sequence     |
+| `A -> Result<B,E>` over a `List<A>`    | `Result<List<B>,E>`  | traverse     |
+| Two independent `Result`s              | One `Result` of both | map2         |
+| `A -> B` and a `Result<A,E>`           | `Result<B,E>`        | map          |
+| `Option<A>`                            | `Result<A,E>`        | toResult     |
+| `A -> B` into an async pipeline        | `A -> Async<B>`      | lift         |
+| A `Result` with one error              | the error in a list  | toValidation |
 
 ## The four you will use constantly
 
@@ -89,7 +90,7 @@ Order parameters from most stable to least stable:
 4. The data being transformed
 
 ```text
-quoteBooking : PricingPolicy -> PriceList -> Instant -> Booking -> Quote
+lateFee : FeePolicy -> Instant -> Booking -> Money
 
 -- a handler: its capability first, then the context for the call
 handleConfirmBooking :
@@ -98,7 +99,7 @@ handleConfirmBooking :
 ```
 
 Every prefix of the first signature is a useful partially applied
-function, and the final shape `Booking -> Quote` is what a pipeline
+function, and the final shape `Booking -> Money` is what a pipeline
 wants.
 
 ## When to stop composing

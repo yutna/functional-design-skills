@@ -25,7 +25,10 @@ confirmBooking :
 
 Five decisions are already made: what comes in, that it is unchecked,
 what must be read first, what comes out, and how it can fail. Review
-this signature with a domain expert before writing code.
+this signature with a domain expert before writing code, or with
+whoever
+[working-alone.md](../../functional-design/references/working-alone.md)
+puts in their place.
 
 ## Input: the command
 
@@ -72,7 +75,7 @@ A step states what it needs as a value, in the domain's words.
 the clinic offers and their prices; `issueConfirmation` needs the
 `Instant`. The handler reads them before the workflow runs, and the
 workflow passes each to the steps that use it. A step that seems to need
-I/O needs a value; where a read depends on a rule, the pipeline is cut
+I/O needs a value; where a read cannot come first, the pipeline is cut
 in two. See
 [functional-parameterizing-dependencies](../../functional-parameterizing-dependencies/SKILL.md).
 

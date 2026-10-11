@@ -16,7 +16,7 @@ domain.
 
 ## 1. Say it in the domain's words
 
-The business says: "a customer enters a code; if it is valid and not
+The business says: "a patient enters a code; if it is valid and not
 expired we take a percentage off the booking total; the receipt has to show
 the discount." That yields one command and one event.
 
@@ -74,7 +74,7 @@ handler supplies them.
 
 ```text
 type ApplyDiscountFailure =
-  | Refused of ApplyDiscountError
+  | Rejected of ApplyDiscountError
   | Unavailable of StoreError
 
 handleApplyDiscount :
@@ -84,7 +84,7 @@ handleApplyDiscount pool now command =
   loadDiscountRules pool
     |> mapError Unavailable
     |> bind (\rules ->
-         applyDiscount rules now command |> mapError Refused)
+         applyDiscount rules now command |> mapError Rejected)
     |> bind (saveDiscounted pool >> mapError Unavailable)
 ```
 

@@ -66,7 +66,7 @@ registry.
 ```text
 -- before: an interface and three classes
 -- after:
-priceBooking : (Booking -> Money) -> Booking -> Priced
+roundTotal : RoundingRule -> PricedBooking -> PricedBooking
 ```
 
 **Visitor becomes a fold or a match.** The double-dispatch machinery

@@ -107,7 +107,7 @@ Skill: `functional-choosing-types-or-plain-data`.
 2. A workflow is a command in and events out, written as a pipeline of
    total functions with one type per completed stage.
 3. A workflow takes values, not capabilities. A handler reads first;
-   where a read depends on a rule, it reads between two pure functions;
+   where a read cannot come first, it reads between two pure functions;
    the core returns instructions when the effects are a business
    artefact.
 4. Configuration and dependencies first, data last, so partial

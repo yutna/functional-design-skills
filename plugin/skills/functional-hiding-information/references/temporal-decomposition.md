@@ -57,10 +57,10 @@ module RowRules
 
 -- knowledge: how a row is completed from stored data
 module RowEnrichment
-  enrich : Customers -> ValidRow -> Result<EnrichedRow, EnrichError>
+  enrich : Patients -> ValidRow -> Result<EnrichedRow, EnrichError>
 ```
 
-`Customers` is a value: the handler read it before the rows were
+`Patients` is a value: the handler read it before the rows were
 enriched. The pure function over the rows is the only thing that knows
 the order of validating and enriching:
 
@@ -70,15 +70,15 @@ type ImportError =
   | Unenriched of EnrichError
 
 importRows :
-  Customers -> List<Row> -> Result<List<EnrichedRow>, ImportError>
-importRows customers rows =
+  Patients -> List<Row> -> Result<List<EnrichedRow>, ImportError>
+importRows patients rows =
   rows
     |> traverse (RowRules.validate >> mapError Invalid)
-    |> bind (traverse (RowEnrichment.enrich customers
+    |> bind (traverse (RowEnrichment.enrich patients
                          >> mapError Unenriched))
 ```
 
-The handler reads the file and the customers, calls it, and writes:
+The handler reads the file and the patients, calls it, and writes:
 
 ```text
 type ImportFailure =
@@ -91,9 +91,9 @@ handleImportFile :
 handleImportFile pool inPath outPath =
   both
       (RowFile.read inPath |> mapError FileFailed)
-      (loadCustomers pool |> mapError Unavailable)
-    |> bind (\(rows, customers) ->
-         importRows customers rows |> mapError Rejected)
+      (loadPatients pool |> mapError Unavailable)
+    |> bind (\(rows, patients) ->
+         importRows patients rows |> mapError Rejected)
     |> bind (RowFile.write outPath >> mapError FileFailed)
 ```
 
