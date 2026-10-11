@@ -17,12 +17,21 @@ function that retries hides latency, cannot be tested in time, and makes
 its own behaviour depend on the network.
 
 ```text
--- shell: the adapter is wrapped once
-saveBookingResilient = withRetry policy (saveBooking pool)
+-- shell, once: the adapter is wrapped. What comes back still takes the
+-- deadline of the request it will serve
+findCatalogueWithRetry = withRetry policy isTransient (findCatalogueIn pool)
 
--- domain: unchanged, and unaware
-confirmBooking : SaveBooking -> BookingRequest -> AsyncResult<Placed, Error>
+-- shell, for each request: the entry point supplies the deadline, and
+-- the handler takes the result as its FindCatalogue, unaware of a retry
+priceFromCatalogue (findCatalogueWithRetry deadline) booking
 ```
+
+`FindCatalogue` and the handler `priceFromCatalogue` are declared in
+[functional-parameterizing-dependencies](../../functional-parameterizing-dependencies/SKILL.md).
+A read can be wrapped as it stands. A write is wrapped only once it is
+idempotent on its effect key, as
+[idempotency-and-delivery.md](idempotency-and-delivery.md) shows; behind
+a retry, any other write is the bug.
 
 ## Retry only what is worth retrying
 
@@ -53,13 +62,34 @@ type RetryPolicy = {
   totalBudget: Seconds,
   backoff: Backoff,
 }
+type Backoff = { base: Seconds, ceiling: Seconds }
 ```
 
 - **Total budget** is the number that matters, because it is what the
   caller experiences.
 - **Per-attempt timeout** stops one slow attempt consuming the budget.
-- The budget should shrink as it is passed inward: a request with three
-  seconds left must not start an operation that takes five.
+- The budget should shrink as it is passed inward. The retried call
+  takes a deadline, an `Instant`, and `withRetry` stops at whichever
+  comes first: `policy.totalBudget` from the first attempt, or that
+  deadline. A request with three seconds left therefore does not start
+  an operation that takes five.
+
+```text
+withRetry :
+  RetryPolicy -> (E -> Boolean) -> (A -> AsyncResult<B, E>)
+    -> Instant -> A -> AsyncResult<B, E>
+```
+
+The second argument says which errors are worth another attempt, from
+the table above. `isTransient` is that test for a `StoreError`.
+`withRetry` wraps a function of one argument, so an adapter that takes
+several is given the others first.
+
+It also lives and dies with the request. A call that must outlive the
+request is not wrapped at all: it is an instruction in an outbox, and
+the queue that holds it does the retrying, as
+[worked-long-running.md](worked-long-running.md#step-5-the-shell-loop)
+shows.
 
 ## Backoff and jitter
 
@@ -68,7 +98,10 @@ retries arrive together and knock the service over again the moment it
 recovers.
 
 ```text
-delay attempt = random (0, min (base * 2 ^ attempt) ceiling)
+-- draw is a random number from 0 to 1, which the shell supplies
+delay : Backoff -> Decimal -> Integer -> Seconds
+delay backoff draw attempt =
+  draw * min (backoff.base * 2 ^ attempt) backoff.ceiling
 ```
 
 Full jitter — a random delay between zero and the computed ceiling — is
@@ -81,7 +114,10 @@ When a dependency is failing consistently, retrying makes it worse and
 delays every caller. A breaker turns that into a fast, clear failure.
 
 ```text
-type BreakerState = Closed | Open of Instant | HalfOpen
+type BreakerState =
+  | Closed of { failures: Integer, windowStart: Instant }
+  | Open of Instant
+  | HalfOpen of { trialInFlight: Boolean }
 ```
 
 - **Closed**: calls pass; failures are counted over a window.

@@ -17,17 +17,21 @@ step fails.
 ## The shape
 
 ```text
--- each step commits on its own
-reserve : BookingId -> AsyncResult<Reservation, ReserveError>
-charge  : BookingId -> Money -> AsyncResult<Receipt, ChargeError>
-issue   : BookingId -> Reservation -> AsyncResult<Ticket, IssueError>
+-- each step commits on its own, and takes the key of its own effect
+hold   : EffectKey -> SlotId -> AsyncResult<SlotHold, HoldError>
+charge : EffectKey -> CardToken -> Money
+           -> AsyncResult<Receipt, ChargeError>
+issue  : EffectKey -> SlotHold -> AsyncResult<Ticket, IssueError>
 
--- each has a named business undo
-releaseReservation : Reservation -> AsyncResult<Released, ReleaseError>
-refundCharge : Receipt -> AsyncResult<Refunded, RefundError>
+-- each has a named business undo, keyed in the same way
+release : EffectKey -> SlotHold -> AsyncResult<Released, ReleaseError>
+refund  : EffectKey -> Receipt -> AsyncResult<Refunded, RefundError>
 ```
 
-Note that the undos are not "rollback". `refundCharge` is a real business
+Each effect key is derived from the command's key and the name of the
+operation, with `effectKey` from [SKILL.md](../SKILL.md#pattern).
+
+Note that the undos are not "rollback". `refund` is a real business
 operation with its own record, its own accounting consequence, and
 possibly its own fee. Naming it `rollback` hides all of that.
 
@@ -38,24 +42,19 @@ The coordinator is a state machine, and the same rules apply as in
 one case per state, each carrying only its own data, transitions as pure
 functions.
 
-```text
-type Booking =
-  | Started of { key: CommandId, request: BookingRequest }
-  | Reserved of { key: CommandId, reservation: Reservation }
-  | Charged of { key: CommandId, reservation: Reservation,
-                 receipt: Receipt }
-  | Issued of { key: CommandId, ticket: Ticket }
-  | Compensating of { key: CommandId, undo: NonEmptyList<Undo> }
-  | Failed of { key: CommandId, reason: BookingFailure }
-```
-
-The pure part decides what to do next; the shell performs it.
+The states of the process are `BookingProcess`, declared once in
+[worked-long-running.md](worked-long-running.md#step-2-model-the-process-as-states):
+a case for each thing achieved, the two that end the process (`Issued`
+and `Abandoned`), and `Stuck`. The pure part decides what to do next;
+the shell performs it.
 
 ```text
-next : Booking -> Event -> (Booking, List<Command>)
+advance :
+  Instant -> BookingProcess -> ProcessEvent
+    -> (BookingProcess, List<Instruction>)
 ```
 
-That signature is the whole design. It is a pure function of two values,
+That signature is the whole design. It is a pure function of three values,
 testable as a table of cases, with no processes, no sleeping, and no
 network. Everything hard about the process becomes data.
 
@@ -74,9 +73,10 @@ network. Everything hard about the process becomes data.
 5. **Some steps cannot be undone.** An email that has been sent is sent.
    Order the steps so irreversible ones come last, and if that is
    impossible, say so where the process is defined.
-6. **The terminal states are business outcomes.** `Issued`, `Failed`,
-   `Refunded` — each with its data, each meaningful to somebody outside
-   engineering.
+6. **The states a process stops in are business outcomes.** `Issued`
+   and `Abandoned` (nothing left standing) end it, and `Stuck` (an undo
+   was refused) holds it until a person has settled that undo — each
+   with its data, each meaningful to somebody outside engineering.
 
 ## When a process manager is the wrong answer
 
@@ -94,27 +94,42 @@ first:
 
 Reach for a process manager when the steps genuinely span systems, all of
 them must eventually happen or be undone, and the failure rate is high
-enough that a human cannot absorb it.
+enough that a human cannot absorb it. The failure rate is a figure from
+the business or from the logs, such as the count of bookings that ended
+in a failure last month. Where there is none, use the cheaper answer and
+record the rate as an assumption; see
+[working-alone.md](../../functional-design/references/working-alone.md).
 
 ## Timeouts as events
 
-A step that never answers is the common case, not an edge case. Give the
-process a deadline per state and treat expiry as an ordinary event.
+A step that never answers is the common case, not an edge case. Give
+every waiting state a deadline and treat its passing as an ordinary
+event, named for the wait it ends.
 
 ```text
-next (Reserved r) (Timeout _) = (Compensating ..., [ReleaseReservation ...])
+advance now (Charged c) (Timeout ForTicket) =
+  (Charged c, [Escalate { key: c.key, wait: ForTicket }])
 ```
 
-Without this, processes accumulate silently in an intermediate state, and
-you discover them from a customer complaint rather than from a metric.
+A deadline does not say the step failed. The effect may have happened
+and the answer been lost. So the process neither undoes on a guess nor
+forgets the wait: the shell has asked again with the same key for as
+long as its bound allows, the state stays where a late answer will find
+it, and a person is told. Where the effect lapses by itself, as a slot
+hold does, the process can end instead.
+
+Without the event, processes accumulate silently in an intermediate
+state, and you discover them from a patient's complaint rather than
+from a metric.
 
 ## Testing
 
-The pure `next` function is tested exhaustively as a table: every state
-crossed with every event, asserting the resulting state and commands.
-That table is also the documentation, and it is where a missing timeout
-transition becomes obvious.
+The pure `advance` function is tested exhaustively as a table: every
+state crossed with every event, asserting the resulting state and
+instructions. That table is also the documentation, and it is where a
+missing timeout transition becomes obvious.
 
 The shell needs a small number of tests: that state is persisted before
-commands are dispatched, that a restart resumes from the stored state,
-and that a duplicate event does not advance the process twice.
+instructions are dispatched, that a restart resumes from the stored
+state, and that a second delivery of the same event id leaves the stored
+state as it was. The shell does that de-duplication, not `advance`.
