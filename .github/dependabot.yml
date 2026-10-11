@@ -12,8 +12,14 @@
 # skills have to be told about, because their shapes move at the major. So the
 # npm entry allows only those libraries, and ignores their minor and patch
 # updates, which leaves a pull request for a new major and nothing else. The
-# libraries are listed in LIBRARIES in scripts/validate-types.mjs, an alias
-# such as effect-4 included, and that script fails when the two lists differ.
+# libraries are listed in LIBRARIES in scripts/validate-types.mjs, and that
+# script fails when the two lists differ.
+#
+# effect-4 is on that list and not on this one. It is an alias, a second major
+# of effect installed under another name, and Dependabot does not rewrite an
+# alias. effect is watched under its own name, with 4.x ignored because the
+# alias already holds it: what opens a pull request is a major nothing here
+# pins. The script checks both halves of that as well.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -32,7 +38,6 @@ updates:
       interval: monthly
     allow:
       - dependency-name: effect
-      - dependency-name: effect-4
       - dependency-name: zod
       - dependency-name: valibot
       - dependency-name: ts-pattern
@@ -47,6 +52,9 @@ updates:
         update-types:
           - version-update:semver-minor
           - version-update:semver-patch
+      - dependency-name: effect
+        versions:
+          - "4.x"
     labels:
       - dependencies
       - chore

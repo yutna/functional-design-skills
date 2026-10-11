@@ -214,9 +214,21 @@ const CASES = [
   // one Dependabot reads, and the line that keeps the entry to new majors.
   ['an example library that Dependabot is not told to watch',
     join('.github', 'dependabot.yml'),
-    ['      - dependency-name: effect-4\n', ''],
-    'effect-4 is on the list of example libraries and not in the npm allow list',
+    ['      - dependency-name: zod\n', ''],
+    'zod is on the list of example libraries and not in the npm allow list',
     'validate-types.mjs'],
+  // An alias is the one library that stays out of the allow list, and the
+  // package it installs has to have the alias's major ignored.
+  ['an alias that Dependabot is told to watch as a package of its own',
+    join('.github', 'dependabot.yml'),
+    ['      - dependency-name: zod\n',
+      '      - dependency-name: zod\n      - dependency-name: effect-4\n'],
+    'allow list names effect-4, which is an alias of effect',
+    'validate-types.mjs'],
+  ['a package offered the major its alias already holds',
+    join('.github', 'dependabot.yml'),
+    ['          - "4.x"\n', '          - "5.x"\n'],
+    'does not ignore 4.x for effect', 'validate-types.mjs'],
   ['a name in the Dependabot allow list that no example uses',
     join('.github', 'dependabot.yml'),
     ['      - dependency-name: next\n',

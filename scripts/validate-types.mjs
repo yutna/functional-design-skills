@@ -105,7 +105,8 @@ import {
 // an import to it: `effect-4` is the second major of `effect`, and no fence
 // says its name. To add one, `npm install --save-dev --save-exact` it, name it
 // here, and add it to the npm allow list in .github/dependabot.yml in the same
-// change; the run fails when the two lists differ.
+// change; the run fails when the two lists differ. An alias is the exception:
+// it stays out of that list, for the reason given above dependabotProblems.
 const LIBRARIES = [
   'effect',
   'effect-4',
@@ -1451,11 +1452,24 @@ function libraryProblems ({ libraries = LIBRARIES, pinned, manifestOf }) {
 // also has to keep ignoring minor and patch updates, which is what makes it
 // "a new major and nothing else"; without that line every release of every
 // example library opens a pull request, which is the noise the rest of npm
-// is left out to avoid. `text` is the file, taken as a value like the rest.
+// is left out to avoid.
+//
+// An alias is the exception on both counts. Dependabot does not rewrite the
+// `npm:<package>@<version>` an alias is pinned as, and it looks an allowed
+// name up in the registry, where `effect-4` is nobody's package or somebody
+// else's (dependabot-core issue 16488, read on 2026-10-11). So an alias stays
+// out of the allow list, and the package it installs is watched under its own
+// name. That package then needs the alias's major ignored: `effect` at 3 with
+// `effect-4` beside it would otherwise be offered every release of 4, a major
+// the examples are already checked against. What is left is a pull request
+// when a major appears that nothing here pins.
+//
+// `pinned` is the devDependencies of package.json and `text` is the file,
+// both taken as values like the rest.
 const DEPENDABOT = '.github/dependabot.yml'
 const SEMVER_IGNORED = ['version-update:semver-minor', 'version-update:semver-patch']
 
-function dependabotProblems ({ libraries = LIBRARIES, text }) {
+function dependabotProblems ({ libraries = LIBRARIES, pinned, text }) {
   let config
   try {
     config = parseYaml(text)
@@ -1471,9 +1485,15 @@ function dependabotProblems ({ libraries = LIBRARIES, text }) {
     }]
   }
   const problems = []
+  const aliases = new Map()
+  for (const name of libraries) {
+    const alias = ALIAS.exec(pinned[name] ?? '')
+    if (alias === null) continue
+    aliases.set(name, { installs: alias[1], major: Number.parseInt(alias[2], 10) })
+  }
   const allowed = (entry.allow ?? []).map((a) => a['dependency-name'])
   for (const name of libraries) {
-    if (allowed.includes(name)) continue
+    if (aliases.has(name) || allowed.includes(name)) continue
     problems.push({
       file: DEPENDABOT,
       message: `${name} is on the list of example libraries and not in the ` +
@@ -1481,12 +1501,38 @@ function dependabotProblems ({ libraries = LIBRARIES, text }) {
     })
   }
   for (const name of allowed) {
-    if (libraries.includes(name)) continue
+    if (aliases.has(name)) {
+      problems.push({
+        file: DEPENDABOT,
+        message: `the npm allow list names ${name}, which is an alias of ` +
+          `${aliases.get(name).installs}. Dependabot does not rewrite an ` +
+          `alias and would look ${name} up in the registry as a package of ` +
+          `its own. Remove it; ${aliases.get(name).installs} is the name to ` +
+          'watch.',
+      })
+    } else if (!libraries.includes(name)) {
+      problems.push({
+        file: DEPENDABOT,
+        message: `the npm allow list names ${name}, which is not on the list ` +
+          'of example libraries in scripts/validate-types.mjs, so nothing ' +
+          'checks the pull requests it opens against an example',
+      })
+    }
+  }
+  for (const [name, { installs, major }] of aliases) {
+    // An alias of a package that is not itself an example library has nothing
+    // watching it, and so nothing to keep quiet.
+    if (!libraries.includes(installs)) continue
+    const versions = (entry.ignore ?? [])
+      .filter((i) => i['dependency-name'] === installs)
+      .flatMap((i) => i.versions ?? [])
+    if (versions.includes(`${major}.x`)) continue
     problems.push({
       file: DEPENDABOT,
-      message: `the npm allow list names ${name}, which is not on the list ` +
-        'of example libraries in scripts/validate-types.mjs, so nothing ' +
-        'checks the pull requests it opens against an example',
+      message: `${installs} is also installed as ${name}, at major ${major}, ` +
+        `and the npm entry does not ignore ${major}.x for ${installs}, so it ` +
+        `opens a pull request moving ${installs} to a major the examples are ` +
+        'already checked against',
     })
   }
   const ignored = (entry.ignore ?? [])
@@ -1541,16 +1587,15 @@ function main (argv) {
     process.exit(1)
   }
   const loaded = loadDocuments()
-  const libraries = libraryProblems({
-    pinned: readPinned(), manifestOf: readManifest,
-  })
+  const pinned = readPinned()
+  const libraries = libraryProblems({ pinned, manifestOf: readManifest })
   const config = readDependabot()
   const dependabot = config === undefined
     ? [{
       file: DEPENDABOT,
       message: 'is missing, so no example library is told of a new major',
     }]
-    : dependabotProblems({ text: config })
+    : dependabotProblems({ pinned, text: config })
   const documents = only === null
     ? loaded.documents
     : loaded.documents.filter((d) => skillOf(d.md) === only)
@@ -1603,8 +1648,13 @@ function main (argv) {
       'file(s) type-check\n',
   )
   process.stdout.write(`      ${listed.join(', ')}\n`)
+  const aliased = Object.keys(libraries.aliases)
   process.stdout.write(
-    `      all ${LIBRARIES.length} are in the npm allow list in ${DEPENDABOT}\n`,
+    `      ${LIBRARIES.length - aliased.length} of them are in the npm allow ` +
+      `list in ${DEPENDABOT}` +
+      (aliased.length === 0
+        ? '\n'
+        : `, which leaves out ${aliased.join(', ')} as an alias\n`),
   )
   if (result.stats.variants.length > 0) {
     const where = result.stats.variants.map((v) =>
@@ -2114,8 +2164,9 @@ function selftest () {
     }
   }
 
-  // The Dependabot entry, against the libraries it has to match.
-  const dependabot = (allow, ignore = SEMVER_IGNORED) => [
+  // The Dependabot entry, against the libraries it has to match. `quiet` maps
+  // a package to the versions the entry ignores for it.
+  const dependabot = (allow, ignore = SEMVER_IGNORED, quiet = {}) => [
     'version: 2',
     'updates:',
     '  - package-ecosystem: github-actions',
@@ -2128,8 +2179,18 @@ function selftest () {
     '      - dependency-name: "*"',
     '        update-types:',
     ...ignore.map((kind) => `          - ${kind}`),
+    ...Object.entries(quiet).flatMap(([name, versions]) => [
+      `      - dependency-name: "${name}"`,
+      '        versions:',
+      ...versions.map((range) => `          - "${range}"`),
+    ]),
     '',
   ].join('\n')
+  // `beta-2` is a second major of `beta`, installed beside it under an alias.
+  const twoMajors = {
+    libraries: ['alpha', 'beta', 'beta-2'],
+    pinned: { alpha: '1.0.0', beta: '1.4.0', 'beta-2': 'npm:beta@2.0.1' },
+  }
   const entries = [
     {
       label: 'a Dependabot entry that allows exactly the example libraries',
@@ -2169,9 +2230,36 @@ function selftest () {
       text: dependabot(['alpha', 'beta']).replace(/\n/g, '\r\n'),
       expect: (found) => found.length === 0,
     },
+    {
+      label: 'an alias is left out of the allow list and its major is ignored',
+      ...twoMajors,
+      text: dependabot(['alpha', 'beta'], SEMVER_IGNORED, { beta: ['2.x'] }),
+      expect: (found) => found.length === 0,
+    },
+    {
+      label: 'an alias named in the Dependabot allow list',
+      ...twoMajors,
+      text: dependabot(['alpha', 'beta', 'beta-2'], SEMVER_IGNORED, { beta: ['2.x'] }),
+      expect: (found) => found.length === 1 &&
+        found[0].message.includes('allow list names beta-2, which is an alias of beta'),
+    },
+    {
+      label: 'a package offered the major its alias already holds',
+      ...twoMajors,
+      text: dependabot(['alpha', 'beta']),
+      expect: (found) => found.length === 1 &&
+        found[0].message.includes('does not ignore 2.x for beta'),
+    },
+    {
+      label: 'ignoring another major does not cover the one the alias holds',
+      ...twoMajors,
+      text: dependabot(['alpha', 'beta'], SEMVER_IGNORED, { beta: ['3.x'] }),
+      expect: (found) => found.length === 1 &&
+        found[0].message.includes('does not ignore 2.x for beta'),
+    },
   ]
-  for (const { label, text, expect } of entries) {
-    const found = dependabotProblems({ libraries: ['alpha', 'beta'], text })
+  for (const { label, text, expect, libraries = ['alpha', 'beta'], pinned = {} } of entries) {
+    const found = dependabotProblems({ libraries, pinned, text })
     const ok = expect(found)
     process.stdout.write(`${ok ? 'selftest ok:' : 'selftest FAIL:'} ${label}\n`)
     if (!ok) {
