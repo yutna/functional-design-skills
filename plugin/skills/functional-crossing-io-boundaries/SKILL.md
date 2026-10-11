@@ -123,7 +123,7 @@ Storage is a boundary like any other, with three extra concerns:
 transactions, identity, and concurrency.
 
 - **The domain does not know it is stored.** No repository interface
-  inside the domain; the workflow takes `LoadBooking` and `SaveBooking`
+  inside the domain; the handler takes `LoadBooking` and `SaveBooking`
   function types. See
   [functional-parameterizing-dependencies](../functional-parameterizing-dependencies/SKILL.md).
 - **One aggregate per transaction.** See

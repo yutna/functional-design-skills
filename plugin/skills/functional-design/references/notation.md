@@ -37,7 +37,7 @@ type PaymentMethod =
   | Transfer of { bank: BankCode, ref: TransferRef }
 
 -- single-case wrapper: a distinct type over a primitive
-type BookingId = BookingId of String
+type BookingId = BookingId of Uuid
 
 -- a type with a parameter
 type Secret<T> = Secret of T
@@ -59,7 +59,7 @@ parseTreatmentCode : String -> Result<TreatmentCode, CodeError>
 
 -- several arguments, written curried
 priceBooking :
-  PriceList -> ValidatedBooking -> Result<PricedBooking, PricingError>
+  Catalogue -> ValidatedBooking -> Result<PricedBooking, PricingError>
 
 -- a function passed as a value
 alias RoundingRule = Money -> Money
@@ -67,7 +67,7 @@ roundTotal : RoundingRule -> PricedBooking -> PricedBooking
 ```
 
 Read `->` right-associatively: `A -> B -> C` is a function from `A` to a
-function from `B` to `C`, so `priceBooking prices` is itself a function,
+function from `B` to `C`, so `priceBooking catalogue` is itself a function,
 waiting for the booking. Every signature in this pack is **total**, as
 [defined below](#words-with-one-meaning). An example of what not to do
 marks the promise it breaks in a comment, such as `-- throws`.
@@ -122,9 +122,10 @@ function it stands for: `(+)`.
 A few names are used without being declared. `identity` returns its
 argument, `const x` returns `x` whatever it is given, `fold` reduces a
 list to one value, `tryCatch` turns a thrown exception into an `Error`,
-and `crash` stops with a message. Any other name an example uses and
-does not declare, such as `trim` or `sumOf`, is an ordinary function
-that does what its name says.
+`crash` stops with a message, and `done x` is an `Async` that has
+already finished with `x`. Any other name an example uses and does not
+declare, such as `trim` or `sumOf`, is an ordinary function that does
+what its name says.
 
 ## Composition and pipelines
 
@@ -140,21 +141,26 @@ readCode = parseTreatmentCode >=> checkOffered catalogue
 ```
 
 `>>` composes plain functions. `>=>` composes functions that each return
-a `Result` with the same error type, and stops at the first `Error`.
-Three more names work on a value that is already a `Result`, and take
-it from the left of `|>`:
+a `Result`, and stops at the first `Error`. Three more names work on a
+value that is already a `Result`, and take it from the left of `|>`:
 
 ```text
 priced |> map addTax              -- the next step cannot fail
-validated |> bind (priceBooking prices)   -- the next step can
+validated |> bind (priceBooking catalogue)  -- the next step can
 priced |> mapError Pricing        -- change the error, keep the value
 ```
 
-`map` and `bind` mean the same on an `Option`, and all three on an
-`AsyncResult`, where a `Result` met in the chain joins it without
-ceremony. `map` is also the name for applying a function to each element
-of a `List`. To adapt a function rather than a value, put the name after
-`>>`: `priceBooking prices >> mapError Pricing`. The full set is in
+`map` and `bind` mean the same on an `Option` and on an `Async`, and all
+three on an `AsyncResult`. A chain may mix the two results: once any
+step is an `AsyncResult` the whole chain is one, and a plain `Result`
+before or after it joins without ceremony. `map` is also the name for
+applying a function to each element of a `List`. To adapt a function
+rather than a value, put the name after `>>`:
+`priceBooking catalogue >> mapError Pricing`.
+
+`>=>` and `bind` need one error type all the way along. Where two steps
+fail with different types, `mapError` lifts each into a type with a case
+for both. The full set is in
 [composition-toolkit.md](../../functional-composing-functions/references/composition-toolkit.md).
 
 ## Standard types
@@ -229,6 +235,10 @@ That guarantee is what makes the core testable. See
   [error-taxonomy.md](../../functional-handling-errors-with-results/references/error-taxonomy.md)
   says. A total function does not crash on any input its type admits; it
   may crash when code upstream broke that type's promise.
+- **rule.** Anything the business would state that decides an outcome:
+  a condition, a calculation, a classification. Code applies a rule
+  whenever it compares, computes with, or chooses by the contents of a
+  domain value. Handing a value on unread applies none.
 - **capability.** A function with an effect type that the shell supplies
   so that a handler can reach the world through it: load a row, send a
   message, draw an identifier. Whatever calls one has an effect type

@@ -106,9 +106,10 @@ Skill: `functional-choosing-types-or-plain-data`.
    name is in that type.
 2. A workflow is a command in and events out, written as a pipeline of
    total functions with one type per completed stage.
-3. Dependencies are parameters. Prefer fetching first and deciding
-   purely; parameterize when you cannot; interpret when the effects
-   themselves are a business artefact.
+3. A workflow takes values, not capabilities. A handler reads first;
+   where a read cannot come first, it reads between two pure functions;
+   the core returns instructions when the effects are a business
+   artefact.
 4. Configuration and dependencies first, data last, so partial
    application produces something useful.
 
@@ -132,9 +133,12 @@ Skills: `functional-handling-errors-with-results`,
 
 ## Effects and state
 
-1. All I/O at the edges; the core computes decisions from values.
-2. The core returns what happened; the shell performs it.
-3. Time, randomness, and identifier generation are effects.
+1. The core is pure: no effect type, no capability. A handler reads,
+   calls the core, and writes.
+2. The core returns decisions, as results, events or instructions; the
+   shell acts on them.
+3. Time, randomness, and identifiers reach the core as values, drawn by
+   the shell.
 4. Transform, never mutate. Keep the one mutable cell at the edge and
    replace its value atomically.
 5. Domain types are not wire types or storage types. Parse inward,

@@ -16,39 +16,37 @@ Placing effects at the edges is not a thing you do once. It is a thing
 that comes undone, and it comes undone in one specific way that is worth
 being able to name.
 
-**Impurity spreads upward.** A function that calls something impure is
-itself impure, whatever its own body does. So one lookup buried three
-levels down makes every caller above it impure too, all the way to the
-entry point — and none of those callers changed. They did not have to.
+**An effect spreads upward.** A function that calls something with an
+effect has an effect itself, whatever its own body does. So one lookup
+buried three levels down gives every caller above it an effect type too,
+all the way to the entry point, and none of those callers changed. They
+did not have to.
 
 ```text
 -- before: one pure chain
-priceBooking  : PriceList -> Booking -> Priced
 applyDiscount : Priced -> Priced
 buildReceipt  : Priced -> Receipt
+buildReceipt priced = receiptFor (applyDiscount priced)
 
 -- someone adds a lookup inside applyDiscount
-applyDiscount : Priced -> Async<Priced>      -- now impure
+applyDiscount : Priced -> Async<Priced>      -- now has an effect
 -- and the type of everything above it has to follow
 buildReceipt  : Priced -> Async<Receipt>     -- for no reason of its own
 ```
 
-Nothing about receipts became asynchronous. The signature changed
-because of a decision made two functions away, and every test of
-`buildReceipt` now needs an await and a stub.
+Nothing about receipts needed an effect. The signature changed because
+of a decision made one function away, and every test of `buildReceipt`
+now needs an await and a stub.
 
 That is the whole mechanic, and it explains three things people
 otherwise treat as separate complaints: why "just one query here" is
-never just one query, why a codebase ends up asynchronous everywhere,
-and why the fix is always the same shape — return the need instead of
-satisfying it.
+never just one query, why a codebase ends up with an effect type
+everywhere, and why the fix is always the same shape: take the value as
+a parameter instead of fetching it inside.
 
 ```text
 -- applyDiscount says what it needs and stays pure
 applyDiscount : DiscountPolicy -> Priced -> Priced
-
--- or it returns the question, and the shell answers it
-applyDiscount : Priced -> Either<NeedsPolicy, Priced>
 ```
 
 **The drill.** Read one function, line by line, and mark each line as
@@ -60,10 +58,10 @@ interleaved, the interleaving is the work, and it is usually one
 reordering rather than a rewrite: gather first, decide second, perform
 last.
 
-Run the drill upward too. When a function is impure, ask whether it is
-impure for its own reason or because of something it calls. The second
-kind is the one to fix, and fixing it un-does the drift for every caller
-above at once.
+Run the drill upward too. When a function has an effect type, ask
+whether it has one for its own reason or because of something it calls.
+The second kind is the one to fix, and fixing it un-does the drift for
+every caller above at once.
 
 ## The test
 
@@ -72,31 +70,37 @@ For any piece of code, ask three questions:
 1. **Does it decide anything the business cares about?** If yes, it is
    core.
 2. **Does it need the world to run?** If yes, it is shell.
-3. **Both?** It is two things. Split it: the shell fetches, the core
-   decides, the shell performs.
+3. **Both?** It is two things written in one function. Split it: the
+   handler reads, a pure function decides, the handler writes.
 
-Nothing is genuinely both. When it feels that way, the fetch and the
-decision are simply written in the same function.
+Sometimes the two alternate, because a rule decides what to read next.
+The deciding is still pure: write it as two pure functions, and let the
+handler read between them.
 
 ## Ambiguous cases
 
-**Validation that needs a lookup.** "Does this treatment code exist?" needs
-storage; "is this quantity in range?" does not. Split them: pure field
-validation in the core, existence checks as a capability passed in, or
-fetched first. See
+**Validation that needs a lookup.** "Does this treatment code exist?"
+needs storage; "is this quantity in range?" does not. The handler reads
+what the check needs, the treatment codes the clinic offers, and a pure
+function checks against them. See
 [functional-parameterizing-dependencies](../../functional-parameterizing-dependencies/SKILL.md).
 
 **Uniqueness.** "Is this email already registered?" is not a domain
-invariant a value can hold; it is a property of a collection at a moment.
-The check is a workflow step with a capability; the enforcement is a
-database constraint. Both, deliberately.
+invariant a value can hold; it is a property of a collection at a
+moment. The handler reads whether the value is taken and passes that
+fact to the pure function that decides. The database constraint still
+enforces it, because another request can take the value between the
+read and the write. Both, deliberately.
 
 **Money formatting.** Formatting for display is presentation, so it lives
 at the edge, where locale and audience are known. Rounding rules are
 business rules and live in the core.
 
 **Identifier generation.** Generating is shell. Validating the format,
-and knowing which entity an identifier belongs to, is core.
+and knowing which entity an identifier belongs to, is core. The one
+identifier the shell must not generate is a command's key, which the
+caller creates before its first attempt; see
+[functional-making-effects-reliable](../../functional-making-effects-reliable/SKILL.md).
 
 **Sorting and paging.** If the ordering is a business rule ("urgent
 first"), the comparison lives in the core. Pagination mechanics belong to
@@ -126,11 +130,14 @@ event. Writing it is shell.
 
 A quick check that needs no discussion. Look at the function's type:
 
-- Contains `Async`, `IO`, `Task`, or a connection type: shell.
-- Returns the same output for the same input, with no effect: core.
+- Has an effect type, or takes a capability or a connection: shell.
+- Has no effect type, and states a rule or builds a domain type: core.
 - Contains a driver, framework, or transport type: shell, and probably
   leaking. See
   [functional-hiding-information](../../functional-hiding-information/SKILL.md).
+- In a language whose types do not mark effects, the signature cannot
+  tell you. Read the body for a clock, a random source, a file, a
+  socket, or a call to something that has one.
 
 If a function is meant to be core and its signature says otherwise, the
 signature is right and the intention is wrong.
@@ -142,7 +149,7 @@ An even quicker check: how hard is it to test?
 | Test needs                   | Where the code is      |
 | ---------------------------- | ---------------------- |
 | Plain values only            | Core, correctly        |
-| A stub function or two       | Core with capabilities |
+| A stub for a capability      | A handler              |
 | A running database or server | Shell                  |
 | A mocking framework          | Shell, or badly split  |
 

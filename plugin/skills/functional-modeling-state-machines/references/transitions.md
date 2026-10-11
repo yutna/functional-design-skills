@@ -28,11 +28,12 @@ Two rules:
 2. The error names the business reason, not the mechanism. `Expired`,
    not `GuardFailed`.
 
-Where a guard needs data the state does not carry, pass the lookup in:
+Where a guard needs data the state does not carry, pass the data in. The
+handler read it before calling the transition:
 
 ```text
 accept :
-  GetCustomerCredit -> Instant -> CustomerId -> Sent
+  CustomerCredit -> Instant -> CustomerId -> Sent
     -> Result<Accepted, AcceptError>
 ```
 

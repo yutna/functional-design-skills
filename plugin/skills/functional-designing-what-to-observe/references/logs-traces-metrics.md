@@ -107,7 +107,7 @@ rejected booking at error level trains everyone to ignore the level.
 ## Traces
 
 A span per unit of work that could be slow, which in practice means
-every call that leaves the process, plus the workflow as a whole.
+every call that leaves the process, plus the handler as a whole.
 
 - Name spans after the operation, not the function: `charge.card`, not
   `handleChargeInternal`.

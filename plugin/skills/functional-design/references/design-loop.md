@@ -4,9 +4,19 @@ One small feature walked through the seven steps: **apply a discount code
 when confirming a booking**. The point is the order of the steps, not the
 domain.
 
+## Contents
+
+- [1. Say it in the domain's words](#1-say-it-in-the-domains-words)
+- [2. Model the data](#2-model-the-data)
+- [3. Design the workflow as a pipeline](#3-design-the-workflow-as-a-pipeline)
+- [4. Decide where effects live](#4-decide-where-effects-live)
+- [5. Shape the modules](#5-shape-the-modules)
+- [6. Name and document](#6-name-and-document)
+- [7. Review](#7-review)
+
 ## 1. Say it in the domain's words
 
-The business says: "a customer enters a code; if it is valid and not
+The business says: "a patient enters a code; if it is valid and not
 expired we take a percentage off the booking total; the receipt has to show
 the discount." That yields one command and one event.
 
@@ -38,31 +48,49 @@ code. Each one must be unbuildable, not merely unlikely.
 ## 3. Design the workflow as a pipeline
 
 ```text
-applyDiscount :
-  ApplyDiscount -> Result<DiscountApplied, ApplyDiscountError>
+alias DiscountRules = Map<DiscountCode, DiscountRule>
 
-applyDiscount =
-  parseCode >=> lookupDiscount >=> checkNotExpired >=> reprice
+applyDiscount :
+  DiscountRules -> Instant -> ApplyDiscount
+    -> Result<DiscountApplied, ApplyDiscountError>
+
+applyDiscount rules now command =
+  parseCode command
+    |> bind (lookupDiscount rules)
+    |> bind (checkNotExpired now)
+    |> map reprice
 ```
+
+The rule table and the instant are values the workflow is given.
 
 Each step gets its own signature before any body is written. Where two
 steps always run together and share nothing else, they are one step.
 
 ## 4. Decide where effects live
 
-`lookupDiscount` needs storage; `checkNotExpired` needs the clock. Neither
-belongs in the core, so both become parameters.
+The rule table lives in storage, and checking expiry needs the clock.
+Neither belongs in the core, so the workflow takes both as values and a
+handler supplies them.
 
 ```text
-alias LookupDiscount = DiscountCode -> Option<DiscountRule>
+type ApplyDiscountFailure =
+  | Rejected of ApplyDiscountError
+  | Unavailable of StoreError
 
-applyDiscount :
-  LookupDiscount -> Instant -> ApplyDiscount
-    -> Result<DiscountApplied, ApplyDiscountError>
+handleApplyDiscount :
+  Pool -> Instant -> ApplyDiscount
+    -> AsyncResult<DiscountApplied, ApplyDiscountFailure>
+handleApplyDiscount pool now command =
+  loadDiscountRules pool
+    |> mapError Unavailable
+    |> bind (\rules ->
+         applyDiscount rules now command |> mapError Rejected)
+    |> bind (saveDiscounted pool >> mapError Unavailable)
 ```
 
-The shell reads the clock and the database once, then calls a pure
-function. The core can now be tested with plain values.
+The shell reads the clock once for the command and hands the instant to
+the handler, which reads the rule table, calls the pure function, and
+writes the result. The core can now be tested with plain values.
 
 ## 5. Shape the modules
 
@@ -75,8 +103,8 @@ to a config file without touching a caller? If not, something leaked.
 
 `applyDiscount` beats `processDiscountRequest`. `saved` beats `amount2`.
 The only comment worth writing here records what the code cannot say: why
-expiry is compared in the customer's timezone, and which team owns the
-rule table.
+a fixed-amount discount is capped at the booking total instead of
+refused, and which team owns the rule table.
 
 ## 7. Review
 

@@ -31,11 +31,13 @@ naming.
 
 ```text
 sortBy : (A -> A -> Ordering) -> List<A> -> List<A>
-priceBooking : GetTreatmentPrice -> Booking -> Priced
+roundTotal : RoundingRule -> PricedBooking -> PricedBooking
 ```
 
-A parameter. Name the function type when it means something to the
-domain. There is no interface and no implementation class.
+A parameter. The function passed in is pure, a pricing or rounding
+rule, and not a lookup: data a rule needs is read first and passed as a
+value. Name the function type when it means something to the domain.
+There is no interface and no implementation class.
 
 ## Command
 
@@ -59,8 +61,12 @@ trails, and replay.
 thing it gets.
 
 ```text
--- factory: a function
-makeBookingId : Unit -> BookingId
+-- factory: a function; drawing an identifier is an effect, so it has
+-- an effect type and is called by the shell
+makeBookingId : Unit -> Async<BookingId>
+
+-- a pure factory builds from what it is given
+bookingFromDraft : BookingId -> Draft -> Booking
 
 -- abstract factory: a record of constructors
 alias Renderer = {

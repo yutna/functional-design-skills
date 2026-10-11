@@ -30,6 +30,13 @@ If all three succeed, the function is applied. If any fail, every failure
 is returned. The error type is a `NonEmptyList` because "failed" means at
 least one problem.
 
+A field's own parser fails with one error, not a list. `toValidation`
+puts that error in a list of one, so that the results line up:
+
+```text
+toValidation : Result<A, E> -> Result<A, NonEmptyList<E>>
+```
+
 ```text
 validateCustomer raw =
   map3 makeCustomer

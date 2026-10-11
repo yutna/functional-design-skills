@@ -56,7 +56,8 @@ you when it is wrong.
 | Smart constructor            | Examples plus a property           |
 | Pure decision or calculation | Examples, one per rule             |
 | State transition             | Table of legal and illegal         |
-| Workflow pipeline            | Examples with stubbed capabilities |
+| Workflow pipeline            | Examples with plain values         |
+| Handler, reads between rules | Stub for each capability, per path |
 | Boundary mapping             | Round-trip property                |
 | Storage adapter              | Integration, few                   |
 | Transport adapter            | Integration, few                   |
@@ -90,20 +91,25 @@ reason. Achieving it is a design change, not a testing technique. See
 
 ## Stubs, not mocks
 
-A capability is a function type, so a stub is a function.
+A capability is a function type, so a stub is a function. The stub
+belongs to a handler, since only a handler takes a capability. Here the
+handler reads a catalogue that a rule names, as in
+[functional-parameterizing-dependencies](../functional-parameterizing-dependencies/SKILL.md):
 
 ```text
-let stubPrice = \code -> Money 1000
-let stubExists = \_ -> true
+let stubLoadCatalogue = \_ -> done (Ok standardCatalogue)
 
-test "prices every treatment" =
-  expect (priceBooking stubPrice validBooking) toBeOk
+test "prices a booking from the catalogue its rule names" =
+  expect (priceFromCatalogue stubLoadCatalogue validBooking)
+    toFinishWith (Ok pricedAtStandardRates)
 ```
 
-No framework, no expectations, no verification of calls. If a test needs
-to assert that a dependency was called, ask what observable outcome that
-call produces, and assert on that instead. Where the call itself is the
-outcome, return it as an event and assert on the event.
+The stub has the capability's type, so the test compiles only if the
+handler asks for what it says. No framework, no expectations, no
+verification of calls. If a test needs to assert that a dependency was
+called, ask what observable outcome that call produces, and assert on
+that instead. Where the call itself is the outcome, return it as an
+instruction and assert on the instruction.
 
 ## Properties worth stating
 

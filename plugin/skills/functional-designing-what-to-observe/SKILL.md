@@ -107,8 +107,8 @@ For each workflow, answer these before implementing it:
 
 1. **What must be countable?** Usually: attempted, succeeded, and each
    named failure case. That falls straight out of the error type.
-2. **What must be timed?** The whole workflow, plus any step that calls
-   another system.
+2. **What must be timed?** The handler as a whole, plus any call it
+   makes to another system.
 3. **What must be reconstructable?** The identifiers needed to find one
    specific case later: the command identity, the entity, the actor.
 

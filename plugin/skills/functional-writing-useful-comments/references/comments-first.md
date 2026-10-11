@@ -45,12 +45,12 @@ rather than two days.
 First attempt:
 
 ```text
--- Takes the raw booking, checks the fields are present and the treatment
--- codes exist by calling the catalogue, then works out prices from
--- the price list, applies the customer's discount if they have one,
--- adds tax unless the customer is exempt, and saves the result,
+-- Takes the unvalidated booking, checks the fields are present and the
+-- treatment codes exist by calling the catalogue, then works out prices
+-- from the price list, applies the patient's discount if they have one,
+-- adds tax unless the patient is exempt, and saves the result,
 -- returning the saved booking or throwing if anything went wrong.
-processBooking : RawBooking -> Booking
+processBooking : UnvalidatedBooking -> Booking
 ```
 
 Reading it back: six clauses joined by "and", a mention of throwing, and
@@ -60,15 +60,15 @@ line of code.
 Second attempt, after splitting and typing:
 
 ```text
--- Validates a raw booking against the catalogue, producing a booking
--- whose treatment codes are known to exist and whose quantities are
--- within limits.
+-- Checks an unvalidated booking against the catalogue, producing a
+-- booking whose treatment codes are known to exist and whose
+-- quantities are within limits.
 --
 -- Fails with: one ValidationError per bad field, all of them, so a
 -- form can be corrected in a single pass.
 -- Does not: price, discount, tax, or save.
 validateBooking :
-  CheckTreatmentExists -> RawBooking
+  Catalogue -> UnvalidatedBooking
     -> Result<ValidatedBooking, NonEmptyList<ValidationError>>
 ```
 

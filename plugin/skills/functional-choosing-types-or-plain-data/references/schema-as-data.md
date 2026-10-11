@@ -148,7 +148,31 @@ type StoredResponse = {
 }
 
 readResponse :
-  GetSchema -> StoredResponse -> Result<ValidatedAnswers, ReadError>
+  Schema -> StoredResponse -> Result<ValidatedAnswers, ReadError>
+```
+
+`readResponse` is pure. The handler loads the document, loads the schema
+that the document names by its version, and passes both in:
+
+```text
+type ReadFailure =
+  | Unreadable of ReadError
+  | Unavailable of StoreError
+
+alias LoadSchema = SchemaVersion -> AsyncResult<Schema, StoreError>
+alias LoadResponse = ResponseId -> AsyncResult<StoredResponse, StoreError>
+
+handleReadResponse :
+  LoadSchema -> LoadResponse -> ResponseId
+    -> AsyncResult<ValidatedAnswers, ReadFailure>
+handleReadResponse loadSchema loadResponse id =
+  loadResponse id
+    |> mapError Unavailable
+    |> bind (\stored ->
+         loadSchema stored.schemaVersion
+           |> mapError Unavailable
+           |> bind (\schema ->
+                readResponse schema stored |> mapError Unreadable))
 ```
 
 Two rules follow:

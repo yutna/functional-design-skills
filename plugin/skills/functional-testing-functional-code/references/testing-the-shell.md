@@ -16,12 +16,12 @@ proving something the core tests cannot.
 ## What the shell tests must prove
 
 1. **The wiring is right.** The composition root supplies the intended
-   implementations, and the workflow runs end to end.
+   implementations, and the handler runs end to end.
 2. **The mapping matches reality.** The storage adapter's rows really do
    round-trip through the real database, with its real types and
    constraints.
-3. **Transactions behave.** A failure mid-workflow rolls back, and a
-   concurrent update is detected.
+3. **Transactions behave.** A failure partway through a handler rolls
+   back, and a concurrent update is detected.
 4. **The transport contract holds.** Requests parse, responses serialise,
    status codes are right.
 
@@ -38,11 +38,11 @@ Everything else belongs in core tests.
 
 ## Fakes for capabilities
 
-For workflow-level tests that are not full integration tests, replace
+For handler tests that are not full integration tests, replace
 each capability with an in-memory implementation.
 
 ```text
--- an in-memory store, thirty lines, shared by every workflow test
+-- an in-memory store, thirty lines, shared by every handler test
 makeFakeStore : Unit -> { save: SaveBooking, load: LoadBooking,
                           contents: Unit -> List<Booking> }
 ```
@@ -95,7 +95,7 @@ A working ratio for a service:
 | Layer                  | Share of tests |
 | ---------------------- | -------------- |
 | Domain types and rules | Most           |
-| Workflows with fakes   | Many           |
+| Handlers with fakes    | Many           |
 | Adapters, integration  | Few            |
 | End to end, full stack | A handful      |
 

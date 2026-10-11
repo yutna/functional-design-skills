@@ -23,8 +23,8 @@ type is already the port and a function is already the adapter.
 | Entity, value object   | Domain type with a constructor        |
 | Aggregate root         | Opaque type with transition functions |
 | Domain service         | A pure function taking what it needs  |
-| Use case, interactor   | A workflow pipeline                   |
-| Port                   | A function type declared inward       |
+| Use case, interactor   | A handler and the workflow it calls   |
+| Port                   | A capability's function type          |
 | Adapter                | A function that satisfies it          |
 | Repository             | One or two function types             |
 | Composition root       | The wiring function at the edge       |
@@ -34,35 +34,42 @@ Nothing on the right needs a class or an interface declaration. A port is
 
 ## The shell is not one thing
 
-"Shell" is a role, not a folder. In practice it has four distinguishable
-jobs, and keeping them separate keeps it thin.
+"Shell" is a role, not a folder. In practice it has five
+distinguishable jobs, and keeping them separate keeps it thin.
 
 **Transport.** Turns requests, messages, or CLI arguments into commands,
 and results back into responses. Owns status codes, content types, and
 serialisation. Knows nothing about storage.
 
+**Handlers.** One for each command: read, call the core, write. Knows
+nothing about HTTP or SQL.
+
 **Storage.** Turns domain values into rows or documents and back. Owns
 transactions, connections, and retries. Knows nothing about transport.
 
 **Capabilities.** Clock, random, identifier generation, feature flags,
-configuration. Small functions, supplied at wiring time.
+configuration. Small functions, supplied at wiring time, and called by
+handlers and entry points.
 
-**Composition.** The root that builds the wired workflows from the three
+**Composition.** The root that builds the wired handlers from the four
 above. One function, no logic.
 
 ```text
--- transport
-handlePost req =
-  parseCommand req
-    |> bind app.confirmBooking
-    |> map toResponse
+-- transport: the entry point is given the instant read for this request
+handlePost : App -> Instant -> Request -> Async<Response>
+handlePost app now request =
+  match parseCommand request with
+  | Error problem -> done (badRequest problem)  -- an Async, finished
+  | Ok command -> app.confirm now command |> respondTo
 
--- composition
-buildApp pool clock =
-  { confirmBooking =
-      confirmBooking (checkTreatment pool) (getPrice pool) (saveBooking pool)
-        (clock.now) }
+-- composition: wires handlers, never a workflow with capabilities
+buildApp pool =
+  { confirm = handleConfirmBooking pool }
 ```
+
+`respondTo` turns the handler's `AsyncResult` into a response, and
+`handleConfirmBooking` is the handler shown in
+[functional-designing-workflow-pipelines](../../functional-designing-workflow-pipelines/SKILL.md).
 
 ## Where events go
 
@@ -76,23 +83,27 @@ decision is a real design choice:
 | Fire and forget         | Simple; events can be lost           |
 | Returned to the caller  | Caller decides; good for libraries   |
 
+"Fire and forget" is acceptable only for an event whose loss is
+acceptable. Any other event follows rule 4 of
+[functional-making-effects-reliable](../../functional-making-effects-reliable/SKILL.md).
+
 Make the choice explicitly and write it down next to the workflow. The
 core is unaffected either way, which is the point.
 
 ## Where transactions go
 
-In the shell, wrapping one aggregate's read-decide-write cycle.
+In the store, around one write. A handler never holds a transaction.
 
-```text
-withTransaction pool (\tx ->
-  loadBooking tx id
-    |> map (applyDecision decision)
-    |> bind (saveBooking tx))
-```
+For a read, a decision and a write on one aggregate, the store checks at
+the write that the row is still as it was read, and returns a conflict
+if it is not. Where two things must be written together, a booking and
+its events, the store offers one function that writes both.
+[persistence-patterns.md](../../functional-crossing-io-boundaries/references/persistence-patterns.md)
+shows the types.
 
-The pure function in the middle knows nothing about the transaction. It
-cannot start one, cannot commit one, and cannot be affected by a
-rollback. See
+The pure function in the middle knows nothing about any of this. It
+cannot start a transaction, cannot commit one, and cannot be affected by
+a rollback. See
 [functional-enforcing-consistency-boundaries](../../functional-enforcing-consistency-boundaries/SKILL.md).
 
 ## Long-running processes
@@ -103,11 +114,14 @@ with pure transitions, and let the shell drive it:
 
 ```text
 -- core
-advance : Instant -> ProcessState -> Event -> (ProcessState, List<Command>)
-
--- shell
-loop: read state, receive event, advance, persist state, dispatch commands
+advance :
+  Instant -> BookingProcess -> ProcessEvent
+    -> (BookingProcess, List<Instruction>)
 ```
+
+The shell, for each event, reads the state, calls `advance`, and saves
+the new state and the instructions together. A relay dispatches the
+instructions afterwards.
 
 The core remains a pure function from state and event to new state and
 instructions, which is testable as a table of cases.
@@ -124,6 +138,7 @@ and the rendering. See
 It will try to. Two symptoms and their repair:
 
 - **A conditional in the shell about business meaning.** Move the
-  decision into the core and return an instruction instead.
-- **A shell function that is hard to name.** It is doing two of the four
+  condition into a pure function, and let the handler follow the case
+  it returns.
+- **A shell function that is hard to name.** It is doing two of the five
   jobs above. Split it.

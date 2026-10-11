@@ -109,13 +109,14 @@ functions. That is what makes partial application possible, and partial
 application is how dependencies are supplied.
 
 ```text
-priceBooking : GetTreatmentPrice -> ValidatedBooking -> PricedBooking
+priceBooking :
+  Catalogue -> ValidatedBooking -> Result<PricedBooking, PricingError>
 
--- apply the dependency once, at wiring time
-priceWithCatalogue = priceBooking (lookupIn catalogue)
+-- apply the value once; the handler read the catalogue first
+priceFromCatalogue = priceBooking catalogue
 
--- the result is exactly the shape the pipeline wants
-pipeline = validate >=> priceWithCatalogue >=> acknowledge
+-- the result is exactly the shape a step wants
+priced = validated |> bind priceFromCatalogue
 ```
 
 This is why parameter order matters: dependencies first, data last. With
@@ -133,7 +134,7 @@ sortTreatments : Comparator -> List<Treatment> -> List<Treatment>
 ```
 
 Name the function type when it means something in the domain
-(`GetTreatmentPrice`), and leave it inline when it is generic
+(`RoundingRule`), and leave it inline when it is generic
 (`A -> Boolean`).
 
 ## Red flags
