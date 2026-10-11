@@ -111,7 +111,9 @@ code it produces:
 - "Utils" modules that exist so a two-line helper has a home
 - Pipelines split into steps so small that the wiring is longer than the
   work
-- A separate module per record field's validation
+- A module for one record field's validation that holds a single check
+  and no type of its own. A module that owns a type with its constructor,
+  such as one for `TreatmentCode`, is not this
 
 The test: could this module's contents be inlined into its single caller
 without any reader losing information? If yes, it is not a module; it is
@@ -133,8 +135,8 @@ is independently meaningful and the split boundaries are natural.
 ## Common mistakes
 
 - **Splitting by structure rather than by knowledge.** One module per
-  entity, per layer, or per file-type distributes one decision across
-  many places.
+  entity or per file type, or a folder per layer for every entity,
+  distributes one decision across many places.
 - **Counting only exported names as the interface.** Required call order
   and value constraints cost callers just as much.
 - **Making a module maximally general.** Generality nobody uses is
