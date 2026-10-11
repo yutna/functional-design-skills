@@ -40,11 +40,16 @@ selecting elements, which is a filter.
    element, same result, no effect.
 3. Default. **Prefer the specific operation when one exists.** `sum`, `maximum`,
    `groupBy` and `count` say more than a fold with a lambda.
-4. Default. **Fold from the left for accumulation, from the right to build a
-   structure.** Left folds are iterative and constant in stack; right folds
-   build lazily and suit infinite sequences.
-5. Default. **One fold per pass, unless the passes are independent.** Combining
-   three folds into one obscures all three; profile before merging.
+4. Default. **Fold from the left, and reverse once when a list is built.**
+   A left fold with a forced accumulator is iterative and constant in
+   stack; see the accumulator rule in
+   [laziness.md](../functional-using-recursion-and-laziness/references/laziness.md).
+   Use a right fold only in a lazy language, or when the consumer takes
+   the result a piece at a time.
+5. Default. **Merge two folds into one pass only when they share a
+   predicate or an accumulator.** The total and the count of the same
+   treatments are one fold. Folds with nothing in common stay as
+   separate passes, because combining them obscures all of them.
 6. Default. **Give a recursive type its fold.** Write it once beside the type,
    and consume the type through it everywhere else.
 
@@ -55,31 +60,31 @@ Loop with accumulators:
 ```text
 total = 0
 count = 0
-for line in lines:
-  if line.taxable:
-    total = total + line.amount
+for t in booking.treatments:
+  if t.billable:
+    total = total + t.price
     count = count + 1
 ```
 
-Three mutable variables, an implicit order, and a shape that cannot be
+Two mutable accumulators, an implicit order, and a shape that cannot be
 reused or run in parallel.
 
 Fold:
 
 ```text
-type Summary = { total: Money, count: Integer }
+type Summary = { total: Satang, count: Integer }
 
-addLine : Summary -> Line -> Summary
-addLine s line =
-  if line.taxable
-  then { total: add s.total line.amount, count: s.count + 1 }
+addTreatment : Summary -> BookedTreatment -> Summary
+addTreatment s t =
+  if t.billable
+  then { total: add s.total t.price, count: s.count + 1 }
   else s
 
-summarise : List<Line> -> Summary
-summarise = fold addLine { total: zero, count: 0 }
+summarise : List<BookedTreatment> -> Summary
+summarise = fold addTreatment { total: zero, count: 0 }
 ```
 
-`addLine` is a pure function that can be tested with two values, and
+`addTreatment` is a pure function that can be tested with two values, and
 `summarise` has no mechanism left to get wrong.
 
 ## Recognising a fold
@@ -126,17 +131,31 @@ missing a case. This is the visitor pattern with the scaffolding removed.
 ## Combining with a monoid
 
 When the combining operation has an identity and is associative, folding
-becomes reorderable and parallelisable, and empty collections stop being
-a special case.
+becomes splittable and parallelisable, with the parts combined in their
+original order, and empty collections stop being a special case.
+Reordering the parts needs one more law, commutativity.
 
 ```text
--- (add, zero) is a monoid over Money
+-- (add, zero) is a monoid over Satang, which is one currency
 totalOf = fold add zero
 ```
 
 Associativity is what allows a fold to be split across workers and the
 partial results combined. See
 [monoids.md](references/monoids.md).
+
+## Fold in each language
+
+- **JavaScript and TypeScript.** A fold is `Array.prototype.reduce`,
+  and `reduceRight` folds from the right. Always pass the initial value:
+  without one, `reduce` on an empty array throws a `TypeError`. An early
+  exit is `some`, which stops at the first truthy result. Grouping is
+  `Object.groupBy`, or `Map.groupBy` for keys that are not strings.
+- **Elixir.** A fold is `Enum.reduce/3`. An early exit is
+  `Enum.reduce_while/3`, whose function returns `{:cont, acc}` or
+  `{:halt, acc}`. Grouping is `Enum.group_by`, and counting each distinct
+  value is `Enum.frequencies`. `Stream` is the lazy counterpart of
+  `Enum`.
 
 ## Red flags
 
