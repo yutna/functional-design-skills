@@ -42,8 +42,9 @@ Not for: designing the domain types themselves.
    says. A private helper may rely on what its caller in the same module
    has just established, and [totality.md](references/totality.md) says
    when.
-2. Judgement. **One input, one output, conceptually.** Group related parameters
-   into a named record rather than passing six positional arguments.
+2. Judgement. **One input, one output, conceptually.** Group related data
+   parameters into a named record rather than passing six positional
+   arguments.
 3. Default. **Put the varying argument last.** Data last, configuration and
    dependencies first, so partial application produces a useful function.
 4. Default. **Name the composed function.** A pipeline assigned to a name that
@@ -72,7 +73,7 @@ Prefer narrowing when the caller can reasonably produce the narrower
 type, because it removes the failure entirely. Prefer widening when the
 value comes from outside and can genuinely be wrong.
 
-The three ways a function is secretly partial:
+The four ways a function is secretly partial:
 
 | Secret partiality      | Repair                                 |
 | ---------------------- | -------------------------------------- |
@@ -141,10 +142,12 @@ Name the function type when it means something in the domain
 
 - A function whose documentation says "throws if..."
 - A parameter list where two adjacent parameters share a type
-- A composed chain longer than about four steps with no names
+- A chain of unnamed steps longer than about four, in a workflow that
+  is not itself a list of named steps
 - A function that takes a boolean to select behaviour
 - A helper that exists only to reorder another function's arguments
-- Point-free code that the author had to explain in review
+- A point-free expression with no named part, longer than about four
+  functions
 
 ## Common mistakes
 
@@ -154,8 +157,11 @@ Name the function type when it means something in the domain
   call site repeats the same dependency arguments.
 - **Chasing point-free style.** Readability is the objective; an
   intermediate name is not a defect.
-- **Very long parameter lists.** Beyond about four, group into a record
-  and gain names at every call site.
+- **Very long parameter lists.** Beyond about four data parameters,
+  group them into a record and gain names at every call site. The
+  record is for data. Capabilities stay separate parameters of a
+  handler and are applied at the composition root; see
+  [functional-parameterizing-dependencies](../functional-parameterizing-dependencies/SKILL.md).
 - **Hiding a dependency in a closure.** A captured database handle is a
   parameter that the signature refuses to admit.
 
