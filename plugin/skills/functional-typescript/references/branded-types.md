@@ -100,12 +100,12 @@ export const addMoney = (
 One brand per entity, so identifiers cannot be transposed.
 
 ```ts
-export type CustomerId = Brand<string, "CustomerId">;
+export type PatientId = Brand<string, "PatientId">;
 export type BookingId = Brand<string, "BookingId">;
 
-// transfer(bookingId, customerId) is now a compile error
+// transfer(bookingId, patientId) is now a compile error
 export const transfer = (
-  customer: CustomerId,
+  patient: PatientId,
   booking: BookingId,
 ): Result<void, TransferError> => {
   /* ... */

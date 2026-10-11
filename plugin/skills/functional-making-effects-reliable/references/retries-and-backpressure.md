@@ -17,16 +17,15 @@ function that retries hides latency, cannot be tested in time, and makes
 its own behaviour depend on the network.
 
 ```text
--- shell, once: the adapter is wrapped. What comes back still takes the
--- deadline of the request it will serve
-findCatalogueWithRetry = withRetry policy isTransient (findCatalogueIn pool)
-
--- shell, for each request: the entry point supplies the deadline, and
--- the handler takes the result as its FindCatalogue, unaware of a retry
-priceFromCatalogue (findCatalogueWithRetry deadline) booking
+-- shell, for each request: the entry point knows the deadline and wraps
+-- the adapter. The handler takes the result as its LoadCatalogueById,
+-- unaware of a retry
+priceFromCatalogue
+  (withRetry policy isTransient deadline (loadCatalogueByIdFrom pool))
+  booking
 ```
 
-`FindCatalogue` and the handler `priceFromCatalogue` are declared in
+`LoadCatalogueById` and the handler `priceFromCatalogue` are declared in
 [functional-parameterizing-dependencies](../../functional-parameterizing-dependencies/SKILL.md).
 A read can be wrapped as it stands. A write is wrapped only once it is
 idempotent on its effect key, as
@@ -68,22 +67,23 @@ type Backoff = { base: Seconds, ceiling: Seconds }
 - **Total budget** is the number that matters, because it is what the
   caller experiences.
 - **Per-attempt timeout** stops one slow attempt consuming the budget.
-- The budget should shrink as it is passed inward. The retried call
-  takes a deadline, an `Instant`, and `withRetry` stops at whichever
+- The budget should shrink as it is passed inward. `withRetry` takes
+  the deadline of the request, an `Instant`, and stops at whichever
   comes first: `policy.totalBudget` from the first attempt, or that
   deadline. A request with three seconds left therefore does not start
   an operation that takes five.
 
 ```text
 withRetry :
-  RetryPolicy -> (E -> Boolean) -> (A -> AsyncResult<B, E>)
-    -> Instant -> A -> AsyncResult<B, E>
+  RetryPolicy -> (E -> Boolean) -> Instant
+    -> (A -> AsyncResult<B, E>) -> (A -> AsyncResult<B, E>)
 ```
 
 The second argument says which errors are worth another attempt, from
-the table above. `isTransient` is that test for a `StoreError`.
-`withRetry` wraps a function of one argument, so an adapter that takes
-several is given the others first.
+the table above. `isTransient` is that test for a `StoreError`. What
+comes back has the shape of what went in, so a handler cannot tell a
+wrapped capability from a bare one. `withRetry` wraps a function of one
+argument, so an adapter that takes several is given the others first.
 
 It also lives and dies with the request. A call that must outlive the
 request is not wrapped at all: it is an instruction in an outbox, and

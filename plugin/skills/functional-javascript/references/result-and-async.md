@@ -159,14 +159,14 @@ something callers match on. See
 ## Parallel work
 
 ```js
-const loadCheckout = async (id) => {
-  const [customer, catalogue] = await Promise.all([
-    loadCustomer(id),
+const loadForBooking = async (id) => {
+  const [patient, catalogue] = await Promise.all([
+    loadPatient(id),
     loadCatalogue(),
   ]);
-  if (!customer.ok) return customer;
+  if (!patient.ok) return patient;
   if (!catalogue.ok) return catalogue;
-  return ok({ customer: customer.value, catalogue: catalogue.value });
+  return ok({ patient: patient.value, catalogue: catalogue.value });
 };
 ```
 

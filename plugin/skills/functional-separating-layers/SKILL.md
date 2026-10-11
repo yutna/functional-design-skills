@@ -12,7 +12,7 @@ metadata:
 ## Overview
 
 In a well-structured system each layer speaks a different language. The
-layer above talks about bookings and customers; the layer below talks about
+layer above talks about bookings and patients; the layer below talks about
 rows and bytes; a layer between talks about neither at once. When two
 adjacent layers have the same abstraction, the boundary between them is
 not earning anything, and the code is longer for no gain.
@@ -88,7 +88,7 @@ handleGetBooking : Request -> Async<Response>
 
 -- application layer: booking words only; it has an effect type, so it
 -- is shell code, and the pure domain sits beneath its callers
-loadBooking : BookingId -> AsyncResult<Option<Booking>, LoadError>
+loadBooking : BookingId -> AsyncResult<Option<Booking>, StoreError>
 -- knows nothing about HTTP or SQL; a missing booking is None inside Ok
 
 -- storage layer: row words only

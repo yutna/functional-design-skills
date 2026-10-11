@@ -194,7 +194,7 @@ an admin, there is no compile-time set of cases to model. Use
 around it fully typed, and pay the costs listed in
 [functional-choosing-types-or-plain-data](../functional-choosing-types-or-plain-data/SKILL.md).
 Reach for `z.record()` rather than a generated union of every field any
-customer has ever added.
+clinic has ever added.
 
 ## Red flags
 

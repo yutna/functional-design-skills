@@ -164,9 +164,9 @@ the transition table in
 already names, so it is usually already written.
 
 ```text
-type Command =
+type QuoteCommand =
   | Send of Instant
-  | Accept of { by: CustomerId, at: Instant }
+  | Accept of { by: PatientId, at: Instant }
   | Cancel of { reason: Reason, at: Instant }
 ```
 

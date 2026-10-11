@@ -58,15 +58,15 @@ type BookingProcess =
   | Charged of { key: CommandId, hold: SlotHold, receipt: Receipt }
   | Issued of { key: CommandId, ticket: Ticket, receipt: Receipt }
   | Undoing of { key: CommandId, current: Undo, later: List<Undo>,
-                 because: BookingFailure }
-  | Abandoned of { key: CommandId, because: BookingFailure }
+                 because: ProcessFailure }
+  | Abandoned of { key: CommandId, because: ProcessFailure }
   | Stuck of { key: CommandId, refused: Undo, why: UndoRefusal,
-               later: List<Undo>, because: BookingFailure }
+               later: List<Undo>, because: ProcessFailure }
 
 type SlotHold = { id: HoldId, expires: Instant }
 type Undo = ReleaseHold of SlotHold | RefundCharge of Receipt
 
-type BookingFailure =
+type ProcessFailure =
   | SlotRefused of HoldRefusal
   | HoldUnanswered
   | PaymentDeclined of Decline
@@ -157,7 +157,7 @@ has settled that one undo and said which, and the rest then carry on:
 
 ```text
 undoAll :
-  CommandId -> BookingFailure -> List<Undo>
+  CommandId -> ProcessFailure -> List<Undo>
     -> (BookingProcess, List<Instruction>)
 undoAll key because [] = (Abandoned { key, because }, [])
 undoAll key because (first :: later) =

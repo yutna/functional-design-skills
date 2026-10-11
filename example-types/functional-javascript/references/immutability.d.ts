@@ -5,7 +5,7 @@
 type Treatment = { readonly id: string; readonly code: string };
 declare const booking: {
   readonly treatments: readonly Treatment[];
-  readonly customer: {
+  readonly patient: {
     readonly address: { readonly city: string };
   };
 };

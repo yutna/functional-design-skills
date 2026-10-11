@@ -67,17 +67,17 @@ priceBooking :
   Catalogue -> ValidatedBooking -> Result<PricedBooking, PricingError>
 
 -- shell: the handler declares what it needs and reads between them
-alias FindCatalogue = CatalogueId -> AsyncResult<Catalogue, StoreError>
+alias LoadCatalogueById = CatalogueId -> AsyncResult<Catalogue, StoreError>
 
 type PricingFailure =
   | Rejected of PricingError
   | Unavailable of StoreError
 
 priceFromCatalogue :
-  FindCatalogue -> ValidatedBooking
+  LoadCatalogueById -> ValidatedBooking
     -> AsyncResult<PricedBooking, PricingFailure>
-priceFromCatalogue findCatalogue booking =
-  findCatalogue (catalogueFor booking)
+priceFromCatalogue loadCatalogueById booking =
+  loadCatalogueById (catalogueFor booking)
     |> mapError Unavailable
     |> bind (\catalogue ->
          priceBooking catalogue booking |> mapError Rejected)
@@ -93,15 +93,15 @@ code to test.
 perform, and the shell executes them.
 
 ```text
-type Instruction =
-  | HoldSlot of SlotId
-  | TakePayment of Money
-  | ReleaseSlot of SlotId
-
 advance :
   Instant -> BookingProcess -> ProcessEvent
     -> (BookingProcess, List<Instruction>)
 ```
+
+`Instruction` is a choice type with a case for each effect the process
+can ask for, such as `HoldSlot` and `TakePayment`.
+[worked-long-running.md](../functional-making-effects-reliable/references/worked-long-running.md)
+declares it, with the states and the events.
 
 This process runs for days and across three systems. What it does next
 is saved with its state, so it can resume after a restart, and that is
@@ -122,7 +122,7 @@ instruction type and a shell that interprets it.
    to an auditor, or replayed.
 2. Default. **Declare a capability's type in the domain's words**, where
    the handler that takes it can see it and no adapter is imported.
-   `FindCatalogue`, not `ICatalogueRepository`.
+   `LoadCatalogueById`, not `ICatalogueRepository`.
 3. Default. **One function type per capability used**, not one record per
    service. See
    [functional-applying-solid-functionally](../functional-applying-solid-functionally/SKILL.md).
@@ -182,13 +182,13 @@ one, and the composition root supplies the real ones:
 
 ```text
 -- declared beside the handler, in the domain's words
-alias FindCatalogue = CatalogueId -> AsyncResult<Catalogue, StoreError>
+alias LoadCatalogueById = CatalogueId -> AsyncResult<Catalogue, StoreError>
 
 -- supplied once, at the edge
-priceFromCatalogueLive = priceFromCatalogue (findCatalogueIn pool)
+priceFromCatalogueLive = priceFromCatalogue (loadCatalogueByIdFrom pool)
 ```
 
-The handler's test supplies a one-line function for `FindCatalogue` and
+The handler's test supplies a one-line function for `LoadCatalogueById` and
 asserts on a plain value.
 
 ## Avoiding the threading problem

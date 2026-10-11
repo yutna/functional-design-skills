@@ -43,7 +43,7 @@ Calendar -> Result<Calendar, MoveError>`. Every new scheduling action
 adds another such function, each one knowing about slots, working hours,
 and clashes.
 
-**Too general.** `apply : Calendar -> Change -> Result<Calendar, Error>`
+**Too general.** `apply : Calendar -> Change -> Result<Calendar, ChangeError>`
 where `Change` is an open-ended script. Every caller must now build
 changes, and the module cannot say which are valid.
 

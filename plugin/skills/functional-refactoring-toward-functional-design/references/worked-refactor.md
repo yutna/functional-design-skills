@@ -111,7 +111,7 @@ method is a candidate.
 type BookingId = BookingId of Uuid
 type TreatmentCode = TreatmentCode of String   -- as the catalogue spells it
 type Quantity = Quantity of Integer            -- at least 1
-type Money = Money of Integer                  -- satang
+type Satang = Satang of Integer
 
 type QuantityError = BelowOne of Integer
 Quantity.parse : Integer -> Result<Quantity, QuantityError>
@@ -169,7 +169,7 @@ whose meaning depended on the status. They move into the cases, and
 ```text
 type Lifecycle =
   | Draft
-  | Confirmed of { at: Instant, total: Money }
+  | Confirmed of { at: Instant, total: Satang }
   | Cancelled of { reason: CancelReason }
 
 type Booking = { id: BookingId, lifecycle: Lifecycle }
@@ -270,7 +270,12 @@ confirm :
     -> Instant -> BookingDto -> AsyncResult<Booking, ConfirmFailure>
 ```
 
-Each alias has an effect type, because each reaches the world.
+Each alias has an effect type, because each reaches the world. This
+repository has no version check, so its save can fail only with a
+`StoreError`;
+[persistence-patterns.md](../../functional-crossing-io-boundaries/references/persistence-patterns.md)
+shows the save that can also report a conflict.
+
 `BookingService.confirm` passes the repository's and the clients' own
 methods, each wrapped with `tryCatch`, so that what one of them throws
 comes back as a `StoreError` or a `MailError` holding the exception. A

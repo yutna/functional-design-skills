@@ -154,7 +154,7 @@ declared here in the domain's words:
 alias ReadForBooking =
   ParsedRequest -> AsyncResult<(BookingRef, Records), StoreError>
 
-type SaveError = SlotChanged | Failed of StoreError
+type SaveError = Conflict | Failed of StoreError
 alias SaveBooked =
   AppointmentBooked -> AsyncResult<AppointmentBooked, SaveError>
 ```
@@ -250,7 +250,7 @@ nowhere else.
 type BookingFailure =
   | Invalid of NonEmptyList<ValidationError>
   | Rejected of Refusal
-  | Conflict
+  | SlotChanged
   | Unavailable of StoreError
 
 handleBookAppointment :
@@ -269,7 +269,7 @@ handleBookAppointment readForBooking saveBooked now command =
 
 saveFailure error =
   match error with
-  | SlotChanged -> Conflict
+  | Conflict -> SlotChanged
   | Failed fault -> Unavailable fault
 ```
 
@@ -294,8 +294,8 @@ and are not rules:
   booked under the appointment's reference, in one transaction. The
   event carries everything that changed, so the adapter decides nothing.
   It marks the slot only if the slot is still held by this patient, and
-  returns `SlotChanged` if it is not.
-- On a `Conflict` the entry point runs the handler once more, with a
+  returns `Conflict` if it is not.
+- On `SlotChanged` the entry point runs the handler once more, with a
   new clock reading, and this time the rules see the slot as it now is.
   That, and not the hold alone, is what stops two patients getting one
   slot.
@@ -339,4 +339,4 @@ stub. That is the return on every decision above.
 The handler has paths of its own, and each gets one test with one-line
 stubs: a form that does not parse reads nothing; a refusal saves
 nothing; a read that fails is `Unavailable`; a slot that changed before
-the write is a `Conflict`.
+the write is `SlotChanged`.

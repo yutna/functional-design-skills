@@ -60,8 +60,8 @@ Not for: failures that can be removed by design, which is
 Exceptions across boundaries:
 
 ```text
-priceBooking : ValidatedBooking -> PricedBooking
--- throws TreatmentNotFound, throws PriceServiceUnavailable
+priceBooking : Catalogue -> ValidatedBooking -> PricedBooking
+-- throws TreatmentNotFound, throws PriceUnavailable
 -- caller must read the implementation to know
 ```
 
@@ -73,7 +73,8 @@ type PricingError =
   | PriceUnavailable of TreatmentCode
   | TotalTooLarge of Money
 
-priceBooking : ValidatedBooking -> Result<PricedBooking, PricingError>
+priceBooking :
+  Catalogue -> ValidatedBooking -> Result<PricedBooking, PricingError>
 ```
 
 Now the failures are visible at every call site, the compiler or the

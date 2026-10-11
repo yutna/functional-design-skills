@@ -23,21 +23,21 @@ declare const setBooking: Dispatch<SetStateAction<Booking>>;
 declare const status: BookingStatus;
 declare const booking: Booking;
 
-type Customer = { readonly isVerified: boolean };
-declare const customer: Customer;
-type CheckoutDecision =
+type Patient = { readonly isVerified: boolean };
+declare const patient: Patient;
+type SubmissionDecision =
   | { readonly tag: "Allowed" }
   | { readonly tag: "NeedsVerification" };
-declare const decideCheckout: (
-  customer: Customer,
+declare const decideSubmission: (
+  patient: Patient,
   booking: Booking,
-) => CheckoutDecision;
+) => SubmissionDecision;
 // The rules fence dispatches `Submitted` with a `decision`; the reducers
 // fence's `Event` has `Submitted` without one. They compile only as two
 // different reducers, so `dispatch` here is typed for the one it names.
 type CheckoutEvent = {
   readonly tag: "Submitted";
-  readonly decision: CheckoutDecision;
+  readonly decision: SubmissionDecision;
 };
 declare const dispatch: (event: CheckoutEvent) => void;
 

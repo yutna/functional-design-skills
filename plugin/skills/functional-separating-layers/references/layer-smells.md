@@ -63,8 +63,9 @@ returns one of the same shape. Legitimate uses are narrow:
 
 ```text
 -- legitimate: adds a guarantee callers rely on, at one place
-withRetry : RetryPolicy -> (A -> AsyncResult<B, E>)
-              -> (A -> AsyncResult<B, E>)
+withRetry :
+  RetryPolicy -> (E -> Boolean) -> Instant
+    -> (A -> AsyncResult<B, E>) -> (A -> AsyncResult<B, E>)
 ```
 
 Before writing one, check three alternatives:

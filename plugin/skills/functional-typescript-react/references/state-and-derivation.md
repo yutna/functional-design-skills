@@ -77,8 +77,8 @@ table, exhaustively, with no rendering and no framework. That is the
 single highest-value move available in a complex React screen.
 
 Keep the reducer free of effects. When a transition should cause one,
-return a state the component reacts to, or return commands alongside the
-state and let the shell run them.
+return a state the component reacts to, or return instructions alongside
+the state and let the shell run them.
 
 `useReducer` takes this as it stands, and that is the default: the
 reducer is a plain function and needs nothing else. Reach for `xstate`
@@ -143,13 +143,13 @@ subtree untestable. See
 ```tsx
 // rules in the handler: untestable, unreusable
 const onSubmit = () => {
-  if (booking.total > 5000 && !customer.isVerified) { /* ... */ }
+  if (booking.total > 5000 && !patient.isVerified) { /* ... */ }
 };
 ```
 
 ```tsx
 // rules in a pure module, tested without React
-const decision = decideCheckout(customer, booking);
+const decision = decideSubmission(patient, booking);
 const onSubmit = () => dispatch({ tag: "Submitted", decision });
 ```
 

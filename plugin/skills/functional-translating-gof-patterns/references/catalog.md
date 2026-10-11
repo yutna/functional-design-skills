@@ -46,7 +46,7 @@ logged, undone, or sent elsewhere.
 
 ```text
 type Command =
-  | ConfirmBooking of BookingRequest
+  | ConfirmBooking of UnvalidatedBooking
   | CancelBooking of { id: BookingId, reason: Reason }
 
 decide : Command -> Result<List<BookingEvent>, CommandError>
@@ -101,7 +101,8 @@ and the write it is given perform the effects.
 
 ```text
 withRetry :
-  RetryPolicy -> (A -> AsyncResult<B, E>) -> (A -> AsyncResult<B, E>)
+  RetryPolicy -> (E -> Boolean) -> Instant
+    -> (A -> AsyncResult<B, E>) -> (A -> AsyncResult<B, E>)
 withTiming : Metric -> (A -> Async<B>) -> (A -> Async<B>)
 ```
 
@@ -140,7 +141,7 @@ confirmBooking :
     -> Result<List<ConfirmBookingEvent>, ConfirmBookingError>
 
 -- the shell delivers it to whoever subscribed
-dispatch : List<ConfirmBookingEvent> -> AsyncResult<Unit, DispatchError>
+publish : List<ConfirmBookingEvent> -> AsyncResult<Unit, PublishError>
 ```
 
 Returning events beats registering callbacks: the decision stays pure,
