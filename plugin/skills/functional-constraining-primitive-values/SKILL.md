@@ -19,7 +19,7 @@ passed where any other is expected, and the same check appears wherever
 someone remembered it.
 
 Wrapping each domain value in its own type, built only through a function
-that can fail, fixes all three at once. This is the cheapest structural
+that can reject it, fixes all three at once. This is the cheapest structural
 improvement available in most codebases.
 
 ## When to use
@@ -35,9 +35,11 @@ Not for: values that genuinely are unconstrained free text with no rules.
 ## Core rules
 
 1. Default. **One type per domain concept**, even when the underlying primitive
-   is the same. `CustomerId` and `BookingId` are different types.
-2. Rule. **Constructors can fail; return `Result`.** The constructor is the only
-   place the rule lives.
+   is the same. `PatientId` and `BookingId` are different types.
+2. Rule. **A constructor that can reject an input returns `Result`.** The
+   constructor is the only place the rule lives. A constructor whose
+   parameter type has no invalid value, or that clamps by a rule the domain
+   states, returns the value.
 3. Rule. **No public raw construction.** If the wrapper can be built directly
    from a primitive anywhere, the type is decoration.
 4. Default. **Unwrap late, at the edge.** Inside the domain, pass the wrapper.
@@ -55,26 +57,31 @@ Primitive obsession:
 
 ```text
 -- what is legal? nothing here says.
-confirmBooking : String -> String -> Integer -> Decimal -> Result<...>
--- callers pass (customerId, treatmentCode, quantity, unitPrice)
+bookTreatment : String -> String -> Integer -> Decimal -> Result<...>
+-- callers pass (patientId, treatmentCode, quantity, unitPrice)
 -- and eventually pass them in the wrong order
 ```
 
 Constrained values:
 
 ```text
-type CustomerId = CustomerId of Uuid
+type PatientId = PatientId of Uuid
 type TreatmentCode = TreatmentCode of String     -- "W" or "G" + 4 digits
-type Quantity = Quantity of Integer          -- 1..1000
-type UnitPrice = UnitPrice of Decimal        -- 0..100000, 2 dp
+type Quantity = Quantity of Integer          -- at least 1
+type UnitPrice = UnitPrice of Money          -- at least 0
 
-parseTreatmentCode : String -> Result<TreatmentCode, TreatmentCodeError>
-quantity : Integer -> Result<Quantity, QuantityError>
+TreatmentCode.parse : String -> Result<TreatmentCode, TreatmentCodeError>
+Quantity.parse : Integer -> Result<Quantity, QuantityError>
 
-confirmBooking :
-  CustomerId -> TreatmentCode -> Quantity -> UnitPrice
-    -> Result<BookingConfirmed, ConfirmBookingError>
+bookTreatment :
+  PatientId -> TreatmentCode -> Quantity -> UnitPrice
+    -> Result<BookedTreatment, BookTreatmentError>
 ```
+
+In these examples a constrained wrapper's raw constructor is private to
+its module, and other code calls the parser, which is named
+`TypeName.parse` throughout. Here `BookedTreatment` also carries the
+`unitPrice`.
 
 Transposed arguments no longer compile. The legal values are in the
 types. The checks happen once, at the edge, and never again.
