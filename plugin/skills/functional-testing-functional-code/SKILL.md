@@ -34,34 +34,45 @@ you when it is wrong.
 
 ## Core rules
 
-1. Rule. **Test the core with values.** No framework, no doubles, no setup. If
-   that is not possible, fix the design first.
+1. Rule. **Test the core with values.** No stub, no fake, and no setup
+   beyond building the inputs. A test runner is not what this rule
+   forbids. If a core test needs more, fix the design first.
 2. Default. **Test the shell with a few integration tests.** Prove the wiring,
    the mapping, and the transactions; do not re-test business rules there.
-3. Default. **Stub capabilities with plain functions.** A dependency that needs
-   a mocking library is too wide. See
+3. Default. **Stand in for capabilities with stubs, or with a fake for a
+   shared store.** A stub is a one-line function that stands in for a
+   capability in one test. A fake is a maintained in-memory
+   implementation that many tests share, held to the real adapter by a
+   contract test. Use stubs for a handler with few capabilities. Use a
+   fake for a store that many handler tests share. A dependency that
+   needs a mocking library is too wide; see
    [functional-applying-solid-functionally](../functional-applying-solid-functionally/SKILL.md).
-4. Rule. **Assert on returned values, not on interactions.** A test that checks
-   which functions were called is testing the implementation.
+4. Rule. **Assert on returned values and stored state, not on
+   interactions.** A test that checks which functions were called, or
+   how many times, is testing the implementation.
 5. Default. **Use properties where the rule is general.** Round trips,
    invariants, and totality are better stated as properties than as examples.
 6. Default. **Test the design, not the coverage number.** A suite that covers
    every line and no failure mode is worse than an honest smaller one.
-7. Judgement. **Let a hard test change the design.** Difficulty is information.
+7. Judgement. **Let a hard test change the design.** Difficulty is
+   information. A hard test reopens the module's interface decision,
+   which is the level where design happens. What tips it: patch the
+   code locally only when the interface is already right and the test is
+   hard for a reason unrelated to it.
 
 ## What to test where
 
-| Subject                      | Kind of test                       |
-| ---------------------------- | ---------------------------------- |
-| Smart constructor            | Examples plus a property           |
-| Pure decision or calculation | Examples, one per rule             |
-| State transition             | Table of legal and illegal         |
-| Workflow pipeline            | Examples with plain values         |
-| Handler, reads between rules | Stub for each capability, per path |
-| Boundary mapping             | Round-trip property                |
-| Storage adapter              | Integration, few                   |
-| Transport adapter            | Integration, few                   |
-| Concurrency                  | Simulated conflict, not threads    |
+| Subject                      | Kind of test                              |
+| ---------------------------- | ----------------------------------------- |
+| Smart constructor            | Examples plus a property                  |
+| Pure decision or calculation | Examples, one per rule                    |
+| State transition             | Table of legal and illegal                |
+| Workflow pipeline            | Examples with plain values                |
+| Handler, reads between rules | Stubs, or a shared fake, per path         |
+| Boundary mapping             | Round-trip property                       |
+| Storage adapter              | Integration, few                          |
+| Transport adapter            | Integration, few                          |
+| Concurrency                  | Simulated conflict; real only for storage |
 
 ## Pattern
 
@@ -80,7 +91,7 @@ Testable with values:
 
 ```text
 test "refunds over sixty days are rejected" =
-  let booking = bookingConfirmedOn (daysAgo 61)
+  let booking = bookingConfirmedOn (daysBefore now 61)
   in expect (decideRefund now booking request)
        toBe (Reject TooOld)
 ```
@@ -91,24 +102,26 @@ reason. Achieving it is a design change, not a testing technique. See
 
 ## Stubs, not mocks
 
-A capability is a function type, so a stub is a function. The stub
+A capability is a function type, so a stub, as rule 3 defines it, is a
+function. The stub
 belongs to a handler, since only a handler takes a capability. Here the
 handler reads a catalogue that a rule names, as in
 [functional-parameterizing-dependencies](../functional-parameterizing-dependencies/SKILL.md):
 
 ```text
-let stubLoadCatalogue = \_ -> done (Ok standardCatalogue)
+let stubFindCatalogue = \_ -> done (Ok standardCatalogue)
 
 test "prices a booking from the catalogue its rule names" =
-  expect (priceFromCatalogue stubLoadCatalogue validBooking)
+  expect (priceFromCatalogue stubFindCatalogue validBooking)
     toFinishWith (Ok pricedAtStandardRates)
 ```
 
-The stub has the capability's type, so the test compiles only if the
-handler asks for what it says. No framework, no expectations, no
-verification of calls. If a test needs to assert that a dependency was
-called, ask what observable outcome that call produces, and assert on
-that instead. Where the call itself is the outcome, return it as an
+`stubFindCatalogue` has the type `FindCatalogue`, which is
+`CatalogueId -> AsyncResult<Catalogue, StoreError>`, so the test
+compiles only if the handler asks for what it says. No framework, no
+expectations, no verification of calls. If a test needs to assert that a
+dependency was called, ask what observable outcome that call produces,
+and assert on that instead. Where the call itself is the outcome, return it as an
 instruction and assert on the instruction.
 
 ## Properties worth stating
@@ -121,7 +134,6 @@ instruction and assert on the instruction.
 | Idempotence       | Applying twice equals applying once    |
 | Monoid laws       | Identity and associativity             |
 | Model equivalence | Matches a slow obvious implementation  |
-| Reachability      | Every state is reachable               |
 
 Each row is a law: a claim that holds for every value, not for the three
 anyone thought of. That is what makes it worth a property rather than an

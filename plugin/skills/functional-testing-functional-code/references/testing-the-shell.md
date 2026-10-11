@@ -7,6 +7,7 @@ proving something the core tests cannot.
 
 - [What the shell tests must prove](#what-the-shell-tests-must-prove)
 - [What they must not do](#what-they-must-not-do)
+- [Which tool](#which-tool)
 - [Fakes for capabilities](#fakes-for-capabilities)
 - [Time, randomness, identifiers](#time-randomness-identifiers)
 - [Testing concurrency without threads](#testing-concurrency-without-threads)
@@ -36,10 +37,26 @@ Everything else belongs in core tests.
 - Mock the database. A test against a mock of a driver proves that the
   mock behaves like the mock.
 
+## Which tool
+
+- **Elixir.** `ExUnit` runs the tests. `Ecto.Adapters.SQL.Sandbox` runs
+  each test in a database transaction that is rolled back when the test
+  ends, which suits the storage adapter. In a Phoenix service,
+  `Phoenix.ConnTest` builds a request with `build_conn` and `get` or
+  `post`, and `json_response` or `response` checks the body and the
+  status code.
+- **JavaScript and TypeScript.** `vitest` is the runner that
+  `@fast-check/vitest` extends; `node:test`, run with `node --test`, is
+  the runner built into Node. A service under test is called with the
+  global `fetch`. The storage adapter is tested against a real database
+  of the same kind as production, started for the test run.
+
 ## Fakes for capabilities
 
-For handler tests that are not full integration tests, replace
-each capability with an in-memory implementation.
+A stub and a fake are defined in
+[the testing skill](../SKILL.md). For handler tests that are not full
+integration tests, replace a store that many tests share with a fake: an
+in-memory implementation.
 
 ```text
 -- an in-memory store, thirty lines, shared by every handler test
@@ -49,7 +66,8 @@ makeFakeStore : Unit -> { save: SaveBooking, load: LoadBooking,
 
 A fake behaves like the real thing for the operations used, so tests read
 naturally and assert on outcomes rather than on calls. Keep one fake per
-capability, maintained as real code, rather than ad hoc stubs per test.
+store, maintained as real code, rather than ad hoc stubs per test. A
+handler with few capabilities still takes stubs.
 
 The risk is that a fake drifts from the real implementation. Mitigate it
 with a **contract test**: one suite of assertions run against both the
@@ -78,11 +96,21 @@ Most concurrency bugs in this architecture are conflict handling, and
 that can be tested deterministically.
 
 ```text
+-- the fake can bump the version once between a read and the write that
+-- follows it, as a concurrent writer would; `contents` is a test-only
+-- read of the fake's state
+makeFakeStore :
+  { bumpVersionOnce: Boolean }
+    -> { save: SaveBooking, load: LoadBooking,
+         contents: Unit -> List<Booking> }
+
 test "a stale write is rejected and retried" =
-  let store = fakeStoreWithVersionBump ()
-  -- the fake bumps the version between read and write once
-  in expect (handleCancel store cmd) toBeOk
-     and expect (store.writeAttempts ()) toBe 2
+  let store = makeFakeStore { bumpVersionOnce: true }
+  let finished = handleCancel store.load store.save cancelCmd
+  in expect finished toFinishWith (Ok cancelled)
+     and expect (store.contents ())
+           toBe [{ ...booking, status: Cancelled, version: 3 }]
+-- version 1 stored, 2 after the concurrent writer, 3 after the retry
 ```
 
 Reserve real concurrency tests for the storage layer's guarantees, and
@@ -95,7 +123,7 @@ A working ratio for a service:
 | Layer                  | Share of tests |
 | ---------------------- | -------------- |
 | Domain types and rules | Most           |
-| Handlers with fakes    | Many           |
+| Handlers, stubs, fakes | Many           |
 | Adapters, integration  | Few            |
 | End to end, full stack | A handful      |
 
