@@ -142,7 +142,7 @@ validateBooking catalogue =
 checkLines catalogue fields =
   fields.lines
     |> traverseAll (checkLine catalogue)
-    |> map (\lines -> { patient: fields.patient, lines })
+    |> map (\lines -> { ...fields, lines })
 ```
 
 The signatures that make this fit, all with the same error type:

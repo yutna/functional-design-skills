@@ -29,6 +29,15 @@ languages; the shapes do not.
 | `A -> B` into an async pipeline        | `A -> Async<B>`      | lift         |
 | A `Result` with one error              | the error in a list  | toValidation |
 
+Three of these are used across the pack with these signatures. `map3`
+and `map4` are `map2`, below, for more results.
+
+```text
+toResult     : E -> Option<A> -> Result<A, E>
+toValidation : Result<A, E> -> Result<A, NonEmptyList<E>>
+traverse     : (A -> Result<B, E>) -> List<A> -> Result<List<B>, E>
+```
+
 ## The four you will use constantly
 
 **map** applies a function to the success value and leaves the failure

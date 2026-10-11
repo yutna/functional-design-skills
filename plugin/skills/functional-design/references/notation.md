@@ -150,11 +150,13 @@ validated |> bind (priceBooking catalogue)  -- the next step can
 priced |> mapError Pricing        -- change the error, keep the value
 ```
 
-`map` and `bind` mean the same on an `Option`, and all three on an
-`AsyncResult`, where a `Result` met in the chain joins it without
-ceremony. `map` is also the name for applying a function to each element
-of a `List`. To adapt a function rather than a value, put the name after
-`>>`: `priceBooking catalogue >> mapError Pricing`.
+`map` and `bind` mean the same on an `Option` and on an `Async`, and all
+three on an `AsyncResult`. A chain may mix the two results: once any
+step is an `AsyncResult` the whole chain is one, and a plain `Result`
+before or after it joins without ceremony. `map` is also the name for
+applying a function to each element of a `List`. To adapt a function
+rather than a value, put the name after `>>`:
+`priceBooking catalogue >> mapError Pricing`.
 
 `>=>` and `bind` need one error type all the way along. Where two steps
 fail with different types, `mapError` lifts each into a type with a case

@@ -38,19 +38,20 @@ depends on a patient category nobody had written down.
 
 ## 2. Types from the vocabulary
 
-Constrained values first, one rule each:
+Constrained values first, one rule each. Each has a parser, such as
+`PatientId.parse : String -> Result<PatientId, ValidationError>`.
 
 ```text
 type PatientId = PatientId of Uuid
-type DoctorId = DoctorId of Uuid
 type SlotId = SlotId of Uuid
 type BookingRef = BookingRef of String
 type Satang = Satang of Integer             -- never negative
 type Reason = Reason of String              -- 1 to 200 characters
 ```
 
-The category the experts named, which had been an untyped assumption,
-and the hold, which had been a timestamp column:
+A slot is one doctor at one time, so its identifier names both. The
+category the experts named had been an untyped assumption, and the hold
+had been a timestamp column:
 
 ```text
 type PatientCategory =
@@ -58,25 +59,27 @@ type PatientCategory =
   | Returning
   | Insured of { policy: PolicyNumber, copay: Satang }
 
+type Patient = { id: PatientId, category: PatientCategory }
+
 type SlotState =
   | Free
   | Held of { by: PatientId, until: Instant }
   | Booked of BookingRef
+
+type Slot = { id: SlotId, state: SlotState, standardFee: Satang }
 ```
 
 The command is what the patient's form sent, with nothing checked. The
 event is the one fact this workflow can decide:
 
 ```text
-type BookAppointment = {
-  patient: String,
-  doctor: String,
-  slot: String,
-  reason: String,
-}
+type BookAppointment = { patient: String, slot: String, reason: String }
 
 type AppointmentBooked = AppointmentBooked of Appointment
 ```
+
+With one event there is nothing to put in a list. A second kind of event
+would make the result a list of a choice type.
 
 "Confirmation sent" and "schedule updated" are events too, and this
 workflow does not return them. Neither is true when the booking is
@@ -101,7 +104,7 @@ type Refusal =
   | NoSlot of SlotProblem
 
 type NotRegistered = NotRegistered of PatientId
-type SlotProblem = TakenByAnother | HoldExpired
+type SlotProblem = NoSuchSlot | TakenByAnother | HoldExpired
 ```
 
 Both are pure. The experts confirmed `HoldExpired` is a real outcome
@@ -110,39 +113,50 @@ patients see, not a technical error, so it has a name and a case.
 ## 4. Stage types
 
 ```text
-BookAppointment    -- the command: four strings, nothing checked
-ParsedRequest      -- identifiers and reason parsed
-KnownRequest       -- the patient is registered, and has a category
-HeldRequest        -- the slot is still held for this patient
-PricedRequest      -- fee decided from the category
-Appointment        -- confirmed, has a booking reference
-```
+type ParsedRequest = { patient: PatientId, slot: SlotId, reason: Reason }
+type KnownRequest = { request: ParsedRequest, patient: Patient }
+type HeldRequest = { known: KnownRequest, slot: Slot, heldUntil: Instant }
+type PricedRequest = { held: HeldRequest, fee: Satang }
 
-No stage type is reused, and each name says what has been established.
-
-## 5. What has to be read
-
-Three things, and none of them can be asked for until `parseRequest` has
-produced the identifiers: the patient's record, the state of the slot,
-and the doctor's standard fee.
-
-```text
-type Records = {
-  patient: Option<Patient>,
-  slot: SlotState,
-  standardFee: Satang,
+type Appointment = {
+  ref: BookingRef,
+  patient: PatientId,
+  slot: SlotId,
+  reason: Reason,
+  fee: Satang,
+  bookedAt: Instant,
 }
 ```
 
-That is a read between two pure functions, so the handler takes its
-capabilities as parameters, and they are declared here in the domain's
-words:
+Each stage is the one before it with one thing established: the
+identifiers parsed, the patient known, the slot still held for them, the
+fee decided. No stage type is reused.
+
+## 5. What has to be read
+
+Two things: the patient's record, and the slot with its state and the
+doctor's standard fee.
+
+```text
+type Records = { patient: Option<Patient>, slot: Option<Slot> }
+```
+
+Neither can be asked for until `parseRequest` has run. Each identifier
+arrives as text, and whether that text is an identifier at all is the
+first rule the request meets. That is the first of the three cases in
+rule 1 of
+[functional-parameterizing-dependencies](../../functional-parameterizing-dependencies/SKILL.md):
+what to read cannot be named until a rule has run. So the handler reads
+between two pure functions, and takes its capabilities as parameters,
+declared here in the domain's words:
 
 ```text
 alias ReadForBooking =
   ParsedRequest -> AsyncResult<(BookingRef, Records), StoreError>
+
+type SaveError = SlotChanged | Failed of StoreError
 alias SaveBooked =
-  AppointmentBooked -> AsyncResult<AppointmentBooked, StoreError>
+  AppointmentBooked -> AsyncResult<AppointmentBooked, SaveError>
 ```
 
 `ReadForBooking` also draws the booking reference, because a new
@@ -156,9 +170,10 @@ knownPatient :
   Option<Patient> -> ParsedRequest -> Result<KnownRequest, NotRegistered>
 
 heldSlot :
-  Instant -> SlotState -> KnownRequest -> Result<HeldRequest, SlotProblem>
+  Instant -> Option<Slot> -> KnownRequest
+    -> Result<HeldRequest, SlotProblem>
 
-priceVisit : Satang -> HeldRequest -> PricedRequest
+priceVisit : HeldRequest -> PricedRequest
 
 confirm : Instant -> BookingRef -> PricedRequest -> Appointment
 ```
@@ -167,13 +182,15 @@ Each step that can fail has an error type of its own, as narrow as what
 can go wrong in it.
 
 Parsing accumulates errors, because a patient fixing a form should see
-all of them at once:
+all of them at once. `map3` applies a function to three results and
+keeps every failure, as
+[applicative-validation.md](../../functional-handling-errors-with-results/references/applicative-validation.md)
+shows:
 
 ```text
 parseRequest command =
-  map4 toParsedRequest
+  map3 (\patient slot reason -> { patient, slot, reason })
     (PatientId.parse command.patient |> toValidation)
-    (DoctorId.parse command.doctor |> toValidation)
     (SlotId.parse command.slot |> toValidation)
     (Reason.parse command.reason |> toValidation)
 ```
@@ -181,14 +198,17 @@ parseRequest command =
 The hold is a match on the slot's state, with every case answered:
 
 ```text
-heldSlot now slot known =
-  match slot with
-  | Held hold ->
-      if hold.by != known.patient.id then Error TakenByAnother
-      else if hold.until < now then Error HoldExpired
-      else Ok (toHeldRequest known)
-  | Free -> Error HoldExpired
-  | Booked _ -> Error TakenByAnother
+heldSlot now found known =
+  match found with
+  | None -> Error NoSuchSlot
+  | Some slot ->
+      match slot.state with
+      | Free -> Error HoldExpired
+      | Booked _ -> Error TakenByAnother
+      | Held hold ->
+          if hold.by != known.patient.id then Error TakenByAnother
+          else if hold.until < now then Error HoldExpired
+          else Ok { known, slot, heldUntil: hold.until }
 ```
 
 Pricing is pure, and total, because the category already decided it:
@@ -200,10 +220,10 @@ feeFor standard category =
   | FirstVisit -> add standard firstVisitSurcharge
   | Returning -> standard
   | Insured insurance -> insurance.copay
-```
 
-`priceVisit` is `feeFor`, applied to the standard fee and the category
-the request now carries.
+priceVisit held =
+  { held, fee: feeFor held.slot.standardFee held.known.patient.category }
+```
 
 ## 7. Composition
 
@@ -212,7 +232,7 @@ bookAppointment now ref records parsed =
   knownPatient records.patient parsed
     |> mapError UnknownPatient
     |> bind (heldSlot now records.slot >> mapError NoSlot)
-    |> map (priceVisit records.standardFee)
+    |> map priceVisit
     |> map (confirm now ref)
     |> map AppointmentBooked
 ```
@@ -230,6 +250,7 @@ nowhere else.
 type BookingFailure =
   | Invalid of NonEmptyList<ValidationError>
   | Rejected of Refusal
+  | Conflict
   | Unavailable of StoreError
 
 handleBookAppointment :
@@ -244,33 +265,40 @@ handleBookAppointment readForBooking saveBooked now command =
            |> bind (\(ref, records) ->
                 bookAppointment now ref records parsed    -- pure
                   |> mapError Rejected))
-    |> bind (saveBooked >> mapError Unavailable)      -- write
+    |> bind (saveBooked >> mapError saveFailure)      -- write
+
+saveFailure error =
+  match error with
+  | SlotChanged -> Conflict
+  | Failed fault -> Unavailable fault
 ```
 
 The handler holds no rule. It calls two pure functions, reads between
-them, and writes what the second one decided. Its failure type has three
-cases because three different things can go wrong, and only the first
-two are the business's.
+them, and writes what the second one decided. `saveFailure` renames how
+the write came out and decides nothing.
 
-The composition root gives the handler its capabilities once, and the
-entry point for the HTTP route reads the clock, builds the command from
-the request body, calls the handler, and renders either outcome:
+The composition root gives the handler its capabilities once:
 
 ```text
 buildApp pool =
-  { bookAppointment =
-      handleBookAppointment (readForBooking pool) (saveBooked pool) }
+  { book = handleBookAppointment (readForBooking pool) (saveBooked pool) }
 ```
 
-Three things the adapters do, which are real work and are not rules:
+The entry point for the HTTP route reads the clock, builds the command
+from the request body, calls `app.book`, and renders either outcome.
 
-- `readForBooking` runs its three reads and draws the reference
-  together.
-- `saveBooked` writes the appointment, the slot's new state, and the
-  event in one transaction, and fails with a conflict if the slot is no
-  longer as it was read. On a conflict the entry point runs the handler
-  once more, and this time the rules see the slot as it now is. That,
-  and not the hold alone, is what stops two patients getting one slot.
+Three things the adapters and the entry point do, which are real work
+and are not rules:
+
+- `saveBooked` writes the appointment and the event, and marks the slot
+  booked under the appointment's reference, in one transaction. The
+  event carries everything that changed, so the adapter decides nothing.
+  It marks the slot only if the slot is still held by this patient, and
+  returns `SlotChanged` if it is not.
+- On a `Conflict` the entry point runs the handler once more, with a
+  new clock reading, and this time the rules see the slot as it now is.
+  That, and not the hold alone, is what stops two patients getting one
+  slot.
 - A relay delivers the saved event. Two other handlers receive it: one
   sends the patient's confirmation, one updates the doctor's schedule.
   Each is a read, a decision and a write of its own, and each can fail
@@ -295,18 +323,20 @@ The rules are tested with plain values:
 
 ```text
 test "an insured patient pays the copay" =
-  let records = {
-    patient: Some (insured (Satang 5000)),
-    slot: Held { by: patientA, until: later },
-    standardFee: Satang 80000,
-  }
+  let insured = { id: patientA, category: Insured insurance }
+  let held = Held { by: patientA, until: later }
+  let slot = { id: slotA, state: held, standardFee: Satang 80000 }
+  let records = { patient: Some insured, slot: Some slot }
   in expect (bookAppointment now ref records parsedA |> map feeOf)
-       toBe (Ok (Satang 5000))
+       toBe (Ok insurance.copay)
 ```
 
-No database, no clock, no HTTP, no mocking library, and no stub. That is
-the return on every decision above.
+`patientA`, `slotA`, `insurance`, `later`, `now`, `ref` and `parsedA`
+are plain values built in the test file, and `feeOf` reads the fee off
+the event. No database, no clock, no HTTP, no mocking library, and no
+stub. That is the return on every decision above.
 
 The handler has paths of its own, and each gets one test with one-line
 stubs: a form that does not parse reads nothing; a refusal saves
-nothing; a read that fails is reported as `Unavailable`.
+nothing; a read that fails is `Unavailable`; a slot that changed before
+the write is a `Conflict`.

@@ -2,7 +2,8 @@
 
 The task: approve a refund if the booking exists, is no more than sixty
 days old, and the amount does not exceed the patient's refund allowance
-for the month.
+for the month. How much of the allowance is used comes from the billing
+system, which charges for each call.
 
 ## Contents
 
@@ -20,7 +21,7 @@ A handler reads everything first, then a pure function decides.
 
 ```text
 -- core: no dependencies at all
-type RefundContext = {
+type RefundCase = {
   now: Instant,
   request: RefundRequest,
   booking: Booking,
@@ -28,7 +29,7 @@ type RefundContext = {
   allowance: Money,
 }
 
-approveRefund : RefundContext -> Result<RefundApproved, RefundError>
+approveRefund : RefundCase -> Result<RefundApproved, RefundError>
 ```
 
 ```text
@@ -76,9 +77,11 @@ through capabilities it takes as parameters.
 
 ```text
 -- core: each check is a rule, and neither reads anything
+type Allowance = { limit: Money, used: Money }
+
 checkAge : Instant -> Booking -> Result<RecentBooking, RefundError>
 checkAllowance :
-  Money -> Money -> RecentBooking -> RefundRequest
+  Allowance -> RecentBooking -> RefundRequest
     -> Result<RefundApproved, RefundError>
 ```
 
@@ -99,7 +102,7 @@ handleApproveRefund loadBooking loadUsage allowance now request =
          loadUsage request.patient (monthOf now)
            |> mapError Unavailable
            |> bind (\used ->
-                checkAllowance allowance used recent request
+                checkAllowance { limit: allowance, used } recent request
                   |> mapError Rejected))
 ```
 
@@ -109,24 +112,25 @@ it ran, so `checkAllowance` cannot be handed a booking nobody checked.
 **Cost:** the handler has paths, so it takes the capabilities and not
 the connection, a test stubs each one, and the order of reads becomes
 code to test.
-**Benefit:** nothing is read that the decision does not reach. The usage
-is read only when the age check has passed.
+**Benefit:** the usage, which costs a call, is read only when the age
+check has passed.
 
-Use it when one of the three conditions in rule 1 of
-[the skill](../SKILL.md#core-rules) holds.
+That cost is what earns the strategy here: a read with a known cost too
+high to pay every time is the second of the three conditions in rule 1
+of [the skill](../SKILL.md#core-rules). Without one of the three, the
+skipped read is not worth the paths, and strategy 1 is the answer.
 
 ## Strategy 3: interpretation
 
 The core returns instructions; the shell performs them.
 
 ```text
-type Instruction =
+type RefundInstruction =
   | CreditAccount of { patient: PatientId, amount: Money }
   | NotifyPatient of { patient: PatientId, template: TemplateId }
-  | RecordAudit of AuditEntry
 
 planRefund :
-  RefundContext -> Result<NonEmptyList<Instruction>, RefundError>
+  RefundCase -> Result<NonEmptyList<RefundInstruction>, RefundError>
 ```
 
 The amount appears once, in the instruction that credits it. What earns
@@ -200,9 +204,9 @@ takes only what the handlers use.
 ```text
 buildApp pool allowance =
   {
-    confirmBooking =
+    confirm =
       handleConfirmBooking pool,
-    approveRefund =
+    refund =
       handleApproveRefund (loadBooking pool) (loadUsage pool) allowance,
   }
 ```

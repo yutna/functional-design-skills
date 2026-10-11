@@ -67,17 +67,17 @@ priceBooking :
   Catalogue -> ValidatedBooking -> Result<PricedBooking, PricingError>
 
 -- shell: the handler declares what it needs and reads between them
-alias LoadCatalogue = CatalogueId -> AsyncResult<Catalogue, StoreError>
+alias FindCatalogue = CatalogueId -> AsyncResult<Catalogue, StoreError>
 
 type PricingFailure =
   | Rejected of PricingError
   | Unavailable of StoreError
 
 priceFromCatalogue :
-  LoadCatalogue -> ValidatedBooking
+  FindCatalogue -> ValidatedBooking
     -> AsyncResult<PricedBooking, PricingFailure>
-priceFromCatalogue loadCatalogue booking =
-  loadCatalogue (catalogueFor booking)
+priceFromCatalogue findCatalogue booking =
+  findCatalogue (catalogueFor booking)
     |> mapError Unavailable
     |> bind (\catalogue ->
          priceBooking catalogue booking |> mapError Rejected)
@@ -122,7 +122,7 @@ instruction type and a shell that interprets it.
    to an auditor, or replayed.
 2. Default. **Declare a capability's type in the domain's words**, where
    the handler that takes it can see it and no adapter is imported.
-   `LoadCatalogue`, not `ICatalogueRepository`.
+   `FindCatalogue`, not `ICatalogueRepository`.
 3. Default. **One function type per capability used**, not one record per
    service. See
    [functional-applying-solid-functionally](../functional-applying-solid-functionally/SKILL.md).
@@ -182,13 +182,13 @@ one, and the composition root supplies the real ones:
 
 ```text
 -- declared beside the handler, in the domain's words
-alias LoadCatalogue = CatalogueId -> AsyncResult<Catalogue, StoreError>
+alias FindCatalogue = CatalogueId -> AsyncResult<Catalogue, StoreError>
 
 -- supplied once, at the edge
-priceFromCatalogueLive = priceFromCatalogue (loadCatalogueFrom pool)
+priceFromCatalogueLive = priceFromCatalogue (findCatalogueIn pool)
 ```
 
-The handler's test supplies a one-line function for `LoadCatalogue` and
+The handler's test supplies a one-line function for `FindCatalogue` and
 asserts on a plain value.
 
 ## Avoiding the threading problem

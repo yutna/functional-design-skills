@@ -60,11 +60,11 @@ handlePost : App -> Instant -> Request -> Async<Response>
 handlePost app now request =
   match parseCommand request with
   | Error problem -> done (badRequest problem)  -- an Async, finished
-  | Ok command -> app.confirmBooking now command |> respondTo
+  | Ok command -> app.confirm now command |> respondTo
 
 -- composition: wires handlers, never a workflow with capabilities
 buildApp pool =
-  { confirmBooking = handleConfirmBooking pool }
+  { confirm = handleConfirmBooking pool }
 ```
 
 `respondTo` turns the handler's `AsyncResult` into a response, and
@@ -92,18 +92,18 @@ core is unaffected either way, which is the point.
 
 ## Where transactions go
 
-In the shell, wrapping one aggregate's read-decide-write cycle.
+In the store, around one write. A handler never holds a transaction.
 
-```text
-withTransaction pool (\tx ->
-  loadBooking tx id
-    |> map (applyDecision decision)
-    |> bind (saveBooking tx))
-```
+For a read, a decision and a write on one aggregate, the store checks at
+the write that the row is still as it was read, and returns a conflict
+if it is not. Where two things must be written together, a booking and
+its events, the store offers one function that writes both.
+[persistence-patterns.md](../../functional-crossing-io-boundaries/references/persistence-patterns.md)
+shows the types.
 
-The pure function in the middle knows nothing about the transaction. It
-cannot start one, cannot commit one, and cannot be affected by a
-rollback. See
+The pure function in the middle knows nothing about any of this. It
+cannot start a transaction, cannot commit one, and cannot be affected by
+a rollback. See
 [functional-enforcing-consistency-boundaries](../../functional-enforcing-consistency-boundaries/SKILL.md).
 
 ## Long-running processes
@@ -138,6 +138,7 @@ and the rendering. See
 It will try to. Two symptoms and their repair:
 
 - **A conditional in the shell about business meaning.** Move the
-  decision into the core and return an instruction instead.
+  condition into a pure function, and let the handler follow the case
+  it returns.
 - **A shell function that is hard to name.** It is doing two of the five
   jobs above. Split it.

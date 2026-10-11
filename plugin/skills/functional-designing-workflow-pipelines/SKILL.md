@@ -124,7 +124,7 @@ the instant is the one clock reading taken for this command.
 | Values read  | Parameters, read by the handler beforehand    |
 | Stage types  | One per completed step, never reused          |
 | Error type   | One choice type for the whole workflow        |
-| Output       | A list of events                              |
+| Output       | The events it decided, usually as a list      |
 | Composition  | `bind` for a step that can fail, `map` if not |
 
 More on each in
