@@ -18,7 +18,7 @@ the space nobody thought of.
 ## Which library
 
 Guidance that says "the framework" cannot be acted on. These are the
-ones the language packs in this pack assume.
+ones this file recommends.
 
 | Stack            | Library                                 |
 | ---------------- | --------------------------------------- |
@@ -29,8 +29,9 @@ ones the language packs in this pack assume.
 
 `fast-check` supplies `fc.assert`, `fc.property`, and the `fc.*`
 arbitraries; `@fast-check/vitest` adds `test.prop` so a property reads
-like any other test. `stream_data` supplies `check all` inside
-`ExUnit`, and ships `ExUnitProperties` for the generators.
+like any other test. `stream_data` ships `StreamData` for the
+generators, such as `integer`, `list_of` and `frequency`, and
+`ExUnitProperties` for `property` and `check all` inside `ExUnit`.
 `propcheck` wraps PropEr and is the one of the two with a
 command-sequence model built in, which is what the last section here
 needs.
@@ -47,7 +48,7 @@ Ask what is true regardless of the input. The recurring answers:
 
 ```text
 forAll validBooking (\booking -> fromDto (toDto booking) == Ok booking)
-forAll anyText (\s -> render (parse s) == normalise s)
+forAll validText (\s -> parse s |> map render == Ok (normalise s))
 ```
 
 The single highest-value property in a codebase, because boundary
@@ -57,11 +58,17 @@ mappings are where silent data loss happens.
 rule, and every operation preserves it.
 
 ```text
-forAll anyString (\s ->
+-- strings close to valid, so that most runs reach the Ok branch
+forAll genNearCode (\s ->
   match parseTreatmentCode s with
   | Ok c -> length (unwrap c) == 5
   | Error _ -> true)
 ```
+
+Count how many runs reach the `Ok` branch. A property whose `Ok` branch
+never runs passes and tests nothing; arbitrary strings almost never
+parse as a code of a letter and four digits. Test the rejections
+separately, with the invalid generator described below.
 
 **Totality.** For any input of the declared type, the function returns
 without raising.
@@ -73,7 +80,7 @@ sorting, deduplication, and any effect that may be retried.
 implementation.
 
 ```text
-forAll anyList (\xs -> fastSort xs == sort (bruteForce xs))
+forAll anyList (\xs -> fastSort xs == bruteForceSort xs)
 ```
 
 **Algebraic laws.** Identity and associativity for a combination,
@@ -90,10 +97,18 @@ Write generators for domain types, not for primitives, and build them
 from the smart constructors so every generated value is valid.
 
 ```text
-genQuantity = choose (1, 1000) |> map Quantity
-genBookedTreatment = map2 makeTreatment genTreatmentCode genQuantity
-genBooking = genNonEmptyList genBookedTreatment |> map makeBooking
+-- beside the Quantity type, so the range is stated in one place
+genQuantity = choose (1, 1000) |> map parseQuantity |> keepOk
+genBookedTreatment =
+  map2 makeTreatment genTreatmentCode genQuantity |> keepOk
+genBooking =
+  genNonEmptyList genBookedTreatment |> map makeBooking |> keepOk
 ```
+
+A smart constructor returns a `Result`, so `keepOk` unwraps it by
+dropping the values the constructor refuses. If it drops most of what
+is generated, build the value from the constructor's own pieces
+instead.
 
 Two extra generators are worth having:
 
@@ -170,15 +185,27 @@ implementation, does the result agree with what the model says, and do
 the invariants still hold?
 
 ```text
+type StepOutcome =
+  | Skipped                     -- the precondition does not hold
+  | Disagreed of { state: State, command: Command }
+  | Stepped of (State, Model)
+
 -- one step: model and implementation must stay in step
+runCommand : (State, Model) -> Command -> StepOutcome
 runCommand (state, model) command =
-  let next      = apply command state
-      nextModel = applyToModel command model
-  in agrees next nextModel && invariantsHold next
+  if not (precondition model command) then Skipped
+  else
+    let next = apply state command
+    let nextModel = applyToModel model command
+    in if agrees next nextModel && invariantsHold next
+       then Stepped (next, nextModel)
+       else Disagreed { state, command }
 ```
 
-The property is then: for any sequence of commands whose preconditions
-hold in turn, every step agrees.
+Folding `runCommand` over a generated sequence carries the next pair
+forward, skips commands whose precondition fails, and stops at the
+first `Disagreed`. The property is then: for any sequence of commands
+whose preconditions hold in turn, no step disagrees.
 
 Three things to get right, because each one silently weakens the test:
 

@@ -27,7 +27,7 @@ take 20 fibs
 operation but holds one element at a time.
 
 ```text
-readLines path |> map parse |> filter valid |> fold count 0
+readLines path |> map parse |> filter valid |> count
 ```
 
 **Work that may not be needed.** A fallback, a diagnostic message, an
@@ -106,7 +106,8 @@ first, and accept the memory cost knowingly.
 | The computation may be unneeded   | Lazy   |
 
 The default is strict. Reach for laziness when one of the last four rows
-applies, and force at the boundary in every case.
+applies. Force a value at the boundary; a stream is not forced there,
+because a sink in the shell consumes it one element at a time.
 
 ## Laziness in strict languages
 
@@ -116,6 +117,13 @@ The idea survives without language support:
 - An iterator or generator is a lazy sequence.
 - A memoised function of no arguments is a lazy value evaluated once.
 
-The language packs give the concrete constructs. The rules above apply
-unchanged, and the leak pattern is if anything easier to hit, because a
-closure's captured references are less visible.
+In JavaScript and TypeScript, a generator function (`function*`) is a
+lazy sequence, and an async generator (`async function*`) read with
+`for await...of` is an effectful stream. In Elixir, `Stream` is the lazy
+counterpart of `Enum`, with `Stream.iterate/2` and `Stream.unfold/2` for
+generated sequences and `Stream.resource/3` for a source that must be
+opened and closed.
+
+The rules above apply unchanged, and the leak pattern is if anything
+easier to hit, because a closure's captured references are less
+visible.

@@ -7,6 +7,7 @@ proving something the core tests cannot.
 
 - [What the shell tests must prove](#what-the-shell-tests-must-prove)
 - [What they must not do](#what-they-must-not-do)
+- [Which tool](#which-tool)
 - [Fakes for capabilities](#fakes-for-capabilities)
 - [Time, randomness, identifiers](#time-randomness-identifiers)
 - [Testing concurrency without threads](#testing-concurrency-without-threads)
@@ -36,20 +37,44 @@ Everything else belongs in core tests.
 - Mock the database. A test against a mock of a driver proves that the
   mock behaves like the mock.
 
+## Which tool
+
+- **Elixir.** `ExUnit` runs the tests. `Ecto.Adapters.SQL.Sandbox` runs
+  each test in a database transaction that is rolled back when the test
+  ends, which suits the storage adapter. In a Phoenix service,
+  `Phoenix.ConnTest` builds a request with `build_conn` and `get` or
+  `post`, and `json_response` or `response` checks the body and the
+  status code.
+- **JavaScript and TypeScript.** `vitest` is the runner that
+  `@fast-check/vitest` extends; `node:test`, run with `node --test`, is
+  the runner built into Node. A service under test is called with the
+  global `fetch`. The storage adapter is tested against a real database
+  of the same kind as production, started for the test run.
+
 ## Fakes for capabilities
 
-For handler tests that are not full integration tests, replace
-each capability with an in-memory implementation.
+A stub and a fake are defined in
+[the testing skill](../SKILL.md). For handler tests that are not full
+integration tests, replace a store that many tests share with a fake: an
+in-memory implementation.
 
 ```text
--- an in-memory store, thirty lines, shared by every handler test
-makeFakeStore : Unit -> { save: SaveBooking, load: LoadBooking,
-                          contents: Unit -> List<Booking> }
+-- an in-memory store, thirty lines, shared by every handler test;
+-- `contents` is a test-only read of what it holds
+makeFakeStore :
+  { bumpVersionOnce: Boolean }
+    -> { save: SaveBooking, load: LoadBooking,
+         contents: Unit -> List<Versioned<Booking>> }
 ```
+
+`SaveBooking`, `LoadBooking` and `Versioned` are declared in
+[persistence-patterns.md](../../functional-crossing-io-boundaries/references/persistence-patterns.md).
+The option is for the conflict test further down.
 
 A fake behaves like the real thing for the operations used, so tests read
 naturally and assert on outcomes rather than on calls. Keep one fake per
-capability, maintained as real code, rather than ad hoc stubs per test.
+store, maintained as real code, rather than ad hoc stubs per test. A
+handler with few capabilities still takes stubs.
 
 The risk is that a fake drifts from the real implementation. Mitigate it
 with a **contract test**: one suite of assertions run against both the
@@ -78,12 +103,20 @@ Most concurrency bugs in this architecture are conflict handling, and
 that can be tested deterministically.
 
 ```text
-test "a stale write is rejected and retried" =
-  let store = fakeStoreWithVersionBump ()
-  -- the fake bumps the version between read and write once
-  in expect (handleCancel store cmd) toBeOk
-     and expect (store.writeAttempts ()) toBe 2
+-- the fake changes the stored version once, between a read and the
+-- write that follows it, as a concurrent writer would
+test "a stale write is refused, and nothing is overwritten" =
+  let store = makeFakeStore { bumpVersionOnce: true }
+  in expect (handleCancel store.load store.save now bookingId reason)
+       toFinishWith (Error VersionChanged)
+     and expect (store.contents ()) toBe [asTheOtherWriterLeftIt]
 ```
+
+The assertions are on what the handler finished with and on what the
+store now holds, not on how many times anything was called. Running the
+handler again after a conflict is the entry point's work, and it gets a
+second test: the same fake, the handler run twice, and the booking
+cancelled.
 
 Reserve real concurrency tests for the storage layer's guarantees, and
 keep them few.
@@ -95,7 +128,7 @@ A working ratio for a service:
 | Layer                  | Share of tests |
 | ---------------------- | -------------- |
 | Domain types and rules | Most           |
-| Handlers with fakes    | Many           |
+| Handlers, stubs, fakes | Many           |
 | Adapters, integration  | Few            |
 | End to end, full stack | A handful      |
 

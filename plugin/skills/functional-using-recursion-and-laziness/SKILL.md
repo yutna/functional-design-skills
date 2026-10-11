@@ -38,20 +38,30 @@ Not for: reducing a collection to a value, which is
 1. Default. **Write the base case first.** Then the recursive case, and check
    that it always moves towards the base.
 2. Default. **Make the recursive call the last thing.** A tail call can be
-   turned into a loop; a call whose result is then modified cannot.
-3. Rule. **Know whether your language eliminates tail calls.** If it does not,
-   bound the depth, use an explicit accumulator loop, or trampoline.
+   turned into a loop; a call whose result is then modified cannot as
+   written, so move the work into an accumulator first. This applies
+   unless the depth is bounded and small, or the recursion is not
+   linear; see the table below.
+3. Rule. **Rely on tail-call elimination only where the language
+   guarantees it.** Elixir runs a call in tail position in constant
+   stack space on the BEAM. In JavaScript and TypeScript, bound the
+   depth, write an explicit accumulator loop, or trampoline.
 4. Default. **Prefer an existing traversal.** Fold, map, and unfold cover most
    cases; hand-written recursion is for shapes they do not fit.
 5. Rule. **Memoise only pure functions**, and own the cache in one place.
-6. Default. **Use laziness for size, not for style.** An unevaluated computation
-   holding a reference to a large structure is a leak with a nice name.
-7. Default. **Force at the boundary.** A lazy value crossing into the shell
-   should be evaluated where its cost and failures are visible.
+6. Default. **Use laziness for size, or for work that may not be needed,
+   not for style.** An unevaluated computation holding a reference to a
+   large structure is a leak with a nice name.
+7. Default. **Force a lazy value at the boundary.** A lazy value, such as
+   a lazy total or a cached entry, crossing into the shell should be
+   evaluated where its cost and failures are visible. A stream is
+   outside this default: a sink in the shell consumes it one element at
+   a time.
 
 ## Recursion shapes
 
 ```text
+-- n is a non-negative Integer
 -- not tail recursive: the multiply happens after the call returns
 factorial n = if n <= 1 then 1 else n * factorial (n - 1)
 
@@ -61,7 +71,8 @@ factorial n = go n 1
 ```
 
 The second form runs in constant stack space where the language
-eliminates tail calls, and is a plain loop where it does not.
+eliminates tail calls, and still grows the stack where it does not;
+there, write the loop by hand.
 
 | Situation               | Approach                           |
 | ----------------------- | ---------------------------------- |
@@ -77,8 +88,10 @@ More in
 
 ## Laziness
 
-A lazy value is a computation that has not run yet, and runs at most
-once. Two uses justify it:
+A lazy value is a computation that has not run yet, and in most
+implementations runs at most once. Three uses justify it: unbounded
+sequences, data larger than memory (see Streaming below), and work that
+may not be needed.
 
 **Unbounded sequences.** Describe the whole sequence, take what is
 needed.
@@ -97,23 +110,33 @@ orElseLazy : (Unit -> A) -> Option<A> -> A
 ```
 
 In a strict language, the delay is expressed by passing a function of no
-arguments, which is the same idea without the syntax.
+arguments, memoised if it must run once, which is the same idea without
+the syntax.
 
 ## Streaming
 
-The practical payoff of laziness is processing data larger than memory,
-one element at a time, through a pipeline that reads like a list
-operation.
+The second use is processing data larger than memory, one element at a
+time, through a pipeline that reads like a list operation. `Stream<A>`
+here is a lazy sequence of `A`; the notation page has no entry for it.
+A stream whose elements come from a file or a socket is an effect type,
+as `Async` is: pulling an element reaches outside. So the source and the
+sink are shell. The stages between them only describe what happens to
+each element, and are core.
 
 ```text
-readLines path
-  |> map parseRow
-  |> filter isRelevant
-  |> take 1000
-  |> toList
+-- shell: the source reads the file
+readLines : Path -> Stream<Line>
+
+-- core: pure stages in the middle; rows that do not parse are dropped
+relevant : Stream<Line> -> Stream<Row>
+relevant lines =
+  lines |> map parseRow |> keepOk |> filter isRelevant
+
+-- shell: the sink consumes one element at a time
+rows = relevant (readLines path) |> take 1000 |> toList
 ```
 
-Nothing is read until the last step asks, and only a thousand relevant
+Nothing is read until the sink asks, and only a thousand relevant
 rows are ever materialised. See
 [laziness.md](references/laziness.md).
 
@@ -124,8 +147,12 @@ only when the function is genuinely pure, and safe only when the cache
 has one owner and a bound.
 
 ```text
-memoise : (A -> B) -> (A -> B)
+memoise : Capacity -> (A -> B) -> (A -> B)
 ```
+
+The returned function owns exactly one cache, bounded by `Capacity`,
+and holds mutable state to do it. Create it once, at the edge, in the
+module that owns it.
 
 Three questions before applying it:
 
@@ -147,8 +174,8 @@ Three questions before applying it:
 
 ## Common mistakes
 
-- **Assuming tail-call elimination.** Most mainstream runtimes do not do
-  it. Check, and write a loop if not.
+- **Assuming tail-call elimination.** Where the language does not
+  guarantee it, a tail call still grows the stack. Write a loop.
 - **Recursing where a fold exists.** The fold is tested, named, and hard
   to get wrong.
 - **Leaking through laziness.** An unevaluated computation keeps

@@ -1,21 +1,27 @@
 # Monoids
 
 A monoid is a type with two things: a way to combine two values, and an
-identity value that changes nothing. Combination must be associative, so
+identity value that changes nothing. In the code below the identity
+value is named `empty`, so that `identity` stays the function that
+returns its argument. Combination must be associative, so
 the grouping does not matter.
 
 ```text
 combine : A -> A -> A
-identity : A
+empty : A
 
 -- laws
-combine a identity == a
-combine identity a == a
+combine a empty == a
+combine empty a == a
 combine a (combine b c) == combine (combine a b) c
 ```
 
 Nothing about this is abstract nonsense; it is the precise condition
-under which a fold can be split, reordered, and run in parallel.
+under which a fold can be split, and run in parallel with the parts
+combined in their original order. Reordering the parts needs
+commutativity as well, which not every monoid has: list append, text
+concatenation and a map merge where the right side wins are not
+commutative.
 
 ## Contents
 
@@ -53,8 +59,8 @@ collection, so `totalOf []` is zero rather than an error or a `None`.
 anywhere, each part folded independently, and the results combined.
 
 ```text
-total = parts |> parallelMap (fold combine identity)
-              |> fold combine identity
+total = parts |> parallelMap (fold combine empty)
+              |> fold combine empty
 ```
 
 **Composable summaries.** If two summary types are monoids, a record of
@@ -62,18 +68,25 @@ them is a monoid too, combined field by field. That is how one pass
 produces several statistics without interleaving their logic.
 
 ```text
-type Summary = { count: Integer, total: Money, currencies: Set<Currency> }
--- combine field-wise; identity is the identity of each field
+type Summary = { total: Satang, count: Integer }
+-- combine field-wise; empty is the identity of each field
 ```
+
+`Satang` is one currency, so its sum has a single total. Amounts in
+several currencies have no single total; keep a
+`Map<Currency, Satang>` instead, which is a monoid by merging with
+addition.
 
 ## Checking your own
 
 When defining a combination over a domain type, check the laws with three
 property tests: left identity, right identity, and associativity. Failing
-associativity is the common one, and it usually means the operation is
-really "apply an update", which is a fold's step function rather than a
-monoid. The general move -- write the claim as an equation over arbitrary
-values, then let the property test be that equation -- is in
+associativity is the common one. It usually means the answer is being
+computed too early, as with an average, or that the operation is an
+update with differently typed arguments, which is a fold's step function
+rather than a monoid. The general move -- write the claim as an equation
+over arbitrary values, then let the property test be that equation -- is
+in
 [functional-testing-functional-code](../../functional-testing-functional-code/SKILL.md).
 
 ```text
@@ -89,10 +102,12 @@ each a monoid, so the pair is one too, and the average comes out of the
 final value.
 
 ```text
-type Running = { total: Decimal, count: Integer }
-combine a b = { total: a.total + b.total, count: a.count + b.count }
-identity   = { total: 0, count: 0 }
-average r  = if r.count == 0 then None else Some (r.total / r.count)
+type Summary = { total: Satang, count: Integer }
+combine a b =
+  { total: add a.total b.total, count: a.count + b.count }
+empty = { total: zero, count: 0 }
+average r =
+  if r.count == 0 then None else Some (toDecimal r.total / r.count)
 ```
 
 Last-write-wins is the case people expect to fail and it does not:
@@ -113,7 +128,7 @@ non-empty.
 - Accumulating validation errors: `NonEmptyList` concatenation
 - Merging configuration layers: map merge, later wins
 - Combining permissions: set union
-- Totalling money: addition, with the currency fixed
+- Totalling money: addition, over one currency
 - Building a query: predicate conjunction, identity is "match all"
 - Composing middleware: function composition, identity is `identity`
 

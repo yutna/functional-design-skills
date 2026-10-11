@@ -35,19 +35,32 @@ Not for: deciding which effects the system performs, which is
 
 ## Core rules
 
-1. Rule. **Transform, do not mutate.** A function that changes a value returns a
-   new one. The caller decides what to keep.
-2. Rule. **State transitions are pure functions.** `State -> Event -> State`. No
-   I/O inside, no clock, no randomness.
-3. Default. **Keep mutable state in one place, at the edge.** One reference
-   cell, one database row, one actor. Not a field on ten objects.
+1. Rule. **Transform, do not mutate.** Never mutate a value that anything
+   else can observe. A function that changes such a value returns a new
+   one, and the caller decides what to keep. A value built inside one
+   function and not yet returned is outside this rule; rule 6 says when
+   mutating it is worth it.
+2. Rule. **State transitions are pure functions.** No I/O inside, no
+   clock, no randomness. The shape depends on the job. A transition is
+   one function for each event, takes the specific source state, and
+   returns the new state, or a `Result` when it can refuse, as
+   [functional-modeling-state-machines](../functional-modeling-state-machines/SKILL.md)
+   says. `State -> Event -> State` is the fold that replays events
+   already accepted, and it cannot refuse.
+3. Default. **Keep each piece of mutable state with one owner, at the
+   edge.** One reference cell, one database row, one actor, reached
+   through the pure update function and owned by one module. Not a field
+   on ten objects. Unrelated pieces of state get separate cells.
 4. Default. **Swap, do not edit.** Replace the whole value atomically; never
    partially update a shared structure.
 5. Default. **Share structure instead of copying.** Persistent data structures
    make "a new version" cheap. See
    [persistent-structures.md](references/persistent-structures.md).
-6. Default. **Local mutation is acceptable when invisible.** Inside one
-   function, never escaping, with a measurement that justified it.
+6. Default. **Local mutation is acceptable when invisible.** It applies
+   when the value is built inside one function, is not observable by the
+   caller or by any other code, and a measurement justified it. A
+   transient or builder that is frozen before it is returned qualifies.
+   A mutable accumulator that survives between calls does not.
 7. Default. **Do not defend with copies.** If values are immutable, defensive
    copying is dead code.
 
@@ -56,26 +69,26 @@ Not for: deciding which effects the system performs, which is
 Mutation shared across readers:
 
 ```text
-cart.items.push(item)         -- who else holds this cart?
-cart.total = recalculate cart -- two steps: readers can see between them
+booking.treatments.push(t)   -- who else holds this booking?
+booking.total = recalculate booking -- two steps: readers see between
 ```
 
-Any code holding `cart` sees the change, possibly halfway through. Under
-concurrency, two pushes can lose one. Under test, the previous state is
-gone.
+Any code holding `booking` sees the change, possibly halfway through.
+Under concurrency, two pushes can lose one. Under test, the previous
+state is gone.
 
 Transformation:
 
 ```text
-addItem : Item -> Cart -> Cart
-addItem item cart =
-  { ...cart, items: cons item cart.items }
+addTreatment : BookedTreatment -> Booking -> Booking
+addTreatment t booking =
+  { ...booking, treatments: cons t booking.treatments }
 
-total : Cart -> Money         -- derived, never stored
+total : Booking -> Satang     -- derived, never stored
 ```
 
-The old cart still exists and is still valid. Concurrency is handled once
-where the cart is stored, not at every mutation site.
+The old booking still exists and is still valid. Concurrency is handled
+once where the booking is stored, not at every mutation site.
 
 ## Where the mutable cell lives
 
@@ -93,12 +106,15 @@ Whichever is chosen, the update follows the same shape: read the current
 value, compute a new one with a pure function, install it atomically.
 
 ```text
-update : Reference<S> -> (S -> S) -> S
+updateAtomically :
+  Integer -> Reference<S> -> (S -> S) -> AsyncResult<S, Conflict>
 ```
 
-If the installation can fail because someone else changed it first, the
-retry is a loop around the pure function, and the pure function is
-unchanged. See
+It reads and writes a shared cell, so it has an effect type. If the
+installation fails because someone else changed the value first, the
+retry is a bounded loop around the pure function, and the pure function
+is unchanged. When the bound is spent the caller receives a `Conflict`.
+See
 [concurrency.md](references/concurrency.md).
 
 ## Modelling change over time
@@ -139,9 +155,9 @@ updates to the one mutable cell, and that is a small, isolated problem:
 
 - A function that returns nothing but changes its argument
 - A lock protecting a data structure rather than a resource
-- Defensive copying on the way in or out of a function
+- Defensive copying of values that are already immutable
 - A field updated in two steps, with readers in between
-- Global or module-level mutable state
+- Mutable state reachable from many modules, rather than owned by one
 - A cached value stored beside the data it is derived from
 - Two threads calling the same "add" and one result disappearing
 
@@ -154,8 +170,9 @@ updates to the one mutable cell, and that is a small, isolated problem:
 - **Storing derived values.** Recompute, unless it must be frozen for a
   business reason, in which case it is a different concept with its own
   name.
-- **Mutating inside a "pure" function.** A hidden accumulator makes the
-  function untestable in parallel and unsafe to memoise.
+- **Mutating inside a "pure" function.** An accumulator that survives
+  between calls makes the function untestable in parallel and unsafe to
+  memoise. One that is built and frozen inside a single call is rule 6.
 - **Using a lock instead of a swap.** Locks compose badly and the value
   is already immutable; the swap is enough.
 
@@ -176,9 +193,7 @@ updates to the one mutable cell, and that is a small, isolated problem:
   retries, idempotency, reading two sequences of effects against each
   other, and the failure modes immutability does not fix.
 
-Worth noting for confidence rather than for new content: the data-first
-school arrives independently at the same advice — one state reference,
-updated by comparing and swapping on a version, with all logic reading
-immutable snapshots. It is the one principle both schools of functional
-design state identically. See
-[two-schools.md](../functional-choosing-types-or-plain-data/references/two-schools.md).
+See
+[two-schools.md](../functional-choosing-types-or-plain-data/references/two-schools.md)
+for where the two schools of functional design agree, immutable data
+among them.

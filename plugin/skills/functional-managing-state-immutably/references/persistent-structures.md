@@ -58,11 +58,12 @@ neutral advice would be wrong:
 | Haskell, F#, Scala       | The standard library                    |
 | JavaScript, TypeScript   | Nothing built in; add `immutable`       |
 
-The last row is why the table exists. JavaScript's `Object.freeze`,
-spread, and the `toSorted` family produce a new value by copying, not by
-sharing structure, so "immutable" there costs linear time and memory on
-every change. That is fine for a record with six fields and wrong for a
-map with fifty thousand entries updated per request.
+The last row is why the table exists. In JavaScript, spread and the
+`toSorted` family copy rather than share structure, so "immutable" there
+costs linear time and memory on every change. `Object.freeze` only
+freezes the object it is given, and does not make a new value. Copying
+is fine for a record with six fields and wrong for a map with fifty
+thousand entries updated per request.
 
 Two ways out, and they are not the same thing:
 
@@ -141,20 +142,22 @@ bigMap
   |> persistent
 ```
 
-This is legitimate local mutation: the mutable value never escapes, and
-the function's signature is unchanged. It is the one case where mutating
-inside a pure function is safe, and it should be justified by a
-measurement. See
+This is local mutation as rule 6 of
+[the skill](../SKILL.md) allows it: the mutable value never escapes, and
+the function's signature is unchanged. The measurement that justifies
+it is described in
 [designing-for-performance.md](../../functional-programming-strategically/references/designing-for-performance.md).
 
 ## Immutability in languages without persistent collections
 
-Most mainstream languages have arrays and maps that copy on write, or
-libraries that add persistent versions. Rules that work everywhere:
+Most mainstream languages have mutable arrays and maps, and libraries
+that add persistent versions. Rules that work everywhere:
 
 1. Never mutate a value a caller gave you.
-2. Never return a reference to internal mutable state; return a copy, or
-   an immutable view.
+2. Where the value is mutable and cannot be frozen, never return a
+   reference to internal mutable state; return a copy, or an immutable
+   view. Where the value is already immutable, a copy is the defensive
+   copying that rule 7 of [the skill](../SKILL.md) calls dead code.
 3. Freeze at construction where the language allows it, and freeze deeply
    or not at all.
 4. Prefer building a new value from a fold over mutating an accumulator
@@ -172,11 +175,15 @@ become simple: keep the earlier value and return to it. No undo log, no
 inverse operation, no snapshot mechanism.
 
 ```text
+-- tryEach returns the first Some that its function finds, else None
+search : State -> Option<State>
 search state =
-  match nextMoves state with
-  | [] -> None
-  | moves -> tryEach (\m -> search (apply m state)) moves
-  -- `state` is untouched by any recursive call
+  if isGoal state then Some state
+  else
+    match nextMoves state with
+    | [] -> None
+    | moves -> tryEach (\m -> search (apply m state)) moves
+    -- `state` is untouched by any recursive call
 ```
 
 This is the same property that makes pure functions safe to run in

@@ -16,7 +16,7 @@ Move the work that happens after the call into an accumulator passed
 forward.
 
 ```text
--- after the call: cons happens on the way back up
+-- after the call: append happens on the way back up
 reverse [] = []
 reverse (x :: rest) = append (reverse rest) [x]     -- also quadratic
 
@@ -27,7 +27,8 @@ reverse xs = go xs []
 ```
 
 The accumulator holds the partial answer. This transformation works for
-most linear recursions and turns them into loops.
+most linear recursions and turns them into tail calls, which are loops
+where the language eliminates them.
 
 ## When the recursion is not linear
 
@@ -41,17 +42,22 @@ in order of preference:
 
 ```text
 walk root =
-  go [root] []
+  reverse (go [root] [])
   where
     go [] acc = acc
     go (n :: rest) acc =
       match n with
       | Leaf v -> go rest (v :: acc)
-      | Node l r -> go (l :: r :: rest) acc
+      | Node (l, r) -> go (l :: r :: rest) acc
 ```
 
-Constant stack, and the traversal order is explicit rather than implied
-by the language.
+The call stack stays constant, and the traversal order is explicit
+rather than implied by the language. The pending nodes now live in a
+list on the heap, which grows with the tree. Leaves are prepended, so
+`reverse` restores the left-to-right order once at the end. Termination
+depends on the list of pending nodes, not on a smaller argument: each
+step removes one node and adds only its children, so the walk ends when
+the tree does.
 
 ## Trampolines
 
@@ -66,10 +72,16 @@ run : Step<A> -> A
 run s =
   match s with
   | Done a -> a
-  | More f -> run (f ())        -- a loop, not a nested call
+  | More f -> run (f ())        -- a `while` loop in a real language
 ```
 
-Each `More` returns to the driver, so the stack never grows. The cost is
+The notation has no loop, so `run` is written recursively here. In a
+language without tail-call elimination it has to be a loop with one
+local variable: a recursive driver would need the very thing the
+trampoline stands in for. Each `More` returns to the driver, so the
+stack never grows. Termination
+depends on each step leading closer to a `Done`; say so in a comment,
+and bound the number of steps where that is not evident. The cost is
 an allocation per step, which is usually acceptable next to a crash.
 
 ## Mutual recursion
@@ -79,6 +91,7 @@ The same techniques apply, and trampolining is often the only practical
 one because neither call can be optimised independently.
 
 ```text
+-- n is a non-negative Integer; a negative n would never reach 0
 isEven n = if n == 0 then true else isOdd (n - 1)
 isOdd n = if n == 0 then false else isEven (n - 1)
 ```
@@ -94,24 +107,37 @@ unfold produces a structure from a seed.
 ```text
 unfold : (S -> Option<(A, S)>) -> S -> List<A>
 
-pageAll : PageToken -> List<Record>
-pageAll = unfold (\token ->
-  match fetchPage token with
-  | Page rows (Some next) -> Some (rows, next)
-  | Page rows None -> Some (rows, Stop)
-  | Stop -> None)
+-- the slots of a clinic day, from its opening hours
+type Cursor = { next: Instant, closes: Instant }
+
+daySlots : OpeningHours -> List<Slot>
+daySlots hours =
+  unfold step { next: hours.opens, closes: hours.closes }
+  where
+    step c =
+      let end = c.next + slotLength
+      in if end > c.closes
+         then None
+         else Some ({ start: c.next, end }, { ...c, next: end })
 ```
 
-Pagination, retry schedules, and sequence generation are all unfolds.
-Recognising the shape avoids a hand-written loop with a mutable cursor.
+Retry schedules and slot generation are unfolds. Recognising the shape
+avoids a hand-written loop with a mutable cursor.
+
+Reading the pages of a remote source until there are no more is not an
+unfold in the core, because each read is an effect that can fail. It is
+a loop in an adapter, with an effect type, such as
+`readAllPages : PageToken -> AsyncResult<List<Record>, StoreError>`.
 
 ## Structural recursion and termination
 
 A recursion terminates if every call is on a strictly smaller piece of
 the input. Two habits make that visible:
 
-1. Recurse on a **component** of a value, never on a value you
-   constructed inside the function.
+1. When recursing over the input's own structure, recurse on a
+   **component** of a value, never on a value you constructed inside the
+   function. The explicit stack and the trampoline above recurse on
+   something else, and each carries its own termination note.
 2. When recursing on a number, make it decrease, and handle the negative
    case explicitly rather than assuming it cannot happen.
 
