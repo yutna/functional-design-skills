@@ -64,7 +64,7 @@ isRevenue o = o.status == "paid"            -- knows the spelling
                                             -- and the meaning
 ```
 
-Change the spelling, or add a "refunded" status that is still revenue,
+Change the spelling, or add an "attended" status that is still revenue,
 and reporting is silently wrong. Nothing connects the two modules but a
 string literal.
 
@@ -77,8 +77,9 @@ type Booking = { ..., status: BookingStatus }
 
 countsAsRevenue : Booking -> Boolean          -- the meaning lives here
 
--- reporting module
-isRevenue = countsAsRevenue                 -- knows nothing else
+-- reporting module: no wrapper, it calls the rule where it needs it
+revenueOf bookings =
+  bookings |> filter countsAsRevenue |> sumOf total
 ```
 
 Now adding a status is a change in one module, and the type system lists
@@ -92,7 +93,7 @@ every place that must be reconsidered.
 | Exposed record shape | Storage or wire structure  | Map at the boundary   |
 | Status strings       | Spelling plus meaning      | Choice type plus rule |
 | Leaked error type    | The library underneath     | Own error type        |
-| Pass-through value   | That the value exists      | Context at the edge   |
+| Pass-through value   | That the value exists      | Bind once at the edge |
 | Exported helper      | How the work is done       | Stop exporting it     |
 | Temporal modules     | The order of the steps     | Split by knowledge    |
 
