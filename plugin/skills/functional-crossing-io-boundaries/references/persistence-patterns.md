@@ -62,19 +62,24 @@ toFailure e =
   | Conflict -> VersionChanged
   | Failed fault -> Unavailable fault
 
-handleCancel pool now id reason =
-  loadBooking pool id                                  -- read
+handleCancel :
+  LoadBooking -> SaveBooking -> Instant -> BookingId -> CancelReason
+    -> AsyncResult<Unit, CancelFailure>
+handleCancel loadBooking saveBooking now id reason =
+  loadBooking id                                       -- read
     |> mapError Unavailable
     |> bind (toResult NotFound)
     |> bind (\versioned ->
          cancelBooking now reason versioned.value      -- decide
            |> mapError Rejected
            |> map (\booking -> { ...versioned, value: booking }))
-    |> bind (saveBooking pool >> mapError toFailure)   -- write
+    |> bind (saveBooking >> mapError toFailure)        -- write
 ```
 
-The store owns the transaction. The handler never holds one, and it
-passes the pool only so that the adapters can reach the database. The
+The store owns the transaction. The handler never holds one: it takes
+the two capabilities, and a test can hand it a fake store. Elsewhere in
+the pack `loadBooking` returns the booking alone, where the version is
+not the point. The
 pure function cannot start a transaction, commit one, or be affected by
 a rollback. That is what makes it testable and reusable.
 

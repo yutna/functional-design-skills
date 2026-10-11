@@ -90,7 +90,9 @@ deliver it. The decision stays pure and testable, and the set of
 listeners becomes visible in one place.
 
 ```text
-confirmBooking : BookingRequest -> Result<List<BookingEvent>, ConfirmBookingError>
+confirmBooking :
+  Catalogue -> Instant -> UnvalidatedBooking
+    -> Result<List<ConfirmBookingEvent>, ConfirmBookingError>
 ```
 
 ## Patterns that stay useful

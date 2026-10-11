@@ -77,7 +77,7 @@ type Status = New | Paid | Void
 -- Open to new cases, closed to new operations.
 -- Adding a new payment method costs nothing. Adding a new
 -- operation means changing the record and every implementation.
-alias PaymentMethod = { charge: Amount -> AsyncResult<Receipt, Error> }
+alias PaymentMethod = { charge: Money -> AsyncResult<Receipt, ChargeError> }
 ```
 
 Rules of thumb:

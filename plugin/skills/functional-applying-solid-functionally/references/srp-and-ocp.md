@@ -104,8 +104,8 @@ A table from a tag to behaviour, when the set of variants is loaded at
 runtime or comes from configuration.
 
 ```text
-alias Handlers = Map<EventTag, Event -> AsyncResult<Unit, Error>>
-dispatch : Handlers -> Event -> AsyncResult<Unit, Error>
+alias Handlers = Map<EventTag, Event -> AsyncResult<Unit, HandlerError>>
+dispatch : Handlers -> Event -> AsyncResult<Unit, HandlerError>
 ```
 
 Open to new variants without recompiling. The cost is that nothing checks

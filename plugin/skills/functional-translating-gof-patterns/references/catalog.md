@@ -135,10 +135,12 @@ pattern name adds nothing. See
 
 ```text
 -- the decision returns what happened
-confirmBooking : BookingRequest -> Result<List<BookingEvent>, ConfirmBookingError>
+confirmBooking :
+  Catalogue -> Instant -> UnvalidatedBooking
+    -> Result<List<ConfirmBookingEvent>, ConfirmBookingError>
 
--- the shell decides who hears about it
-dispatch : List<BookingEvent> -> AsyncResult<Unit, DispatchError>
+-- the shell delivers it to whoever subscribed
+dispatch : List<ConfirmBookingEvent> -> AsyncResult<Unit, DispatchError>
 ```
 
 Returning events beats registering callbacks: the decision stays pure,

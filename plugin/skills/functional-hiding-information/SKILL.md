@@ -105,11 +105,11 @@ selects a mode, so every caller must decide about modes.
 
 ```text
 -- overexposed: every caller learns about caching
-fetchUser : CacheMode -> UserId -> AsyncResult<User, Error>
+fetchUser : CacheMode -> UserId -> AsyncResult<User, FetchError>
 
 -- exposed only where it matters
-fetchUser : UserId -> AsyncResult<User, Error>
-fetchUserUncached : UserId -> AsyncResult<User, Error>
+fetchUser : UserId -> AsyncResult<User, FetchError>
+fetchUserUncached : UserId -> AsyncResult<User, FetchError>
 ```
 
 The rule: the common case should not pay for the rare one.
