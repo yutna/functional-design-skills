@@ -61,13 +61,14 @@ the value.
 ```text
 -- cannot be a type: it depends on availability right now
 checkAvailability :
-  GetAvailability -> Booking
-    -> AsyncResult<AvailableBooking, Unavailable>
+  Availability -> Booking -> Result<AvailableBooking, Unavailable>
 ```
 
 These are workflow steps returning `Result`, not type invariants. The
 signal is that the rule mentions time, another system, or state that
-lives elsewhere.
+lives elsewhere. The step itself is pure: the handler reads the
+availability first and passes the value in, so the step takes no
+capability.
 
 ## Rules that change more often than the code
 
