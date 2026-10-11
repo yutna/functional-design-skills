@@ -40,15 +40,18 @@ which is
 2. Default. **Discover through events.** Ask what happens, in the past tense:
    "booking confirmed", "payment declined". Events reveal boundaries that nouns
    hide.
-3. Default. **Every workflow is a command in, events out.** Name the trigger,
-   the work, and what the rest of the world learns. That triple is the unit of
-   design. See
+3. Default. **Every workflow starts from one command or one event, and
+   returns events.** Name the trigger, the work, and what the rest of the
+   world learns. That triple is the unit of design. See
    [functional-designing-workflow-pipelines](../functional-designing-workflow-pipelines/SKILL.md).
 4. Rule. **Draw a context boundary wherever a word changes meaning.** If
    "customer" means a billing account here and a person there, those are two
    contexts, and the two `Customer` types must be different types.
-5. Rule. **Never share a model across contexts.** Translate at the border, in
-   one place, deliberately.
+5. Rule. **Never share a model by accident.** Every pair of contexts has
+   a relationship that was chosen and is written down. Usually it is a
+   translation at the border, in one place; a small kernel owned by both
+   is the other choice, made on purpose. See
+   [bounded-contexts.md](references/bounded-contexts.md).
 6. Default. **Persist nothing until the model holds.** Deriving the model from a
    schema imports the storage's compromises into the domain forever.
 7. Default. **Write the model down as types, and read them back to the
@@ -70,37 +73,46 @@ type BookingRecord = {
 }
 ```
 
-Nothing here is a business word. `flag1` will be explained in a wiki page
+Little here is a business word. `flag1` will be explained in a wiki page
 that goes stale. `statusCode` will be compared against string literals in
 four modules.
 
 The domain's model, taken from a conversation:
 
 ```text
--- "A quote becomes a booking when the customer accepts it. We can only
+-- "A quote becomes a booking when the patient accepts it. We can only
 --  accept a quote that hasn't expired."
 type Quote = { id: QuoteId, lines: NonEmptyList<QuoteLine>,
                expires: Instant }
 
-type AcceptQuote = { quote: QuoteId, acceptedBy: CustomerId }
-type QuoteAccepted = { booking: Booking, acceptedAt: Instant }
-type AcceptQuoteError = QuoteExpired of Instant | QuoteNotFound
+type AcceptQuote = { quote: QuoteId, acceptedBy: PatientId }
+type QuoteAccepted = { booking: BookingId, acceptedAt: Instant }
+type AcceptQuoteError = QuoteExpired of Instant
 
 acceptQuote :
-  AcceptQuote -> Result<QuoteAccepted, AcceptQuoteError>
+  Instant -> BookingId -> Quote -> AcceptQuote
+    -> Result<QuoteAccepted, AcceptQuoteError>
 ```
 
 Every name came from the business. The rule about expiry is visible in
 the error type. An expert can read this and say whether it is right.
 
+The handler loads the quote named in the command and supplies the
+instant and the new identifier. When it finds no quote it has nothing to
+pass, so a missing quote is not a case of `AcceptQuoteError`. This
+`Quote` is the discovery sketch: a record with an expiry. It is refined
+into one case for each state in
+[functional-modeling-state-machines](../functional-modeling-state-machines/SKILL.md).
+
 ## Discovery procedure
 
-1. **Collect events.** With the experts, list everything that happens, in
+1. **Collect events.** With the experts, or from evidence where there
+   are none (see below), list everything that happens, in
    the past tense, on one surface. Do not organise yet.
 2. **Find the triggers.** For each event, ask what caused it: a command
    from a person, another event, or the passage of time.
-3. **Group into workflows.** A command, the work it triggers, the events
-   it produces. Name each workflow in the domain's words.
+3. **Group into workflows.** A command or an event, the work it starts,
+   the events it produces. Name each workflow in the domain's words.
 4. **Mark the pain points.** Where experts disagree, hesitate, or say "it
    depends", that is where the real complexity is.
 5. **Listen for changed meanings.** The same word used differently by two
@@ -111,13 +123,20 @@ the error type. An expert can read this and say whether it is right.
 7. **Write the types**, and read them back. Iterate on the types, not on
    prose.
 
+With no experts to ask, run the steps against the evidence in the
+repository (tests, documentation, issues, type names) and list every
+assumption for the user to confirm. The read-back in step 7 then goes
+to the user, with that list. See
+[Running it alone](references/event-storming.md#running-it-alone) and
+[working-alone.md](../functional-design/references/working-alone.md).
+
 ## Quick reference
 
 | Domain concept   | Appears in code as                          |
 | ---------------- | ------------------------------------------- |
 | Event            | A record named in the past tense            |
 | Command          | A record named as an imperative             |
-| Workflow         | One function, command in, events out        |
+| Workflow         | One function: a trigger in, events out      |
 | Business rule    | A type that makes the violation unbuildable |
 | Constraint       | A constructor that can fail                 |
 | Bounded context  | A module or service with its own types      |
@@ -130,7 +149,8 @@ the error type. An expert can read this and say whether it is right.
 - The model was derived from tables, or from an existing API
 - A workflow with no named trigger and no named outcome
 - "We'll clarify that with the business later" in a design document
-- One shared `Customer` type used by billing, shipping and support
+- One shared `Patient` type used by scheduling, billing and clinical
+  records
 
 ## Common mistakes
 

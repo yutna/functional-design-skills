@@ -1,7 +1,7 @@
 # Bounded Contexts
 
 A bounded context is a boundary within which a set of words has one
-agreed meaning. Inside it, "customer" means exactly one thing. Outside
+agreed meaning. Inside it, "patient" means exactly one thing. Outside
 it, the same word may mean something else, and that is not a problem to
 solve but a fact to model.
 
@@ -25,8 +25,8 @@ reliability:
    different models, and reorganisations follow the same lines.
 3. **Different rates of change.** A pricing engine that changes weekly
    does not belong with a compliance archive that changes yearly.
-4. **Different data needs for the same entity.** Support needs a
-   customer's history; billing needs their tax status. Neither needs the
+4. **Different data needs for the same entity.** Clinical records need
+   a patient's history; billing needs their tax status. Neither needs the
    other's fields.
 
 A boundary is **not** indicated by: a technical layer, a database table,
@@ -38,22 +38,22 @@ The same real-world thing has a different type in each context, holding
 only what that context needs.
 
 ```text
--- sales context
-type Customer = { id: CustomerId, name: Name, segment: Segment }
+-- scheduling context
+type Patient = { id: PatientId, name: Name, preferredSlots: SlotPreference }
 
--- shipping context
-type Customer = { id: CustomerId, address: Address,
-                  instructions: Option<String> }
+-- clinical records context
+type Patient = { id: PatientId, history: List<ClinicalNote>,
+                 allergies: Option<String> }
 
 -- billing context
-type Customer = { id: CustomerId, taxId: TaxId, terms: PaymentTerms }
+type Patient = { id: PatientId, taxId: TaxId, terms: PaymentTerms }
 ```
 
 Three types, one shared identifier. This is not duplication: each type
 records what its context is responsible for, and none of them changes
 when another context's needs change.
 
-Sharing one `Customer` across all three couples every change in any
+Sharing one `Patient` across all three couples every change in any
 context to all of them, and produces a type where most fields are
 irrelevant or absent at any given moment.
 
@@ -81,8 +81,8 @@ The translation is code, in one place, and it belongs to the downstream
 context.
 
 ```text
--- shipping context, at its edge
-fromSalesOrder : SalesOrderMessage -> Result<Shipment, TranslationError>
+-- scheduling context, at its edge
+fromReferral : ReferralMessage -> Result<Booking, TranslationError>
 ```
 
 Rules for a border:
