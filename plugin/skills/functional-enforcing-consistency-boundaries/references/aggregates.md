@@ -76,9 +76,19 @@ Correct under concurrency, and the standard answer for seats, stock, and
 unique names.
 
 ```text
-reserve : SeatId -> Instant -> Result<Reservation, AlreadyTaken>
-confirm : Reservation -> BookingId -> Result<Booking, Expired>
+type ReservationError =
+  | AlreadyTaken
+  | Expired
+  | Unavailable of StoreError
+
+reserve :
+  SeatId -> Instant -> AsyncResult<Reservation, ReservationError>
+confirm :
+  Reservation -> BookingId -> AsyncResult<Booking, ReservationError>
 ```
+
+Both reach storage, so both have an effect type, and each is shell code
+that claims or converts the claim in the database.
 
 **Compensate after.** Do the work, detect violations later, and reverse
 them. Suits money movement, where reversal is a normal operation and

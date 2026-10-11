@@ -117,16 +117,16 @@ See [comment-kinds.md](references/comment-kinds.md).
 For an exported function, in this order:
 
 ```text
--- Prices every treatment of a validated booking using the supplied price
--- source, and returns the booking with a total.
+-- Prices every treatment of a validated booking from the catalogue's
+-- prices, and returns the booking with a total.
 --
--- Requires: every treatment code in the booking exists in the source;
--- callers get that guarantee from validateBooking.
--- Fails with: PriceUnavailable when the source has no price today;
+-- Requires: every treatment code in the booking exists in the
+-- catalogue; callers get that guarantee from validateBooking.
+-- Fails with: PriceUnavailable when the catalogue has no price today;
 -- TotalTooLarge above the ten-million limit set by the finance team.
 -- Does not: apply discounts, which happen later in the pipeline.
-priceBooking : GetTreatmentPrice -> ValidatedBooking
-               -> Result<PricedBooking, PricingError>
+priceBooking :
+  Catalogue -> ValidatedBooking -> Result<PricedBooking, PricingError>
 ```
 
 The "does not" line is often the most valuable, because it answers the

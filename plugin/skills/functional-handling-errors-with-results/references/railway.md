@@ -32,7 +32,7 @@ two-track pipeline.
 | `A -> B`                     | one-track | `map`              |
 | `A -> Result<B, E>`          | switch    | `bind`             |
 | `Result<A,E> -> Result<B,E>` | two-track | use directly       |
-| Throws, returns nothing      | dead-end  | wrap into a switch |
+| Throws on some input         | dead-end  | wrap into a switch |
 
 ```text
 -- one-track function joined with map
@@ -42,14 +42,15 @@ priced |> map addTax
 validated |> bind price
 
 -- dead-end function made into a switch
-save : Booking -> Unit        -- throws
-saveSafely : Booking -> Result<Booking, SaveError>
-saveSafely o = tryCatch (\_ -> save o; o) toSaveError
+parseDate : String -> Date    -- throws on text that is not a date
+readDate : String -> Result<Date, DateError>
+readDate text = tryCatch (\_ -> parseDate text) toDateError
 ```
 
-The dead-end adapter returns its input on success, so the value continues
-down the track. This is the standard way to insert a logging or storage
-step without breaking the chain.
+The wrapped function is pure and foreign, so wrapping it changes nothing
+but the type. Its result continues down the track on success. This is
+the standard way to bring a function that throws into a chain, and it is
+done once, at the boundary.
 
 ## Composing switches
 
