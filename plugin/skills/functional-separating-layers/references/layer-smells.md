@@ -52,8 +52,8 @@ layer.
 
 **Case: a decorator adding a log line around every call.**
 Adds no guarantee the caller can rely on and doubles the call graph.
-Verdict: pass-through. Log inside the function, or at the edge where the
-request is already being observed.
+Verdict: pass-through. Record the event once, in the shell, where the
+result is handled and the request is already being observed.
 
 ## Decorators specifically
 
@@ -87,7 +87,9 @@ above at each hop.
 
 Vocabulary decides whether a boundary exists at all. It does not decide
 which side of it a given function belongs on. For that, ask a different
-question:
+question. This is the axis inside the domain; which way an import points
+is the other axis, and rule 7 in
+[SKILL.md](../SKILL.md) states both.
 
 > What would have to happen in the world for this to need changing?
 
@@ -125,10 +127,10 @@ selectActiveBookings : Instant -> AsyncResult<List<BookingRow>, DbError>
 -- ...and, in the query, `where cancelled_at is null and starts_at > now`
 ```
 
-"Active" is a business rule sitting in the slowest-changing layer. The
-vocabulary is right and the rate of change is wrong, so the day the
-definition of active gains a third condition, a storage module has to
-be edited by someone reasoning about the business.
+"Active" is a business rule sitting in a storage module. The vocabulary
+is right and the rate of change is wrong, so the day the definition of
+active gains a third condition, a storage module has to be edited by
+someone reasoning about the business.
 
 The repair is the direction rule again: pass the definition down rather
 than burying it.

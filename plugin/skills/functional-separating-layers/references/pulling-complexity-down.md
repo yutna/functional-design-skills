@@ -12,8 +12,8 @@ reader, and every future call site.
 
 1. Name the complexity precisely. "Callers must remember to normalise the
    phone number before comparing."
-2. Count the callers, including the ones that do not exist yet but
-   obviously will.
+2. Count the callers that exist or are visible in the current task, such
+   as open branches or a ticket.
 3. Ask whether **all** callers want the same handling.
    - Yes: pull it down. The module does it, and the interface loses a
      rule.
@@ -36,15 +36,18 @@ reader, and every future call site.
 normalisePhone : String -> String
 compareNormalised : String -> String -> Boolean
 
--- after: no rules in the interface
+-- after: two rules left the interface; the region is still the caller's
 type PhoneNumber = PhoneNumber of String   -- always normalised
 parsePhone : Region -> String -> Result<PhoneNumber, PhoneError>
 -- equality on PhoneNumber is now correct by construction
 ```
 
-The implementation got harder: it must normalise, and it must own the
-region default. The interface lost three rules that every caller had to
-know, and the class of bugs where someone compared raw strings is gone.
+The implementation got harder: it must normalise, and it must apply the
+region the caller names. The interface lost two rules that every caller
+had to know, and the class of bugs where someone compared raw strings is
+gone. The third rule, which region a missing country code means, is
+still a decision, and the caller makes it by passing a `Region`; see the
+third limit below.
 
 ## Limits
 
