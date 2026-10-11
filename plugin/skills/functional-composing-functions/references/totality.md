@@ -122,9 +122,10 @@ the signature is the contract and there is no context to rely on.
 - Property test: for arbitrary inputs of the declared type, the function
   returns a value and does not raise.
 - Review: search exported functions for the tokens that escape the type.
-  In TypeScript and JavaScript they are `throw`, the non-null `!`, the
-  assertion `as`, and null returns. In Elixir they are `raise`, the
-  bang functions that raise (`fetch!`), and `nil` returns.
+  In JavaScript and TypeScript they are `throw` and null returns, and in
+  TypeScript also the non-null `!` and the assertion `as`. In Elixir
+  they are `raise`, the bang functions that raise (`fetch!`), and `nil`
+  returns.
 - Types: turn on the checks the language offers for exhaustiveness and
   for nullability, and treat their warnings as errors. The language
   packs list them:

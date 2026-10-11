@@ -123,8 +123,8 @@ of the boundary, not of the step that produced it. The same rule applies
 to logging, metrics, and user-facing messages: do it once, where the
 context is complete.
 
-The counterpart inside the domain is one failure type per handler, so
-the aggregation point has one thing to match on. See
+The counterpart is one failure type for each handler, so the
+aggregation point has one thing to match on. See
 [error-taxonomy.md](../../functional-handling-errors-with-results/references/error-taxonomy.md).
 
 ### Aggregation gone wrong
