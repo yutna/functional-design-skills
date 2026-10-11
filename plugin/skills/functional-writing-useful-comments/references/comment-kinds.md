@@ -17,7 +17,8 @@ signature.
 
 Contents, in order:
 
-1. What it produces, in one sentence
+1. What it produces, in one sentence, where the name and types leave
+   something out, such as a unit
 2. What it requires of its inputs, beyond what the types say
 3. How it can fail, and what each failure means
 4. What it deliberately does not do
@@ -65,10 +66,11 @@ The dependency exists but neither module's code shows it. These are the
 comments that prevent the worst class of bug.
 
 ```text
--- The mobile client matches on these exact strings. Adding a case is
--- safe; renaming one is a breaking API change and needs a version
--- bump in BookingApi.
-type BookingStatusTag = "new" | "paid" | "cancelled"
+-- Serialised as the lower-case strings "new", "booked" and "cancelled",
+-- which are the wire contract: the mobile client matches on them
+-- exactly. Adding a case is safe; renaming one is a breaking API change
+-- and needs a version bump in BookingApi.
+type BookingStatusTag = New | Booked | Cancelled
 ```
 
 Placement: put it where an edit would break the assumption. If two places
@@ -95,16 +97,15 @@ Fields whose meaning or units are not obvious.
 
 ```text
 type RetryPolicy = {
-  -- Total elapsed time, not per attempt. An attempt already in
-  -- flight is not cancelled when this expires.
-  budget: Seconds,
-  -- Multiplier applied to the previous delay. 1.0 means constant.
-  backoff: Decimal,
+  -- An attempt already in flight is not cancelled when this expires.
+  totalBudget: Seconds,
+  backoff: Backoff,
 }
 ```
 
-Prefer a type where one exists. `budget: Seconds` already says more than
-`budget: Integer` plus a comment, and cannot go stale.
+Prefer a type where one exists. `totalBudget: Seconds` already says more
+than `budget: Integer` plus a comment, and cannot go stale. The one
+comment above says what no type can.
 
 ## Module comments
 
@@ -120,7 +121,7 @@ At the top of a module, three things:
 -- afterwards by the Discounts module, nor tax, which is Billing's.
 ```
 
-If the sentence needs "and", the module has two purposes. See
+If the sentence joins two unrelated purposes, the module has two. See
 [functional-splitting-and-joining-code](../../functional-splitting-and-joining-code/SKILL.md).
 
 ## Comments to delete on sight
@@ -131,6 +132,11 @@ If the sentence needs "and", the module has two purposes. See
 | Commented-out code              | Version control holds it     |
 | "TODO" with no name or date     | Nobody will do it            |
 | A changelog in the file header  | Version control holds it     |
-| "This should never happen"      | Either prove it or handle it |
+| "This should never happen"      | Prove it in a type, or crash |
 | Apology for the code's quality  | Say what would be better     |
 | A section marker in a long body | Split the function instead   |
+
+A "should never happen" message is kept only as the message of a crash
+that names the invariant that broke; it is never turned into a returned
+value. See
+[functional-defining-errors-out-of-existence](../../functional-defining-errors-out-of-existence/SKILL.md).

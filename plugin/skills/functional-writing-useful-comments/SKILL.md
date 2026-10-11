@@ -55,12 +55,12 @@ authorisationWindow = Days 30
 Every argument for not writing comments is one of these, and each has an
 answer.
 
-| Excuse                     | Answer                                   |
-| -------------------------- | ---------------------------------------- |
-| Good code documents itself | Code says what, never why                |
-| I have no time             | Minutes now against every reader's hours |
-| Comments go out of date    | Only if you edit code without them       |
-| The ones I see are useless | They were; write the four kinds below    |
+| Excuse                     | Answer                                        |
+| -------------------------- | --------------------------------------------- |
+| Good code documents itself | Code says what, never why                     |
+| I have no time             | Minutes now against every reader's hours      |
+| Comments go out of date    | Only if the code they describe changes unseen |
+| The ones I see are useless | They were; write the kinds below              |
 
 The first excuse is the important one: a signature states structure, and
 a name states meaning, but neither can state why a threshold is thirty
@@ -71,13 +71,13 @@ The second is worth examining honestly. Comments written first save time
 in the same session, because they expose a bad interface before it is
 implemented. See [comments-first.md](references/comments-first.md).
 
-## Four kinds worth writing
+## Six kinds worth writing
 
-**Interface comments** describe what a caller must know: what the
-function does, what it requires, what it guarantees, and what it can
-fail with. Write these for everything exported. They belong above the
-signature and must not describe the implementation, or callers will
-depend on it.
+**Interface comments** describe what a caller must know and the signature
+cannot say. Their contents, in order, are listed in
+[comment-kinds.md](references/comment-kinds.md). Write these for
+everything exported. They belong above the signature and must not
+describe the implementation, or callers will depend on it.
 
 **Implementation comments** explain what is not obvious inside: why an
 algorithm was chosen, what an unusual step is for, which invariant the
@@ -86,22 +86,32 @@ following lines maintain.
 **Cross-module comments** record a dependency that neither module's code
 shows: "the batch job assumes these rows are ordered by created_at",
 "this tag string is the wire contract with the mobile client". These are
-the hardest to place; put them where a change would break the assumption,
-in both places if necessary.
+the hardest to place; put them where a change would break the assumption.
+If two places can break it, comment both and name the other place in each,
+so that the comment can be found when the other place changes.
 
 **Rationale comments** record why a choice was made and what was
 rejected. They are what stop a future reader "simplifying" a deliberate
 decision.
 
+**Data comments** explain a field whose meaning or unit is not obvious.
+Where a type can say it, use the type.
+
+**Module comments** sit at the top of a module and say what knowledge it
+owns, what it deliberately does not own, and how to use it if the entry
+point is not obvious.
+
 See [comment-kinds.md](references/comment-kinds.md).
 
 ## Core rules
 
-1. Default. **Write the interface comment before the code.** If it is hard to
-   write, the interface is wrong, and you have learned that before implementing
-   it. See [comments-first.md](references/comments-first.md).
+1. Default. **Write the interface comment before the code.** If it will not fit
+   in one short paragraph, the interface is wrong, and you have learned that
+   before implementing it. See [comments-first.md](references/comments-first.md).
 2. Rule. **Describe things the reader cannot see.** Never restate the signature.
-3. Default. **Say why, not what.** The what is in the code; the why is not.
+3. Default. **Inside a body, say why, not what.** The what is in the code; the
+   why is not. At an interface, say what the signature cannot: requirements,
+   failures, what it does not do.
 4. Rule. **Keep interface comments free of implementation.** Anything a caller
    should not rely on must not be in the interface comment.
 5. Default. **Put the comment where the reader will be.** Next to the code it
@@ -114,11 +124,12 @@ See [comment-kinds.md](references/comment-kinds.md).
 
 ## What belongs in an interface comment
 
-For an exported function, in this order:
+For an exported function, with the contents in the order
+[comment-kinds.md](references/comment-kinds.md) gives:
 
 ```text
--- Prices every treatment of a validated booking from the catalogue's
--- prices, and returns the booking with a total.
+-- The total is a whole number of satang: the sum of each treatment's
+-- catalogue price times its quantity.
 --
 -- Requires: every treatment code in the booking exists in the
 -- catalogue; callers get that guarantee from validateBooking.
@@ -150,7 +161,8 @@ question a reader is actually asking.
 - **Writing comments last.** By then the design is fixed and the comment
   is a transcription.
 - **Duplicating a comment at every call site.** Put it once, at the
-  definition.
+  definition. A cross-module comment is the exception, and it names the
+  other place.
 - **Using comments to apologise.** "This is ugly but works" tells the
   reader nothing they cannot see. Say what would be better and why it was
   not done. See
