@@ -22,8 +22,9 @@ against the installed version before writing code.
 
 ## Names that changed
 
-Each entry gives a name the other pages use, then what replaces it.
-Every other name those pages use is still there on 4.0.2.
+Each entry gives an Effect 3 name, then what replaces it. All but the
+catch-all handler appear on the other pages, and every other name those
+pages use is still there on 4.0.2.
 
 ```text
 Context.Tag("X")<X, S>()       Context.Service<X, S>()("X")

@@ -39,18 +39,18 @@ Not for: TypeScript without Effect, which has
 
 ## Notation mapping
 
-| Neutral notation      | Effect                                         |
-| --------------------- | ---------------------------------------------- |
-| `A -> B`              | A plain function; keep it plain                |
-| `Result<T, E>`        | The synchronous result type, or `Effect<T, E>` |
-| `Option<T>`           | `Option<T>`                                    |
-| `AsyncResult<T, E>`   | `Effect<T, E>`                                 |
-| A declared dependency | A service class, provided by a `Layer`         |
-| Choice type           | Discriminated union, or `Data.TaggedEnum`      |
-| Single-case wrapper   | `Schema.brand`                                 |
-| `>=>` composition     | `Effect.flatMap` in a `pipe`, or `Effect.gen`  |
-| Boundary parse        | A schema's decoder for unknown input           |
-| Exhaustive match      | `Match.exhaustive`                             |
+| Neutral notation      | Effect                                           |
+| --------------------- | ------------------------------------------------ |
+| `A -> B`              | A plain function; keep it plain                  |
+| `Result<T, E>`        | `Either` on 3, `Result` on 4, or `Effect<T, E>`  |
+| `Option<T>`           | `Option<T>`                                      |
+| `AsyncResult<T, E>`   | `Effect<T, E>`                                   |
+| A declared dependency | A service class, provided by a `Layer`           |
+| Choice type           | Discriminated union, or `Data.TaggedEnum`        |
+| Single-case wrapper   | `Schema.brand`                                   |
+| `>=>` composition     | `Effect.flatMap` in a `pipe`, or `Effect.gen`    |
+| Boundary parse        | `decodeUnknown` on 3, `decodeUnknownEffect` on 4 |
+| Exhaustive match      | `Match.exhaustive`                               |
 
 ## Core rules
 
@@ -153,9 +153,10 @@ schema _is_ the separated schema and the type at once.
 The default is still to model the shape. When a field set is decided
 outside the code — config, tenant, admin — reach for a `Schema.Record`
 keyed by `FieldKey`, with `Schema.Unknown` values, behind a branded
-wrapper, rather than generating a union of every field. Its arguments
-differ by major, and [effect-4.md](references/effect-4.md) has the
-Effect 4 form. The envelope stays fully modelled either way. See
+wrapper, rather than generating a union of every field. On Effect 3
+that is `Schema.Record({ key: FieldKey, value: Schema.Unknown })`, and
+[effect-4.md](references/effect-4.md) has the Effect 4 form. The envelope
+stays fully modelled either way. See
 [functional-choosing-types-or-plain-data](../functional-choosing-types-or-plain-data/SKILL.md).
 
 ## Red flags
