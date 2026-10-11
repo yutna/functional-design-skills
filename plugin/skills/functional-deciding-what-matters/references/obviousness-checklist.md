@@ -1,8 +1,10 @@
 # Obviousness Checklist
 
 Run this over a diff or a module. Each item is a question with a concrete
-failure and a concrete fix. Stop at the first "no" and fix it before
-continuing; obscurity compounds.
+failure and a concrete fix. A "no" is a failure. When working on your own
+code, stop at the first "no" and fix it before continuing; obscurity
+compounds. When reviewing someone else's diff, record each "no" and fix
+none.
 
 ## At the interface
 
@@ -16,7 +18,7 @@ continuing; obscurity compounds.
 
 3. **Does the signature state everything it touches?**
    Failure: a "pure-looking" function that writes an audit row.
-   Fix: return the intent, and let the shell perform the write.
+   Fix: return an instruction for the write, and let the shell perform it.
 
 4. **Are two adjacent parameters of the same type distinguishable?**
    Failure: `transfer(a: String, b: String)`. Fix: distinct types, or a
@@ -28,14 +30,15 @@ continuing; obscurity compounds.
 
 ## At the call site
 
-1. **Does the call read like the sentence a domain expert would say?**
+1. **Does the call read like a sentence in the words the user, the tests
+   or the docs use for this?**
    Failure: `handle(o, true, null, ctx)`. Fix: named record argument,
    choice types instead of booleans.
 
 2. **Can a reader tell what happens next?**
    Failure: a call that emits an event with no indication of the handler.
-   Fix: a comment at the emit site naming the handlers, or an explicit
-   pipeline.
+   Fix: an explicit pipeline, or a comment at the registration site
+   naming the handlers.
 
 3. **Is the order of these calls enforced by something?**
    Failure: `validate(o); price(o)` where the second silently misbehaves
@@ -47,15 +50,15 @@ continuing; obscurity compounds.
 1. **Does each name say what the value is, not what shape it has?**
    Failure: `list2`, `tmpMap`, `data`. Fix: name the concept.
 
-2. **Is any value doing two jobs?**
+2. **Does every value do one job?**
    Failure: a variable reused as both raw input and normalised output.
    Fix: two names.
 
-3. **Is there a fact here that the reader cannot derive?**
+3. **Can the reader derive every fact here?**
    Failure: a magic constant, an ordering assumption, a workaround for
    another system's bug. Fix: a comment stating why, not what.
 
-4. **Would a reader expect this to be pure, and it is not?**
+4. **Does it behave as a reader would expect, pure where it looks pure?**
    Failure: a `format` function that caches into module state.
    Fix: remove the cache, or name the function so the surprise is gone.
 
@@ -69,11 +72,19 @@ continuing; obscurity compounds.
    Failure: `getUser` throws while `fetchBooking` returns `Result`.
    Fix: unify, or rename so the difference is visible.
 
-3. **Could the module's purpose be stated in one sentence without "and"?**
-   Failure: "handles pricing and notification". Fix: split.
+3. **Could the module's purpose be stated in one sentence, without
+   joining two unrelated purposes?**
+   Failure: "handles pricing and notification". Fix: split. An "and"
+   between attributes of one thing is fine.
 
 ## Final question
 
-Hand the diff to someone who did not write it and ask them to say what it
-does. Every hesitation is a defect in the code, not in the reader. Record
-what they hesitated at, fix that, and do not argue.
+Ask the user to read the diff and say what it does. If the user is not
+available, give a reader that has not seen the code only the diff and ask
+the same; [working-alone.md](../../functional-design/references/working-alone.md)
+says how. Every hesitation is a defect in the code, not in the reader.
+Record what they hesitated at, fix that, and do not argue.
+
+If neither reader is available, report the answers to the questions above
+as unconfirmed, and name what a reader who has not seen the code should
+be asked.

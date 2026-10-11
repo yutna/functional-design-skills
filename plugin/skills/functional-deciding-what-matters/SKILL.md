@@ -35,15 +35,23 @@ Not for: deciding module boundaries, which is
 
 1. Default. **Decide what matters, explicitly.** For each module, list the facts
    a caller must know. That list is the interface. Everything else is
-   implementation and must not be visible.
+   implementation and must not be visible. Where the module already
+   exports its helpers by convention, follow the convention and flag it;
+   do not restructure the exports for one function.
 2. Default. **Make what matters unmissable.** Put it in the type first, the name
    second, the doc comment third. Never only in prose far from use.
 3. Default. **Make what does not matter invisible.** Not merely unimportant-
    looking: absent. An exported helper nobody should call still costs attention
-   every time someone reads the module's exports.
+   every time someone reads the module's exports. The condition in rule 1
+   applies here too.
 4. Rule. **Judge obviousness from outside.** You cannot assess your own code's
-   obviousness. If a reader stumbled, the code is not obvious, and their
-   confusion is the measurement, not their skill.
+   obviousness. Judge it by a reader who has not seen the code;
+   [working-alone.md](../functional-design/references/working-alone.md)
+   says who that is. If that reader stumbled, the code is not obvious, and
+   their confusion is the measurement, not their skill. The reader is a
+   competent developer new to this code, fluent in the language and in
+   the domain's vocabulary. Unfamiliar domain words are not a finding
+   against the code.
 5. Default. **Give the reader the information where they need it.** A fact
    needed at a call site belongs in the signature, not in the implementation.
 6. Default. **Prefer explicit over inferred.** If a reader must derive a fact by
@@ -59,20 +67,22 @@ export parse, normalise, TAX_TABLE, applyTax, roundHalfUp,
        Currency, convert, DEFAULT_RATE, priceBooking
 ```
 
-A reader cannot tell that only `priceBooking` and `Currency` are meant for
-them. Every other name is a question they must answer before they dare
-call anything.
+A reader cannot tell which of these are meant for them. Every name is a
+question they must answer before they dare call anything.
 
 ```text
--- focused: the two facts that matter, the rest hidden
-export priceBooking, Currency
+-- focused: one entry point and the types it needs, the rest hidden
+export priceBooking, PricedBookingInput, PricedBooking, PricingError,
+       Currency
 
+type PricedBookingInput = { booking: ValidatedBooking, currency: Currency }
 priceBooking : PricedBookingInput -> Result<PricedBooking, PricingError>
 ```
 
-Now the interface states what matters: one entry point, one type in its
-signature, one failure type. The tax table, rounding rule and conversion
-are implementation, and a change to any of them cannot reach a caller.
+Now the interface states what matters: one entry point, its input and
+output types, one failure type. `Currency` is exported because the input
+type holds one. The tax table, rounding rule and conversion are
+implementation, and a change to any of them cannot reach a caller.
 
 ## What matters, in order
 
@@ -91,8 +101,9 @@ be reachable.
 
 ## Things that destroy obviousness
 
-- **Event-driven flow.** Nothing shows what runs next. Compensate by
-  documenting, at the registration site, what handles the event.
+- **Event-driven flow.** Nothing shows what runs next. Compensate with
+  an explicit pipeline, or by documenting, at the registration site, what
+  handles the event.
 - **Generic containers.** A pair or a tuple of maps says nothing about
   what its parts mean. Name the type.
 - **Different types, same declaration.** Two values that look alike and
@@ -106,7 +117,8 @@ be reachable.
 
 ## Red flags
 
-- The module exports more than a reader could hold in their head
+- The module exports more names than it has callers for: count the
+  exports, then search for who imports each one
 - A caller must read the implementation to know what to pass
 - The important thing is stated only in a comment far from the code
 - "Correct but hard to follow" appears in a review
@@ -120,7 +132,8 @@ be reachable.
   the internal thing its own module with its own interface.
 - **Hiding what the caller genuinely needs.** Making failure invisible is
   not simplicity; it is a bug waiting for production.
-- **Arguing with a confused reader.** Their confusion is data.
+- **Arguing with a confused reader.** Their confusion is data, provided
+  the reader is the one Rule 4 describes.
 
 ## Related skills
 
