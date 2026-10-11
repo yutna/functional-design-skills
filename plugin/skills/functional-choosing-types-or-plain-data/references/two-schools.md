@@ -102,8 +102,11 @@ why neither generalises.
 
 Where a distinct type is a runtime construct with no checking behind it,
 the wall costs you generic operations and returns almost nothing
-enforceable. Tearing it down is straightforwardly correct there, and the
-schema has to be a runtime value anyway.
+enforceable. Tearing it down is straightforwardly correct there for a
+value that already meets one of the
+[facts that send a value generic](../SKILL.md#when-generic-data-is-the-right-answer),
+and the schema has to be a runtime value anyway. For any other value the
+default holds.
 
 Where a distinct type is free to declare, checked at every use, and proves
 exhaustiveness, the wall is nearly free and returns a great deal.
