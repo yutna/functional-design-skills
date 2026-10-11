@@ -4,7 +4,7 @@ description: Use when deciding what one transaction must cover, when two entitie
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.0.4
+  version: 3.1.0
 ---
 
 # Enforcing Consistency Boundaries
