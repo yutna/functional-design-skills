@@ -1,5 +1,13 @@
 # Split or Join: A Procedure
 
+## Contents
+
+- [The procedure](#the-procedure)
+- [Worked case: the duplication trap](#worked-case-the-duplication-trap)
+- [Worked case: the over-eager extraction](#worked-case-the-over-eager-extraction)
+- [Worked case: the special-general mixture](#worked-case-the-special-general-mixture)
+- [Signals summary](#signals-summary)
+
 ## The procedure
 
 1. Write one sentence describing each piece. If a single sentence without
@@ -19,13 +27,13 @@
 Two functions look nearly identical:
 
 ```text
-priceBooking   : Catalogue -> Booking -> Priced
-priceQuote   : Catalogue -> Quote -> Priced
+priceVisit : Catalogue -> Booking -> Priced
+priceQuote : Catalogue -> Quote -> Priced
 ```
 
 The bodies are ninety per cent the same. The instinct is to join them
 behind a flag or a shared generic. Apply step 4: what would change each?
-Bookings are priced with customer contract rates; quotes are priced at list
+Bookings are priced with the patient's contract rates; quotes are priced at list
 price and must stay stable for thirty days. Those rules will diverge, and
 they answer to different parts of the business.
 
@@ -33,12 +41,25 @@ Verdict: keep apart. Extract only the genuinely shared part, if it is a
 meaningful abstraction on its own:
 
 ```text
-applyTreatmentRates : Rates -> List<BookedTreatment> -> Priced
+applyTreatmentRates :
+  Rates -> List<(TreatmentCode, Integer)> -> Priced
+
+priceVisit catalogue booking =
+  applyTreatmentRates
+    (contractRates catalogue booking.patient)
+    (map (\t -> (t.code, t.quantity)) booking.treatments)
+
+priceQuote catalogue quote =
+  applyTreatmentRates
+    (listRates catalogue)
+    (map (\l -> (l.code, l.quantity)) quote.lines)
 ```
 
-Now each function is a short expression of its own rule over a shared
-primitive. The similar-looking code that remains is not duplication; it
-is two rules that happen to rhyme today.
+The shared part takes pairs of code and quantity, which both a booking's
+treatments and a quote's lines can produce. Now each function is a short
+expression of its own rule over a shared primitive. The similar-looking
+code that remains is not duplication; it is two rules that happen to
+rhyme today.
 
 The opposite mistake is equally common: two functions that both parse the
 same file format, with slightly different bodies. There, step 2 finds
