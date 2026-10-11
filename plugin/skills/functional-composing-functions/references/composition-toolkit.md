@@ -83,16 +83,23 @@ sequential steps and wrong for validating a form. See
 Order parameters from most stable to least stable:
 
 1. Configuration and policy that changes rarely
-2. Dependencies supplied at wiring time
+2. Dependencies supplied at wiring time, such as the capabilities a
+   handler takes
 3. Context for this call, such as the current instant or the actor
 4. The data being transformed
 
 ```text
-priceBooking : PricingPolicy -> GetPrice -> Instant -> Booking -> Priced
+priceBooking : PricingPolicy -> PriceList -> Instant -> Booking -> Priced
+
+-- a handler: its capability first, then the context for the call
+handleConfirmBooking :
+  Pool -> Instant -> UnvalidatedBooking
+    -> AsyncResult<List<ConfirmBookingEvent>, ConfirmBookingFailure>
 ```
 
-Every prefix of that list is a useful partially applied function, and the
-final shape `Booking -> Priced` is what a pipeline wants.
+Every prefix of the first signature is a useful partially applied
+function, and the final shape `Booking -> Priced` is what a pipeline
+wants.
 
 ## When to stop composing
 
