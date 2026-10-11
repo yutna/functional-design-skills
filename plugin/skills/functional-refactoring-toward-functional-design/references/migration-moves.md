@@ -95,8 +95,9 @@ domain stops importing the service's type.
 
 **Mechanics.** Inside one function, separate the reads at the top, the
 decision in the middle, and the writes at the bottom. Then lift the
-middle into its own function taking values and returning a decision or
-events. The original function becomes the shell.
+middle into its own function taking values and returning a decision: a
+new state, the events it decided, or instructions for the shell. The
+original function becomes the shell.
 
 **Verify.** The extracted function has no imports of infrastructure, and
 its tests need no setup.
@@ -145,13 +146,14 @@ Moves 1 to 4 are local and can be done in any module at any time. Moves 5
 to 7 need 4 to be useful. Moves 8 to 10 are module-scale and are worth
 scheduling into work you are doing anyway.
 
-Do not attempt more than one move per commit. The value of this list is
-that each row is separately reviewable, and that property is lost the
-moment two are combined.
+Moves 8 to 10 are one commit each, tests green, reviewable alone, with no
+time limit. Do not attempt more than one move per commit. The value of
+this list is that each row is separately reviewable, and that property is
+lost the moment two are combined.
 
 ## Move 0: pin what it does now
 
-Every move above says "tests green between each", and in the code this
+Rule 3 in `SKILL.md` says "tests green between each", and in the code this
 skill is for, there are no tests. That is not an obstacle to work
 around; it is the first move, and it has its own technique.
 

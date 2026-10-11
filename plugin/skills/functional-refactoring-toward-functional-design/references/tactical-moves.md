@@ -3,7 +3,7 @@
 The ten moves in [migration-moves.md](migration-moves.md) change the
 _shape_ of a design: what the types are, where effects live, what a module
 exposes. The nineteen here clean up _inside_ a shape. They are smaller,
-they are mechanical, and each should take a couple of minutes.
+they are mechanical, and each should fit in one small diff.
 
 Use them after the strategic moves have decided the shape, or on their
 own when the shape is already right and the code is merely awkward.
@@ -151,7 +151,8 @@ that were merged.
 
 ### Parameterize Function
 
-**When.** Two functions differ only by a literal value.
+**When.** Two functions differ only by a literal value. A flag that
+selects behaviour is not that case; Remove Flag Argument above splits it.
 **Mechanics.** Add a parameter for the value; keep thin named wrappers if
 callers read better with them.
 **Verify.** The bodies are now identical. If they are merely similar, do
@@ -163,8 +164,9 @@ not merge them.
 **Mechanics.** Split into a pure function that computes and an effectful
 one that applies.
 **Verify.** The query is pure and the modifier returns nothing
-interesting. This is command-query separation, and in this pack it is a
-rule rather than a refactoring.
+interesting. This is the split that
+[functional-separating-pure-core-from-shell](../../functional-separating-pure-core-from-shell/SKILL.md)
+makes a rule.
 
 ## Shaping a conditional
 
@@ -213,8 +215,9 @@ most often skipped.
    not refactoring.
 3. **One move per commit.** A commit that changes behaviour and structure
    together cannot be reviewed or reverted usefully.
-4. **If a move takes more than a few minutes, it was too big.** Revert
-   and take a smaller one. Do not push through — a half-applied move is
+4. **If the tests are not green after the first edit and run, or the
+   diff touches files outside the module, the move was too big.** Revert
+   and take a smaller one. Do not push through: a half-applied move is
    the worst state the code can be in.
 5. **Never mix a refactoring commit with a fix.** If the results differ,
    that is a behaviour change and it needs its own commit and its own

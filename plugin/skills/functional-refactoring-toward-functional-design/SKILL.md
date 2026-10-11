@@ -35,33 +35,38 @@ Not for: designing something new, which starts at
 
 ## Core rules
 
-1. Rule. **Ask whether the thing should exist before choosing a move for it.**
-   State the requirement in the domain's words. Anything in the code that the
-   sentence did not mention — a flag, a cache, a required call order, an unread
-   field — is complexity you added, and it is deleted rather than moved.
-   Refactoring it is how it becomes permanent: once it has a good name and a
-   test, nobody removes it. See
+1. Rule. **Ask what breaks if the thing is deleted, before choosing a move
+   for it.** A flag, a cache, a required call order or an unread field may be
+   complexity you added, and refactoring it is how it becomes permanent. The
+   test, and the four outcomes it has, are in
    [essential-and-accidental.md](../functional-diagnosing-complexity/references/essential-and-accidental.md).
 2. Default. **Refactor where you are already working.** Unrelated cleanup is
    hard to review and hides the real change.
 3. Rule. **One move at a time, tests green between each.** A move that cannot be
    verified is a rewrite in disguise.
-4. Default. **Start at the boundary of the module you are in**, not at the
-   centre of the system.
+4. Default. **Choose the module you are editing**, not the centre of the
+   system. Inside it, start where the move says (move 4 starts at the
+   leaves) and finish at its boundary.
 5. Default. **Make each move pay for itself.** If a step leaves the code no
    better, it is not one of the moves below.
 6. Default. **Move rules inward, effects outward.** Every step should shrink the
    impure region.
 7. Default. **Convert types before functions.** A precise type makes the
    function changes obvious and often mechanical.
-8. Rule. **Never widen a type to accommodate a new requirement.** Ask first
-   whether the requirement is a different concept.
-9. Rule. **One move per commit, and revert any move that takes more than a few
-   minutes.** A half-applied move is the worst state the code can be in.
+8. Rule. **Never widen a type to hold a different concept.** A new case of
+   the same kind of thing is added as a case; a different concept gets its
+   own type.
+9. Rule. **One move per commit, tests green, reviewable alone.** For a
+   tactical move, if the tests are not green after the first edit and run,
+   or the diff reaches outside the module, revert and take a smaller move.
+   Moves 8 to 10 are module-scale and carry no time limit. A half-applied
+   move is the worst state the code can be in.
 
 ## The ordered moves
 
-Apply in this order. Each one makes the next easier.
+Apply in this order unless a move is blocked;
+[migration-moves.md](references/migration-moves.md) says which can come
+early. Each one makes the next easier.
 
 | Order   | Move                                         |
 | ------- | -------------------------------------------- |
@@ -106,33 +111,62 @@ makes the design worse.
 
 ## Pattern
 
-A typical starting point:
+A typical starting point, shortened from
+[worked-refactor.md](references/worked-refactor.md):
 
 ```text
 class BookingService {
-  save(booking) {
-    if (!booking.customerId) throw new Error("bad booking")
+  confirm(dto) {
+    if (!dto.patientId) throw new Error("bad booking")
+    const booking = this.repo.load(dto.id) ?? { id: dto.id, treatments: [] }
+    if (booking.status === "confirmed") throw new Error("already confirmed")
+
+    let total = 0
+    for (const treatment of dto.treatments) {
+      const priced = this.catalogue.find(treatment.code)
+      if (!priced) throw new Error("unknown treatment " + treatment.code)
+      total += priced.price * treatment.qty
+    }
+
     booking.status = "confirmed"
     booking.confirmedAt = new Date()
-    this.repo.update(booking)
-    this.mailer.send(booking.email, "confirmed")
+    booking.total = total
+    this.repo.save(booking)
+    this.mailer.send(dto.email, "Booking confirmed", render(booking))
+    return booking
   }
 }
 ```
 
-After moves 1, 2, 4, 5 and 7, in five separate commits:
+After moves 1, 2, 4, 5, 6 and 7, in six separate commits, the decision is
+a pure function and the service is the handler around it. The aliases
+`LoadBooking`, `LoadCatalogue`, `SaveBooking` and `SendMail` are the
+function types of commits 6 and 7 there, and `ConfirmFailure` has the
+cases `Rejected`, `Unavailable` and `NotSent`.
 
 ```text
 -- pure
-confirmBooking :
-  Instant -> ValidatedBooking -> Result<ConfirmedBooking, ConfirmBookingError>
+decideConfirmation :
+  Instant -> Catalogue -> Booking -> BookingDto
+    -> Result<Booking, ConfirmError>
 
 -- shell
-handleConfirmBooking repo mailer now raw =
-  validateBooking raw
-    |> bind (confirmBooking now)
-    |> bind (\o -> save repo o |> map (const o))
-    |> bind (\o -> notify mailer o)
+handleConfirm :
+  LoadBooking -> LoadCatalogue -> SaveBooking -> SendMail
+    -> Instant -> BookingDto -> AsyncResult<Booking, ConfirmFailure>
+handleConfirm loadBooking loadCatalogue saveBooking sendMail now dto =
+  both (loadBooking dto.id) (loadCatalogue ())                 -- read
+    |> mapError Unavailable
+    |> bind (\(found, catalogue) ->
+         decideConfirmation now catalogue (orDraft dto.id found) dto
+           |> mapError Rejected)                               -- decide
+    |> bind (\booking ->
+         saveBooking booking                                   -- write
+           |> mapError Unavailable
+           |> bind (\_ ->
+                sendMail (confirmationFor booking)
+                  |> mapError NotSent)
+           |> map (\_ -> booking))
 ```
 
 No step required understanding the whole system, and each was
@@ -143,13 +177,18 @@ individually reviewable.
 When a new requirement arrives, ask whether it is an instance of what the
 module already claims to do.
 
-| Situation                           | Action                 |
-| ----------------------------------- | ---------------------- |
-| The new case fits the abstraction   | Add it, in the idiom   |
-| It is the same kind of thing, wider | Widen the abstraction  |
-| It is a different kind of thing     | Split it out           |
-| It fits but needs a flag            | It does not fit        |
-| Fixing properly is out of budget    | Patch, record the debt |
+| Situation                                        | Action                 |
+| ------------------------------------------------ | ---------------------- |
+| The new case fits the abstraction                | Add it, in the idiom   |
+| It is the same kind of thing, wider              | Widen the abstraction  |
+| It is a different kind of thing                  | Split it out           |
+| It fits only if a flag selects the new behaviour | Split it out           |
+| The restructure is not bounded                   | Patch, record the debt |
+
+Bounded means the restructure stays inside the module and its direct
+callers and fits one commit. When it is not bounded, tell the user what
+you would restructure, make the minimal change, and record the debt as
+[keeping-design-clean.md](references/keeping-design-clean.md) describes.
 
 The flag row is the one people get wrong. A boolean parameter added to
 select behaviour is the standard sign that two things have been merged.
@@ -158,7 +197,8 @@ See
 
 ## Keeping it clean afterwards
 
-- Every change leaves the module at least slightly better.
+- What each change owes the module is stated in
+  [functional-programming-strategically](../functional-programming-strategically/SKILL.md).
 - When a comment becomes false, fix it in the same edit.
 - When a name stops matching, rename it in the same edit.
 - When the purpose sentence acquires an "and", split before adding more.
@@ -168,7 +208,8 @@ See
 
 ## Red flags
 
-- A refactoring branch that has been open for weeks
+- A refactoring branch that has outlived the limit in
+  [keeping-design-clean.md](references/keeping-design-clean.md)
 - A commit that changes behaviour and structure together
 - A migration that requires the whole team to stop
 - A new adapter layer added before anything is moved through it
