@@ -20,14 +20,16 @@ nothing to maintain and everything to restore once lost.
 
 ## Rules
 
-1. **Match the surrounding code before expressing a preference.** A worse
+1. **Match the project's written conventions, then the surrounding code,
+   before expressing a preference.** A worse
    convention applied uniformly beats a better one applied in patches.
    Where the project states its conventions, those are what "uniformly"
    means: code contradicting a written rule is debt, not a second
    convention, and a codebase carrying grandfathered lint findings holds
    both at once.
 2. **When a convention is wrong, change it everywhere or nowhere.** Two
-   conventions in one codebase are worse than either alone.
+   conventions in one codebase are worse than either alone. Everywhere
+   means in one dedicated change.
 3. **Enforce mechanically where possible.** A formatter or lint rule
    never argues, never forgets, and costs no review time.
 4. **Document the conventions that tools cannot enforce.** Where errors
@@ -46,6 +48,9 @@ place. Prefer a name that signals the difference, or make them the same.
 ## Introducing a new convention
 
 - Say what it replaces, or it becomes a third way of doing the thing.
-- Apply it to at least the module you are in, not just your new lines.
+- Apply it everywhere in one dedicated change, or do not introduce it.
+  If everywhere is too large, do not introduce it, and record the debt as
+  [keeping-design-clean.md](../../functional-refactoring-toward-functional-design/references/keeping-design-clean.md)
+  describes.
 - Write it where the agent and the humans both look: the project's
   instructions file, not only a wiki page.

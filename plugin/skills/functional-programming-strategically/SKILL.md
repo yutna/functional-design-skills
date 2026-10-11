@@ -25,7 +25,8 @@ effort on every change, spent on design, not on ceremony.
 - Deciding whether to add a special case or restructure
 - Under deadline pressure, about to take a shortcut
 - Editing code somebody else designed
-- A codebase that everyone agrees is getting worse
+- A codebase that is getting worse: the same few files are edited by most
+  commits in `git log`, or the user says so
 - Reviewing a change that works but reads badly
 
 Not for: throwaway spikes whose output is an answer, not code.
@@ -35,14 +36,16 @@ Not for: throwaway spikes whose output is an answer, not code.
 1. Default. **Ask what the change leaves behind.** Before writing, name the
    design the code will have afterwards. If the answer is "the same, plus one
    more special case", stop and look for a better shape.
-2. Default. **Invest continuously, never in a lump.** Ten per cent on every
-   change beats a rewrite later. There is no point at which a team gets time to
-   "clean it up".
-3. Default. **Design it twice.** For anything non-trivial, produce two genuinely
-   different designs before choosing. See
+2. Default. **Invest continuously, never in a lump.** A small investment on
+   every change beats a rewrite later. There is no point at which a team gets
+   time to "clean it up".
+3. Default. **Design it twice.** For anything whose shape other code will
+   depend on, produce two genuinely different designs before choosing. See
    [design-it-twice.md](references/design-it-twice.md).
-4. Default. **Leave the campsite cleaner.** Every change touching a module makes
-   at least one small structural improvement to it.
+4. Default. **Leave the campsite cleaner.** Never leave the code worse, and
+   when the change adds to a module, make one small structural improvement
+   to the code the change already edits. A fix inside one function owes no
+   improvement; it owes only that the code is no worse.
 5. Judgement. **Take the extra step.** When you have found the right design,
    apply it to the neighbouring code that has the same problem, if that is a
    small step and not a project.
@@ -51,8 +54,10 @@ Not for: throwaway spikes whose output is an answer, not code.
    conventions down -- an instructions file, a rule file, a lint rule -- those
    are the convention, and surrounding code that contradicts one is debt rather
    than a standard to match. See [consistency.md](references/consistency.md).
-7. Rule. **Measure before optimising.** Performance work is a design activity
-   only on the critical path, and only with numbers. See
+7. Default. **Measure before optimising.** Choose the functional default
+   (sharing, folds, tail calls) without measuring. Performance work that
+   makes the code harder to read is a design activity only on the critical
+   path, and only with numbers. See
    [designing-for-performance.md](references/designing-for-performance.md).
 
 ## Tactical versus strategic
@@ -63,7 +68,7 @@ Not for: throwaway spikes whose output is an answer, not code.
 | Special case appears  | Add an `if`     | Ask why the case exists      |
 | Existing design wrong | Work around it  | Fix it, or narrow the fix    |
 | Test is awkward       | Mock more       | Treat as a design signal     |
-| Deadline pressure     | Cut design      | Cut scope                    |
+| Deadline pressure     | Cut design      | Offer a smaller scope        |
 | Repeated code appears | Copy once more  | Find the missing abstraction |
 
 The distinction is not speed. Tactical programming is faster for days and
@@ -113,9 +118,13 @@ for the new requirement from the start.
 2. Decide whether the new requirement fits that abstraction. If it does,
    the change is small. If it does not, the abstraction is wrong, and a
    patch will make it worse.
-3. If the abstraction is wrong and the fix is bounded, fix it now.
-4. If the fix is not bounded, make the minimal change, and write down
-   what the right design is and why you did not do it.
+3. If the abstraction is wrong, decide between restructuring and a
+   minimal patch with the table in
+   [functional-refactoring-toward-functional-design](../functional-refactoring-toward-functional-design/SKILL.md#deciding-patch-or-restructure).
+4. If the table says patch, tell the user what you would restructure,
+   make the minimal change, and record the debt as
+   [keeping-design-clean.md](../functional-refactoring-toward-functional-design/references/keeping-design-clean.md)
+   describes.
 5. Update the comments and names the change invalidated. Stale comments
    are worse than none.
 
@@ -128,7 +137,8 @@ See [working-in-existing-code.md](references/working-in-existing-code.md).
 - Tests were changed to match the code rather than the requirement
 - A comment near your edit is now false and you left it
 - The design got worse and nobody wrote down that it did
-- Only one design was considered for something non-obvious
+- Only one design was considered for something whose shape other code
+  will depend on
 
 ## Common mistakes
 
@@ -138,8 +148,9 @@ See [working-in-existing-code.md](references/working-in-existing-code.md).
   a rewrite of a design nobody understands reproduces the design.
 - **Applying strategy to throwaway code.** A spike whose output is an
   answer does not need a design; label it and delete it.
-- **Refusing to ship.** Cutting scope is strategic; missing the deadline
-  to perfect an internal boundary is not.
+- **Refusing to ship.** Offer the user a smaller scope, and say what each
+  cut leaves undone; do not cut design or scope without their answer.
+  Missing the deadline to perfect an internal boundary is not strategic.
 
 ## Related skills
 
