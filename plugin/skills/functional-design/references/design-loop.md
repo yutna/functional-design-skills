@@ -1,6 +1,6 @@
 # The Design Loop, Worked
 
-One small feature walked through the seven steps: **apply a discount code
+One small feature walked through the steps of the loop: **apply a discount code
 when confirming a booking**. The point is the order of the steps, not the
 domain.
 

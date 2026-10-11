@@ -1,6 +1,6 @@
 # The Principles, on One Page
 
-Every rule in this pack, compressed. Use it as a checklist when there is
+The main rules in this pack, compressed. Use it as a checklist when there is
 no time to read a skill, and follow the link when a line needs its
 reasoning.
 
@@ -30,9 +30,9 @@ reasoning.
 4. The primary output of a change is the design it leaves behind.
 5. Produce two genuinely different designs before choosing one.
 6. Ask whether the complexity is in the problem or in your solution.
-   Complexity you added should be deleted, not refactored — a domain
-   expert describing the requirement would not mention a flag, a cache,
-   or a required call order.
+   Complexity you added is a candidate for deletion rather than
+   refactoring — a domain expert describing the requirement would not
+   mention a flag, a cache, or a required call order.
 7. Almost all added complexity is state, then ordering, then sheer
    volume of code, in that order of harm.
 
