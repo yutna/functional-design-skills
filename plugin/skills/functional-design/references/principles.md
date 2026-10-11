@@ -101,8 +101,9 @@ Skill: `functional-choosing-types-or-plain-data`.
 
 ## Functions and workflows
 
-1. Every function is total: for every input of its type there is an
-   output of its type, with no exception and no null.
+1. Every function a module exports is total: every input its type
+   admits gets an output of its type, and a failure the business can
+   name is in that type.
 2. A workflow is a command in and events out, written as a pipeline of
    total functions with one type per completed stage.
 3. Dependencies are parameters. Prefer fetching first and deciding
@@ -122,7 +123,8 @@ Skills: `functional-composing-functions`, `functional-designing-workflow-pipelin
 3. Before handling an error, try to define it out of existence, mask it
    where the recovery is universal, or aggregate the handling at the
    edge.
-4. Crash on conditions that mean the program is wrong.
+4. Crash on conditions that mean the program is wrong. A crash is never
+   part of a signature, and never the answer to a business failure.
 5. Convert foreign failures once, at the boundary.
 
 Skills: `functional-handling-errors-with-results`,
@@ -161,7 +163,8 @@ duplicated, or lost.
 
 1. Give every command an identity the caller controls, and carry it into
    every effect.
-2. Make the effect idempotent, not the decision. The core already is.
+2. Make the effect idempotent, not the decision. Deciding again is
+   harmless; charging again is not.
 3. Assume at-least-once delivery and de-duplicate on receipt.
 4. Never write state and publish an event in two transactions.
 5. Retry at the shell, bounded in attempts and in total time.

@@ -56,8 +56,8 @@ device, a connection. They are not needed for data.
 Retries mean an operation may run twice. Under concurrency that is not an
 edge case, it is the normal path.
 
-- A pure computation is naturally idempotent; running it twice costs
-  time and nothing else.
+- A pure computation can run twice at no cost but time, because it
+  performs nothing.
 - An effect is not. Charging a card twice is two charges.
 
 The repair is at the shell: give each command an identifier, record that

@@ -46,8 +46,8 @@ Ask what is true regardless of the input. The recurring answers:
 **Round trip.** Anything with two directions.
 
 ```text
-forAll validBooking $ \o -> fromDto (toDto o) == Ok o
-forAll anyText $ \s -> render (parse s) == normalise s
+forAll validBooking (\booking -> fromDto (toDto booking) == Ok booking)
+forAll anyText (\s -> render (parse s) == normalise s)
 ```
 
 The single highest-value property in a codebase, because boundary
@@ -57,10 +57,10 @@ mappings are where silent data loss happens.
 rule, and every operation preserves it.
 
 ```text
-forAll anyString $ \s ->
+forAll anyString (\s ->
   match parseTreatmentCode s with
   | Ok c -> length (unwrap c) == 5
-  | Error _ -> true
+  | Error _ -> true)
 ```
 
 **Totality.** For any input of the declared type, the function returns
@@ -73,7 +73,7 @@ sorting, deduplication, and any effect that may be retried.
 implementation.
 
 ```text
-forAll anyList $ \xs -> fastSort xs == sort (bruteForce xs)
+forAll anyList (\xs -> fastSort xs == sort (bruteForce xs))
 ```
 
 **Algebraic laws.** Identity and associativity for a combination,

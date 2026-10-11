@@ -174,7 +174,7 @@ inverse operation, no snapshot mechanism.
 ```text
 search state =
   match nextMoves state with
-  | [] -> Nothing
+  | [] -> None
   | moves -> tryEach (\m -> search (apply m state)) moves
   -- `state` is untouched by any recursive call
 ```

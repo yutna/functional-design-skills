@@ -23,7 +23,7 @@ languages; the shapes do not.
 | `Result<Result<A,E>,E>`                | `Result<A,E>`        | flatten     |
 | `List<Result<A,E>>`                    | `Result<List<A>,E>`  | sequence    |
 | `A -> Result<B,E>` over a `List<A>`    | `Result<List<B>,E>`  | traverse    |
-| Two independent `Result`s              | One `Result` of both | combine     |
+| Two independent `Result`s              | One `Result` of both | map2        |
 | `A -> B` and a `Result<A,E>`           | `Result<B,E>`        | map         |
 | `Option<A>`                            | `Result<A,E>`        | toResult    |
 | `A -> B` into an async pipeline        | `A -> Async<B>`      | lift        |
@@ -41,14 +41,15 @@ pricedBooking |> map calculateTotal
 when the next step can fail.
 
 ```text
-rawBooking |> bind validate |> bind price
+validate rawBooking |> bind price
 ```
 
 **mapError** converts a step's narrow error into the workflow's error
 type. Use it at composition, never inside the step.
 
 ```text
-validate |> mapError Validation
+validated |> mapError Validation      -- on a value
+validate >> mapError Validation       -- on the step itself
 ```
 
 **traverse** runs a fallible function over a collection and turns the
@@ -62,10 +63,15 @@ treatments |> traverse validateTreatment
 ## Combining independent results
 
 When two computations do not depend on each other, combine them rather
-than chaining, so both failures can be reported.
+than chaining, so both failures can be reported. That needs an error
+type with room for more than one.
 
 ```text
-combine2 : Result<A,E> -> Result<B,E> -> ((A,B) -> C) -> Result<C, E>
+map2 :
+  (A -> B -> C)
+    -> Result<A, NonEmptyList<E>>
+    -> Result<B, NonEmptyList<E>>
+    -> Result<C, NonEmptyList<E>>
 ```
 
 Chaining with bind stops at the first failure, which is right for
@@ -99,7 +105,7 @@ Break a chain and name an intermediate value when:
 
 ```text
 -- clearer than one nine-step chain
-let validated = raw |> bind validate
+let validated = validate raw
 let priced = validated |> bind (price catalogue)
 in priced |> map acknowledge
 ```

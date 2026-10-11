@@ -39,7 +39,7 @@ two-track pipeline.
 priced |> map addTax
 
 -- switch function joined with bind
-raw |> bind validate
+validated |> bind price
 
 -- dead-end function made into a switch
 save : Booking -> Unit        -- throws
@@ -57,9 +57,9 @@ step without breaking the chain.
 confirmBooking = validate >=> price >=> acknowledge
 ```
 
-`>=>` is bind in operator form. It is associative, so the grouping never
-matters, and it is the reason a pipeline can be assembled from any number
-of steps without nesting.
+`>=>` joins two functions the way `bind` chains a value onto one. It is
+associative, so the grouping never matters, and it is the reason a
+pipeline can be assembled from any number of steps without nesting.
 
 ## Aligning error types
 
@@ -72,8 +72,8 @@ type ConfirmBookingError =
   | Pricing of PricingError
 
 confirmBooking =
-  (validate |> mapError Validation)
-    >=> (price |> mapError Pricing)
+  (validate >> mapError Validation)
+    >=> (price >> mapError Pricing)
 ```
 
 Steps stay reusable in other workflows, and the caller matches on one

@@ -127,9 +127,10 @@ Some conditions are not worth handling.
 
 ```text
 -- an invariant broken means the program is wrong
-match quote with
-| IsAccepted a when a.booking == null ->
-    fail "accepted quote without a booking"
+bookingOf accepted =
+  match accepted.booking with
+  | Some booking -> booking
+  | None -> crash "accepted quote without a booking"
 ```
 
 Crash when all of these hold:
@@ -146,7 +147,7 @@ processing nine thousand and discovering it later.
 ### Crashing gone wrong
 
 Crashing on ordinary outcomes: a missing optional field, an expired
-token, a user's typo. Those are business events, and they belong in a
+token, a user's typo. Those are business outcomes, and they belong in a
 `Result`.
 
 ## Applying the four in order

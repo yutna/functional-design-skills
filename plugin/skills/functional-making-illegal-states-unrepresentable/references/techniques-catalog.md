@@ -22,7 +22,7 @@ that does not.
 Permits a cancelled booking with no reason, and a live booking with one.
 
 ```text
-type Booking = { ..., cancelled: Boolean, cancelReason: Option<Text> }
+type Booking = { ..., cancelled: Boolean, cancelReason: Option<String> }
 ```
 
 ```text
@@ -146,7 +146,7 @@ Permits `Pending` with leftover fields from a previous state.
 
 ```text
 type Job = { state: String, result: Option<Output>,
-             error: Option<Text> }
+             error: Option<String> }
 ```
 
 ```text
@@ -172,15 +172,15 @@ Baht of Decimal`, and addition is total again.
 
 ## Optional that means two different things
 
-Permits `Option<Text>` meaning both "not supplied" and "supplied as
+Permits `Option<String>` meaning both "not supplied" and "supplied as
 empty".
 
 ```text
-type Profile = { bio: Option<Text> }
+type Profile = { bio: Option<String> }
 ```
 
 ```text
-type Bio = NotProvided | Provided of NonEmptyText
+type Bio = NotProvided | Provided of NonEmptyString
 type Profile = { bio: Bio }
 ```
 

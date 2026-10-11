@@ -67,7 +67,7 @@ type Shipment = {
   trackingNumber: Option<String>,
   shippedAt: Option<Instant>,
   deliveredAt: Option<Instant>,
-  failureReason: Option<Text>,
+  failureReason: Option<String>,
 }
 ```
 

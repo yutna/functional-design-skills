@@ -36,7 +36,7 @@ Not for: failures that can be removed by design, which is
 ## Core rules
 
 1. Rule. **Expected failures are values.** If a caller should act on it, return
-   it. Reserve exceptions for programmer bugs and unrecoverable conditions.
+   it. Reserve exceptions for programmer bugs.
 2. Rule. **Name the failures in the domain's words.** `QuoteExpired`, not
    `Error500` or a bare string.
 3. Default. **One error choice type per workflow.** Steps keep narrow error

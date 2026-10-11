@@ -78,12 +78,12 @@ When a variant needs several related operations that must vary together.
 
 ```text
 alias Formatter = {
-  header : ReportMeta -> Text,
-  row    : ReportRow -> Text,
-  footer : ReportTotals -> Text,
+  header : ReportMeta -> String,
+  row    : ReportRow -> String,
+  footer : ReportTotals -> String,
 }
 
-render : Formatter -> Report -> Text
+render : Formatter -> Report -> String
 ```
 
 Adding CSV output is a new value, not an edit. Adding a fourth operation
@@ -108,7 +108,7 @@ the table is complete, so it needs a test that asserts coverage.
 When the set of cases belongs to the business and is not open at all.
 
 ```text
-type Shape = Circle of Radius | Rect of W * H | Triangle of B * H
+type Shape = Circle of Radius | Rect of (W, H) | Triangle of (B, H)
 area : Shape -> Area
 ```
 

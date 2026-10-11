@@ -17,9 +17,9 @@ a workflow reaches a second system, the failure modes stop being about
 correctness of logic and start being about delivery, duplication, and
 partial completion.
 
-The rules below all follow from one idea: keep the decision pure and
-idempotent-by-nature, and make each effect separately identifiable, so
-that repeating it is safe and losing it is detectable.
+The rules below all follow from one idea: keep the decision pure, so
+that deciding again does nothing, and make each effect separately
+identifiable, so that repeating it is safe and losing it is detectable.
 
 ## When to use
 
@@ -74,9 +74,10 @@ confirmBooking cmd =
     >=> publishBookingConfirmed         -- may be lost entirely
 ```
 
-A timeout on `charge` leaves nobody knowing whether money moved. A crash
-between `saveBooking` and `publishBookingConfirmed` loses the event silently,
-and a retry of the whole workflow charges again.
+A timeout on `charge` leaves nobody knowing whether money moved. A
+process that dies between `saveBooking` and `publishBookingConfirmed`
+loses the event silently, and a retry of the whole workflow charges
+again.
 
 Reliable: an identity, an idempotent adapter, and one transaction.
 

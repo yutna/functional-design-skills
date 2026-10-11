@@ -143,7 +143,7 @@ Ways to enforce it rather than remember it:
 ```text
 -- a wrapper whose rendering is redacted, everywhere, by construction
 type Secret<T> = Secret of T
-render : Secret<T> -> Text
+render : Secret<T> -> String
 render _ = "[redacted]"
 ```
 

@@ -119,7 +119,7 @@ The error is part of the interface. Two questions decide its shape:
 type EmailError = Empty | MissingAt | TooLong of Integer
 
 -- flat: nobody branches on it, so do not invent cases
-type NoteError = NoteError of Text
+type NoteError = NoteError of String
 ```
 
 Avoid a single `String` error for anything a caller might branch on, and
@@ -161,14 +161,19 @@ never crashes and never returns a value violating the rule. See
 ## Placing constructors in a pipeline
 
 Parsers belong at the boundary, in one step, before the domain sees
-anything.
+anything. Each parser keeps its own error, and the step lifts both into
+the one it returns.
 
 ```text
+type LineError = BadCode of CodeError | BadQuantity of QuantityError
+
 parseBookedTreatment : RawLine -> Result<BookedTreatment, LineError>
 parseBookedTreatment raw =
   TreatmentCode.parse raw.code
-    |> andThen (\code ->
+    |> mapError BadCode
+    |> bind (\code ->
        Quantity.parse raw.qty
+         |> mapError BadQuantity
          |> map (\qty -> { code, qty }))
 ```
 

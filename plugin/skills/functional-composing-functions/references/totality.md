@@ -10,7 +10,7 @@ signature makes and the body breaks.
 - [Two repairs](#two-repairs)
 - [Choosing between them](#choosing-between-them)
 - [Totality and the type's honesty](#totality-and-the-types-honesty)
-- [Effects break totality too](#effects-break-totality-too)
+- [A hidden input is a different defect](#a-hidden-input-is-a-different-defect)
 - [Where partial functions are tolerable](#where-partial-functions-are-tolerable)
 - [Verifying totality](#verifying-totality)
 
@@ -61,6 +61,13 @@ The failure becomes data, and the caller decides.
 | Many callers already hold the narrow type | Narrow       |
 | The narrow type would be awkward to build | Widen        |
 
+A bug that no type can rule out has neither repair. Crash there, as
+[error-taxonomy.md](../../functional-handling-errors-with-results/references/error-taxonomy.md)
+says, and do not widen the output for it: a `Result` case that means
+"the program is wrong" hands every caller a failure it cannot act on.
+The function is still total. It returns for every input its type
+admits, and the crash is for a value that type was meant to exclude.
+
 A third possibility is often best of all: **define the failure out of
 existence** by changing what the operation means, so the awkward case
 becomes ordinary. See
@@ -80,17 +87,23 @@ save : Booking -> AsyncResult<Unit, SaveError>
 Each says what can happen. A caller that ignores the `Result` is making a
 visible choice, and reviewers and tooling can see it.
 
-## Effects break totality too
+## A hidden input is a different defect
 
-A function that reads the clock is not total in the sense that matters: it
-returns different values for the same input. The same goes for reading
-global state, generating randomness, and performing I/O. The repair is
-the same shape: make the hidden input an explicit parameter.
+A function that reads the clock returns a value for every input, so it
+is total. What it lacks is purity: the same input gives different
+outputs, because the clock is an input its signature does not show. The
+same goes for reading global state, drawing a random number, and
+performing I/O. The repair has a familiar shape: make the hidden input
+an explicit parameter.
 
 ```text
-isExpired : Quote -> Boolean            -- reads the clock inside
-isExpired : Instant -> Quote -> Boolean -- total, and testable
+isExpired : Quote -> Boolean            -- reads the clock; the type hides it
+isExpired : Instant -> Quote -> Boolean -- total and pure
 ```
+
+Total and pure are separate promises, defined in
+[notation.md](../../functional-design/references/notation.md#words-with-one-meaning).
+A function can keep either without the other.
 
 See
 [functional-parameterizing-dependencies](../../functional-parameterizing-dependencies/SKILL.md).
@@ -98,10 +111,11 @@ See
 ## Where partial functions are tolerable
 
 Inside a module, in a function that is not exported, where the caller is
-the module itself and the invariant is proven a few lines above. Even
-then, prefer to encode the invariant in a type if the module is going to
-grow. Never across a module boundary: there the signature is the contract
-and there is no context to rely on.
+the module itself and the invariant is proven a few lines above. Such a
+helper crashes if the invariant is ever broken, which is the right
+outcome for a bug. Even then, prefer to encode the invariant in a type
+if the module is going to grow. Never across a module boundary: there
+the signature is the contract and there is no context to rely on.
 
 ## Verifying totality
 

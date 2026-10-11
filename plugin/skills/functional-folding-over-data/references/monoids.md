@@ -31,7 +31,7 @@ under which a fold can be split, reordered, and run in parallel.
 | ----------- | ----------------- | -------- |
 | Integer     | addition          | 0        |
 | Integer     | multiplication    | 1        |
-| Text        | concatenation     | empty    |
+| String      | concatenation     | empty    |
 | List        | append            | empty    |
 | Set         | union             | empty    |
 | Map         | merge, right wins | empty    |
@@ -89,7 +89,7 @@ each a monoid, so the pair is one too, and the average comes out of the
 final value.
 
 ```text
-type Running = { total: Number, count: Integer }
+type Running = { total: Decimal, count: Integer }
 combine a b = { total: a.total + b.total, count: a.count + b.count }
 identity   = { total: 0, count: 0 }
 average r  = if r.count == 0 then None else Some (r.total / r.count)
