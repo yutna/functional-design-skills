@@ -59,10 +59,17 @@ integration tests, replace a store that many tests share with a fake: an
 in-memory implementation.
 
 ```text
--- an in-memory store, thirty lines, shared by every handler test
-makeFakeStore : Unit -> { save: SaveBooking, load: LoadBooking,
-                          contents: Unit -> List<Booking> }
+-- an in-memory store, thirty lines, shared by every handler test;
+-- `contents` is a test-only read of what it holds
+makeFakeStore :
+  { bumpVersionOnce: Boolean }
+    -> { save: SaveBooking, load: LoadBooking,
+         contents: Unit -> List<Versioned<Booking>> }
 ```
+
+`SaveBooking`, `LoadBooking` and `Versioned` are declared in
+[persistence-patterns.md](../../functional-crossing-io-boundaries/references/persistence-patterns.md).
+The option is for the conflict test further down.
 
 A fake behaves like the real thing for the operations used, so tests read
 naturally and assert on outcomes rather than on calls. Keep one fake per
@@ -96,22 +103,20 @@ Most concurrency bugs in this architecture are conflict handling, and
 that can be tested deterministically.
 
 ```text
--- the fake can bump the version once between a read and the write that
--- follows it, as a concurrent writer would; `contents` is a test-only
--- read of the fake's state
-makeFakeStore :
-  { bumpVersionOnce: Boolean }
-    -> { save: SaveBooking, load: LoadBooking,
-         contents: Unit -> List<Booking> }
-
-test "a stale write is rejected and retried" =
+-- the fake changes the stored version once, between a read and the
+-- write that follows it, as a concurrent writer would
+test "a stale write is refused, and nothing is overwritten" =
   let store = makeFakeStore { bumpVersionOnce: true }
-  let finished = handleCancel store.load store.save cancelCmd
-  in expect finished toFinishWith (Ok cancelled)
-     and expect (store.contents ())
-           toBe [{ ...booking, status: Cancelled, version: 3 }]
--- version 1 stored, 2 after the concurrent writer, 3 after the retry
+  in expect (handleCancel store.load store.save now bookingId reason)
+       toFinishWith (Error VersionChanged)
+     and expect (store.contents ()) toBe [asTheOtherWriterLeftIt]
 ```
+
+The assertions are on what the handler finished with and on what the
+store now holds, not on how many times anything was called. Running the
+handler again after a conflict is the entry point's work, and it gets a
+second test: the same fake, the handler run twice, and the booking
+cancelled.
 
 Reserve real concurrency tests for the storage layer's guarantees, and
 keep them few.

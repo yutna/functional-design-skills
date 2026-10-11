@@ -118,9 +118,10 @@ the syntax.
 The second use is processing data larger than memory, one element at a
 time, through a pipeline that reads like a list operation. `Stream<A>`
 here is a lazy sequence of `A`; the notation page has no entry for it.
-Pulling an element from a stream that reads a file is I/O, so the
-source and the sink are shell, and only the stages between them are
-core.
+A stream whose elements come from a file or a socket is an effect type,
+as `Async` is: pulling an element reaches outside. So the source and the
+sink are shell. The stages between them only describe what happens to
+each element, and are core.
 
 ```text
 -- shell: the source reads the file

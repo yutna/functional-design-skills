@@ -29,6 +29,7 @@ shape:
 ```text
 updateAtomically :
   Integer -> Reference<S> -> (S -> S) -> AsyncResult<S, Conflict>
+-- written as the bounded loop it is; the notation has no loop
 updateAtomically attempts ref f =
   repeat at most `attempts` times:
     let (current, version) = read ref
@@ -199,7 +200,7 @@ The shape that fixes all four is the same: the spawn returns something,
 and the thing it returns is held.
 
 ```text
-scope (fun spawn ->
+scope (\spawn ->
   let catalogue = spawn (loadCatalogue clinic)
   let openSlots = spawn (loadOpenSlots clinic)
   await2 catalogue openSlots)

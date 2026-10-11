@@ -2,17 +2,17 @@
 
 A monoid is a type with two things: a way to combine two values, and an
 identity value that changes nothing. In the code below the identity
-value is named `unit`, so that `identity` stays the function that
+value is named `empty`, so that `identity` stays the function that
 returns its argument. Combination must be associative, so
 the grouping does not matter.
 
 ```text
 combine : A -> A -> A
-unit : A
+empty : A
 
 -- laws
-combine a unit == a
-combine unit a == a
+combine a empty == a
+combine empty a == a
 combine a (combine b c) == combine (combine a b) c
 ```
 
@@ -59,8 +59,8 @@ collection, so `totalOf []` is zero rather than an error or a `None`.
 anywhere, each part folded independently, and the results combined.
 
 ```text
-total = parts |> parallelMap (fold combine unit)
-              |> fold combine unit
+total = parts |> parallelMap (fold combine empty)
+              |> fold combine empty
 ```
 
 **Composable summaries.** If two summary types are monoids, a record of
@@ -69,7 +69,7 @@ produces several statistics without interleaving their logic.
 
 ```text
 type Summary = { total: Satang, count: Integer }
--- combine field-wise; unit is the identity of each field
+-- combine field-wise; empty is the identity of each field
 ```
 
 `Satang` is one currency, so its sum has a single total. Amounts in
@@ -84,8 +84,9 @@ property tests: left identity, right identity, and associativity. Failing
 associativity is the common one. It usually means the answer is being
 computed too early, as with an average, or that the operation is an
 update with differently typed arguments, which is a fold's step function
-rather than a monoid. The general move -- write the claim as an equation over arbitrary
-values, then let the property test be that equation -- is in
+rather than a monoid. The general move -- write the claim as an equation
+over arbitrary values, then let the property test be that equation -- is
+in
 [functional-testing-functional-code](../../functional-testing-functional-code/SKILL.md).
 
 ```text
@@ -104,7 +105,7 @@ final value.
 type Summary = { total: Satang, count: Integer }
 combine a b =
   { total: add a.total b.total, count: a.count + b.count }
-unit = { total: zero, count: 0 }
+empty = { total: zero, count: 0 }
 average r =
   if r.count == 0 then None else Some (toDecimal r.total / r.count)
 ```

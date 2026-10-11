@@ -69,17 +69,17 @@ let a driver loop run the steps.
 type Step<A> = Done of A | More of (Unit -> Step<A>)
 
 run : Step<A> -> A
-run first =
-  -- a loop with one local variable that never escapes
-  s = first
-  while s is More f:
-    s = f ()
-  s.value                       -- s is Done here
+run s =
+  match s with
+  | Done a -> a
+  | More f -> run (f ())        -- a `while` loop in a real language
 ```
 
-The driver is written as a loop on purpose. A recursive `run` would
-need the tail-call elimination that the trampoline stands in for.
-Each `More` returns to the driver, so the stack never grows. Termination
+The notation has no loop, so `run` is written recursively here. In a
+language without tail-call elimination it has to be a loop with one
+local variable: a recursive driver would need the very thing the
+trampoline stands in for. Each `More` returns to the driver, so the
+stack never grows. Termination
 depends on each step leading closer to a `Done`; say so in a comment,
 and bound the number of steps where that is not evident. The cost is
 an allocation per step, which is usually acceptable next to a crash.

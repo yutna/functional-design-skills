@@ -93,7 +93,7 @@ Testable with values:
 test "refunds over sixty days are rejected" =
   let booking = bookingConfirmedOn (daysBefore now 61)
   in expect (decideRefund now booking request)
-       toBe (Reject TooOld)
+       toBe (Error TooOld)
 ```
 
 The second runs in microseconds, has no setup, and fails for exactly one
@@ -121,8 +121,8 @@ test "prices a booking from the catalogue its rule names" =
 compiles only if the handler asks for what it says. No framework, no
 expectations, no verification of calls. If a test needs to assert that a
 dependency was called, ask what observable outcome that call produces,
-and assert on that instead. Where the call itself is the outcome, return it as an
-instruction and assert on the instruction.
+and assert on that instead. Where the call itself is the outcome, return
+it as an instruction and assert on the instruction.
 
 ## Properties worth stating
 
