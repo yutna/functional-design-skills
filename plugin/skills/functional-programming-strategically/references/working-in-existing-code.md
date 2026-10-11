@@ -19,13 +19,10 @@ the bar. Anything less is a deliberate, recorded debt.
    is an instance of what the module already claims to do. Not fitting
    means the module's sentence would have to grow an "and also".
 3. **If it fits**, make the change in the module's existing idiom.
-4. **If it does not fit**, choose:
-   - Widen the abstraction so the new case is an instance of it. Best
-     when the two cases are genuinely the same kind of thing.
-   - Split the module so the new case has its own home. Best when they
-     are different things that were merged by accident.
-   - Make the minimal patch and record the debt. Only when the first two
-     are out of budget.
+4. **If it does not fit**, the table in
+   [functional-refactoring-toward-functional-design](../../functional-refactoring-toward-functional-design/SKILL.md#deciding-patch-or-restructure)
+   says whether to widen, split or patch. The sentence from step 1 is
+   what you test the new case against.
 5. **Repair what the change invalidated.** Names, comments, and types
    that were true before and are not now.
 
@@ -40,13 +37,9 @@ the bar. Anything less is a deliberate, recorded debt.
 ## Recording debt honestly
 
 When you knowingly leave the design worse, write it down where the next
-person will look, in the module itself, not in a ticket:
-
-```text
--- The rules below are duplicated in the billing module. They belong in
--- one owner, but unifying them needs the billing rewrite scheduled for
--- the next quarter. Until then, change both.
-```
+person will look, in the module itself, not in a ticket. What the note
+contains is in
+[keeping-design-clean.md](../../functional-refactoring-toward-functional-design/references/keeping-design-clean.md).
 
 An unrecorded shortcut is indistinguishable from a design decision, and
 the next reader will preserve it.

@@ -31,7 +31,9 @@ easier to change than complex code is.
 | Deep recursion           | Tail calls, or an explicit accumulator |
 | Chatty I/O               | Batch at the shell, keep the core pure |
 
-The functional defaults are already reasonable: immutability enables sharing,
+The responses in the table are functional defaults and need no
+measurement; measure before anything that makes the code harder to read
+for speed. The defaults are already reasonable: immutability enables sharing,
 and pure functions are safe to cache and to reorder. Reach for
 [functional-using-recursion-and-laziness](../../functional-using-recursion-and-laziness/SKILL.md)
 and [functional-folding-over-data](../../functional-folding-over-data/SKILL.md)

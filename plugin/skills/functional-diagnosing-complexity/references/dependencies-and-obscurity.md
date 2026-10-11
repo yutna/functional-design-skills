@@ -51,9 +51,9 @@ Two concepts have the same shape, so a caller can pass one where the
 other is meant and nothing objects.
 
 ```text
-alias CustomerId = String
+alias PatientId = String
 alias BookingId = String
-lookup : CustomerId -> BookingId -> Result<Booking, Error>   -- swappable
+lookup : PatientId -> BookingId -> Result<Booking, LookupError>  -- swappable
 ```
 
 **Remove it** with distinct types, even in dynamically typed languages,
@@ -93,5 +93,5 @@ dependency is cheap when visible and lethal when hidden.
 
 The test for obscurity: could a competent developer who has never seen
 this code make a correct change using only what is visible from the call
-site? If not, the missing information belongs in the name, the type, or a
+site? If not, the missing information belongs in the type, the name, or a
 comment, in that order of preference.

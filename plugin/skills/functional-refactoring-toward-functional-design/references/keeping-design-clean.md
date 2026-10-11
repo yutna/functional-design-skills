@@ -3,6 +3,16 @@
 A design decays by absorbing requirements it was not shaped for. Each
 patch is locally reasonable; the sum is a module nobody can describe.
 
+## Contents
+
+- [The question for every new requirement](#the-question-for-every-new-requirement)
+- [Widening well](#widening-well)
+- [Signals of decay](#signals-of-decay)
+- [The upkeep rules](#the-upkeep-rules)
+- [Recording debt](#recording-debt)
+- [When the abstraction is simply wrong](#when-the-abstraction-is-simply-wrong)
+- [The test that catches decay early](#the-test-that-catches-decay-early)
+
 ## The question for every new requirement
 
 **Is this an instance of what the module already does?**
@@ -11,12 +21,10 @@ Answer it before writing code, by stating the module's purpose in one
 sentence and checking whether the new case is covered by that sentence
 unchanged.
 
-| Answer                              | Action                       |
-| ----------------------------------- | ---------------------------- |
-| Yes, exactly                        | Add it in the existing idiom |
-| Yes, if the sentence gets wider     | Widen deliberately           |
-| No, it is a different kind of thing | Give it its own home         |
-| Only with a flag                    | It is a different thing      |
+The table in
+[SKILL.md](../SKILL.md#deciding-patch-or-restructure) says what each
+answer leads to. The sentence is what this page adds: if it must grow an
+"and" to cover the case, the case is not an instance.
 
 ## Widening well
 
@@ -41,15 +49,15 @@ how the second case silently misbehaves.
 
 ## Signals of decay
 
-| Signal                                | What it means              |
-| ------------------------------------- | -------------------------- |
-| A boolean parameter selects behaviour | Two functions in one       |
-| A new optional field for one caller   | A special case leaked in   |
-| The purpose sentence grew an "and"    | Two modules in one         |
-| A wildcard added to a match           | A case nobody considered   |
-| A type widened to hold a new shape    | A different concept merged |
-| A comment explaining an exception     | The abstraction is wrong   |
-| Copy of a function with one change    | A missing parameter        |
+| Signal                                 | What it means              |
+| -------------------------------------- | -------------------------- |
+| A boolean parameter selects behaviour  | Two functions in one       |
+| A new optional field for one caller    | A special case leaked in   |
+| The purpose sentence grew an "and"     | Two modules in one         |
+| A wildcard added to a match            | A case nobody considered   |
+| A type widened with an optional field  | A different concept merged |
+| A comment excusing an off-purpose case | The abstraction is wrong   |
+| Copy of a function with one change     | A missing parameter        |
 
 Any two of these in one module is worth stopping for.
 
@@ -70,13 +78,16 @@ Any two of these in one module is worth stopping for.
 
 ```text
 -- The expiry rule is duplicated in the billing module. It belongs
--- here, but moving it needs billing's storage migration, scheduled
--- for Q3. Until then, change both. See billing/expiry.
+-- here, but billing's tests call its copy directly, and moving it
+-- breaks them. Until then, change both. See billing/expiry.
 ```
 
 Three things: what is wrong, what the right design is, and what is
-blocking it. Without the third, the next reader cannot tell whether it
-was a decision or an oversight, and will preserve it either way.
+blocking it. The blocker is something the next reader can check in the
+repository, such as a failing test or a caller outside the module.
+Without it, the next reader cannot tell whether the note records a
+decision or an oversight, and will preserve it either way. The other
+pages that mention debt link here and do not repeat this.
 
 ## When the abstraction is simply wrong
 
@@ -87,13 +98,15 @@ that no longer exists. Then:
 2. Check whether the change under way is a natural place to move towards
    it. Usually it is, partially.
 3. Do the part that fits inside the current change; record the rest.
-4. Do not open a separate refactoring branch. See
+4. Use a branch that merges within a day, or no separate refactoring
+   branch. See
    [migration-moves.md](migration-moves.md) for how to move a module
    incrementally while it stays in use.
 
 ## The test that catches decay early
 
-Ask a colleague, or re-read after a break: **describe what this module
-does, without looking at the function list.** A module whose description
-has become a list is a module that has lost its abstraction, and it will
-keep absorbing whatever arrives next.
+Give a reader who has not seen the code only the module's name, its doc
+comment and its exported names, and ask what the module does;
+[working-alone.md](../../functional-design/references/working-alone.md)
+says who that reader is. If the answer is a list, the module has lost
+its abstraction, and it will keep absorbing whatever arrives next.

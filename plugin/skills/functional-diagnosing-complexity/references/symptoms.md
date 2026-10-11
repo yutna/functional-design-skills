@@ -50,9 +50,11 @@ applyPayment :
   PricedBooking -> AuthorisedPayment -> Result<PaidBooking, PaymentError>
 ```
 
-Three of the four facts are now in the signature. The fourth,
-idempotency, either becomes a property of `PaidBooking` (applying again is
-a type error) or is documented as the one thing the type cannot say.
+Three of the four facts are now in the signature. The fourth, that
+calling it twice double-counts, either becomes impossible by
+construction or, where retries are expected, is handled by an idempotent
+adapter keyed from the command's key; see
+[functional-making-effects-reliable](../../functional-making-effects-reliable/SKILL.md).
 
 **Exposing question:** list everything a new developer must be told
 before they may call this function safely. Every item on that list is
@@ -64,16 +66,16 @@ The information needed to change the code correctly is not reachable from
 the code you are changing.
 
 ```text
--- shipping.ts
-calculateShipping : Booking -> Money
+-- fees module
+calculateCallOutFee : Booking -> Money
 
 -- somewhere else, unrelated by any import
--- reporting reads shipping cost by re-deriving it with its own copy
--- of the weight bands
+-- reporting reads the call-out fee by re-deriving it with its own copy
+-- of the distance bands
 ```
 
-Change the weight bands in `shipping` and the report silently disagrees.
-Nothing in `shipping` points at `reporting`; nothing in `reporting`
+Change the distance bands in `fees` and the report silently disagrees.
+Nothing in `fees` points at `reporting`; nothing in `reporting`
 points back. The dependency is real and invisible.
 
 The fix is not documentation. It is to make the dependency explicit:

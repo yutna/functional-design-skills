@@ -14,7 +14,7 @@ concurrency approach. Skip it for a bug fix inside one function.
 ## The procedure
 
 1. Write the first design as a set of type signatures only. No bodies.
-2. Write down what you dislike about it, even if it is only a feeling.
+2. Name the requirement the first design handles worst.
 3. Produce a second design that is **radically** different, not a tidied
    version of the first. If you cannot, use the prompts below.
 4. Compare the two against explicit criteria (also below).
@@ -62,9 +62,20 @@ every caller that offers "all formats" changes.
 `Format` choice type. Adding a format is one new case, and the compiler
 or test suite lists every place that must handle it.
 
-B wins on change absorption and illegal states; A wins on nothing except
-that it is what came to mind first. Take from A the idea that each format
-lives in its own module, and have B dispatch to those.
+Scored against each criterion:
+
+- **Interface simplicity.** A tie. A has no argument to choose and B has
+  one, and both are easy to use correctly.
+- **Depth.** B. One function hides which module makes which format.
+- **Illegal states.** A tie. Neither lets a caller ask for a format that
+  does not exist.
+- **Testability.** A tie.
+- **Change absorption.** B, as described above.
+- **Failure clarity.** A tie.
+
+B wins on depth and change absorption; A wins on nothing except that it
+is what came to mind first. Take from A the idea that each format lives
+in its own module, and have B dispatch to those.
 
 ## Common failure
 

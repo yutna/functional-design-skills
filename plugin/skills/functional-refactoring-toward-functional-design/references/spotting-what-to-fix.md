@@ -30,7 +30,8 @@ Read the last two sections before using the list.
 - A status string spelled out -> [functional-constraining-primitive-values](../../functional-constraining-primitive-values/SKILL.md)
 
 The test for all six: count the places a single decision is written down.
-More than one is the finding, whatever it looks like.
+More than one is the finding, whatever it looks like, except where a
+later section says it is the intended trade-off.
 
 ## Symptoms that raise what a reader must hold
 
@@ -61,7 +62,7 @@ See
 - Two modules using each other's guts -> [functional-hiding-information](../../functional-hiding-information/SKILL.md)
 - Domain values as raw primitives -> [functional-constraining-primitive-values](../../functional-constraining-primitive-values/SKILL.md)
 - A module whose functions forward -> [functional-separating-layers](../../functional-separating-layers/SKILL.md)
-- Machinery nobody asked for -> [functional-programming-strategically](../../functional-programming-strategically/SKILL.md)
+- Machinery nobody asked for -> [functional-diagnosing-complexity](../../functional-diagnosing-complexity/SKILL.md)
 - A comment restating the code -> [functional-writing-useful-comments](../../functional-writing-useful-comments/SKILL.md)
 
 This is the worst of the three costs, because there is no point at which
@@ -117,10 +118,9 @@ doing the same job through different names is the same kind of residue.
 
 Four rules, in order.
 
-1. **Ask whether the code should exist at all.** If the requirement,
-   stated in the domain's words, never mentions it, delete it rather than
-   moving it. Refactoring accidental complexity is how it becomes
-   permanent.
+1. **Ask what breaks if the code is deleted.** The test is in
+   [essential-and-accidental.md](../../functional-diagnosing-complexity/references/essential-and-accidental.md).
+   Refactoring accidental complexity is how it becomes permanent.
 2. **Name the cost before the fix.** "This function is long" is not a
    finding. "A reader must hold four intermediate values to follow it" is.
 3. **Check the symptom applies here.** Four of the items above do not, and

@@ -23,8 +23,8 @@ EmailAddress   not EmailString
 PricedBooking    not BookingWithPrices
 ```
 
-For phase types, name the guarantee: `ValidatedBooking` says what is true,
-not which step produced it.
+For stage types, name the guarantee: `ValidatedBooking` says that
+validation has passed, not which step produced it.
 
 For choice types, name the concept and give each case a domain word:
 
@@ -39,15 +39,16 @@ Avoid suffixes that name the mechanism: `...Enum`, `...Union`,
 
 Verb phrases that name the result, from the caller's point of view.
 
-| Purpose                 | Shape                      |
-| ----------------------- | -------------------------- |
-| Transform               | `price`, `normalise`       |
-| Parse untrusted input   | `parseX`, returning Result |
-| Check a condition       | `isX`, `hasX`, `canX`      |
-| Retrieve, may be absent | `findX`, returning Option  |
-| Retrieve, must exist    | `getX`                     |
-| Perform an effect       | `saveX`, `sendX`           |
-| Build a value           | `makeX`, `x` (constructor) |
+| Purpose                   | Shape                          |
+| ------------------------- | ------------------------------ |
+| Transform                 | `price`, `normalise`           |
+| Parse untrusted input     | `parseX`, returning Result     |
+| Check a condition         | `isX`, `hasX`, `canX`          |
+| Retrieve, may be absent   | `findX`, returning Option      |
+| Retrieve, must exist      | `getX`                         |
+| Read through a capability | `loadX`, returning AsyncResult |
+| Perform an effect         | `saveX`, `sendX`               |
+| Build a value             | `makeX`, `x` (constructor)     |
 
 Keep the convention exact. If `find` returns `Option` in one module and
 throws in another, the convention teaches a false rule, and a bug in a
@@ -63,7 +64,7 @@ hasUnpaidTreatments : Booking -> Boolean
 canCancel : Booking -> Boolean
 ```
 
-Never `check`, `valid`, `flag`, `ok`. A negative name doubles the
+Never `check`, `valid`, `flag`, `ok`, `status`. A negative name doubles the
 reader's work: prefer `isActive` over `isNotInactive`.
 
 ## Fields and values
@@ -77,19 +78,21 @@ expiresAt        not expiry
 lineTotal        not total          (which total?)
 ```
 
-For times, the suffix says the kind: `...At` for an instant, `...On` for
-a date, `...For` for a duration.
+Name the quantity. A bare name is enough when the type says the kind,
+as in `retryAfter: Seconds` or `expires: Instant`. Add a suffix when a
+bare name is ambiguous: `...At` for an instant, `...On` for a date,
+`...For` for a duration.
 
 ## Parameters
 
 Named for their role in this function, not their type.
 
 ```text
-transfer : CustomerId -> AccountId -> AccountId -> Money -> Result<...>
--- which account is the source?
+moveAppointment : PatientId -> SlotId -> SlotId -> Result<...>
+-- which slot is the one being given up?
 
-transfer : { by: CustomerId, from: AccountId,
-             to: AccountId, amount: Money } -> Result<...>
+moveAppointment : { patient: PatientId, from: SlotId, to: SlotId }
+                    -> Result<...>
 ```
 
 Where two parameters share a type, either give them distinct types or
@@ -125,17 +128,23 @@ which justifies more characters.
 
 ## Abbreviations
 
-Use only those that are universal in the domain and would appear in a
-conversation between experts: `id`, `url`, `sku`, `vat`. Never invent
-one, never drop vowels, and never abbreviate differently in two places.
+Use only those that are universal in the domain: the ones the project's
+docs and tests already use, such as `id`, `url`, `dob`, `gp`. Never
+invent one, never drop vowels, and never abbreviate differently in two
+places.
 
 ## Consistency across a codebase
 
 Keep a short list of the words the codebase uses, and use them exactly:
 
-- One verb per operation kind: `load` or `fetch` or `get`, not all three
-- One noun per concept: `customer` or `client`, not both
-- One spelling of every domain term, matching the experts' spelling
+- One verb per kind of retrieval: not `load`, `fetch` and `get` for the
+  same kind
+- One noun per concept: `patient` or `client`, not both
+- One spelling of every domain term, matching the spelling in the
+  project's docs and tests; if there is none, ask the user which spelling
+  the business uses, as
+  [working-alone.md](../../functional-design/references/working-alone.md)
+  describes
 
 Where two words are both used, that is either a rename waiting to happen
 or a genuine distinction that deserves to be documented. Decide which.

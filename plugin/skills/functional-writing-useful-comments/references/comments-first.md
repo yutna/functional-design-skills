@@ -9,11 +9,12 @@ beginning, when changing your mind is still cheap.
 For each new module or exported function:
 
 1. Write the signature.
-2. Write the interface comment: what it produces, what it requires, how
-   it fails, what it does not do.
+2. Write the interface comment, with the contents listed in
+   [comment-kinds.md](comment-kinds.md).
 3. Read the comment back. Judge the design by how the comment reads.
-4. Change the design, not the comment, until the comment is short and
-   clear.
+4. Change the design, not the comment, until the comment is no more than
+   one short paragraph, has no more than three Requires lines, and needs
+   no "and" between two unrelated verbs.
 5. Implement.
 6. Adjust the comment only where implementing revealed something the
    caller genuinely needs to know.
@@ -34,7 +35,9 @@ say what a function does is to list what it calls, it is not hiding
 anything. See
 [functional-designing-deep-modules](../../functional-designing-deep-modules/SKILL.md).
 
-**A comment with "and" means two functions.** Split before implementing.
+**A comment with two unrelated verbs, or two reasons to change, means two
+functions.** Split before implementing. An "and" between attributes of one
+thing is fine.
 
 **A comment you cannot write means you do not know what you are
 building.** That is the most valuable outcome, and it costs two minutes
@@ -79,9 +82,9 @@ responsibilities became their own steps in a pipeline. See
 ## For modules
 
 The same technique at a larger scale. Before creating a module, write its
-one-sentence purpose and its list of exports. If the sentence needs
-"and", or if the export list is longer than a reader could hold, redesign
-before writing code.
+one-sentence purpose and its list of exports. If the sentence joins two
+unrelated purposes, or if you cannot name a caller outside the module
+for one of the exports, redesign before writing code.
 
 ## Keeping them true
 

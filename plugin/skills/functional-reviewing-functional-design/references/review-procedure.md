@@ -1,7 +1,9 @@
 # The Review Pass in Detail
 
-Work through the steps in order. Record findings; do not repair as you
-go. Each step lists the question, what a bad answer looks like, and where
+Work through the steps in order. Record flags; do not repair as you go.
+A flag becomes a finding when its cost is stated for that place or
+evidence is given; see [Producing the output](#producing-the-output).
+Each step lists the question, what a bad answer looks like, and where
 the fix is.
 
 ## Contents
@@ -49,8 +51,8 @@ Fixes:
 
 ## Step 3: interfaces
 
-- **Write the module's purpose in one sentence.** If it needs "and",
-  record a finding.
+- **Write the module's purpose in one sentence.** If it needs "and"
+  between unrelated purposes, record a flag.
 - **Is the interface much smaller than what it hides?** Include the
   informal parts: required call order, value constraints, idempotency.
 - **Is anything exported that no outside caller uses?** Especially
@@ -63,12 +65,14 @@ Fixes:
 ## Step 4: dependencies
 
 - **Does the domain import infrastructure?** One import is enough to
-  record the finding.
+  record the flag.
 - **Does any function take more than it uses?** A repository, a service,
   a context object.
 - **Is a value threaded through functions that never read it?**
 - **Which way do the arrows point?** The volatile code must depend on the
-  stable code.
+  stable code;
+  [functional-separating-layers](../../functional-separating-layers/SKILL.md)
+  says which is which.
 
 Fixes:
 [functional-parameterizing-dependencies](../../functional-parameterizing-dependencies/SKILL.md),
@@ -120,7 +124,10 @@ Fixes:
 
 ## Producing the output
 
-Group findings by rank, not by file. For each:
+Group findings by rank, not by file. A flag becomes a finding by naming
+its cost at that place, as the sample does ("one of them will change
+alone"), or by evidence: a measurement, a reproduced bug, or a failing
+test. A flag with neither is not reported. For each finding:
 
 ```text
 Rank 2  skills/bookings/pricing: the discount threshold 5000 also
@@ -129,18 +136,22 @@ Rank 2  skills/bookings/pricing: the discount threshold 5000 also
         Skill: functional-hiding-information
 ```
 
-Three lines: where and what, the smallest fix, the rule. Anything longer
-is a redesign proposal, which is a separate conversation.
+Three parts: where and what is wrong, the smallest fix, the rule.
+Anything longer is a redesign proposal, which is a separate conversation.
 
 ## Calibrating effort
 
-| Change under review      | Depth of pass                 |
-| ------------------------ | ----------------------------- |
-| One-line fix             | Steps 2 and 6                 |
-| A new function           | Steps 1, 2, 6                 |
-| A new module or workflow | All eight                     |
-| A refactor               | All eight, plus the purpose   |
-| An unfamiliar codebase   | Steps 1, 3, 4 locate the rest |
+| Change under review           | Depth of pass |
+| ----------------------------- | ------------- |
+| One function, module exists   | Steps 2 and 6 |
+| A feature in an existing flow | Steps 1, 2, 6 |
+| A new module or workflow      | All eight     |
+| A new bounded context         | All eight     |
+
+These are the sizes in
+[calibration.md](../../functional-design/references/calibration.md). Two
+more cases are not sizes. A refactor takes all eight, plus the purpose.
+In an unfamiliar codebase, steps 1, 3 and 4 locate the rest.
 
 For a refactor, write the module's one-sentence purpose before and after
 the change; if the sentence did not get shorter or clearer, ask what the
