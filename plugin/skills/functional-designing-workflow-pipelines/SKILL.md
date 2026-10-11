@@ -11,16 +11,17 @@ metadata:
 
 ## Overview
 
-A workflow is one business process: a command arrives, work happens,
-events come out. Modelled as a pipeline, it becomes a sequence of small
-total functions, each with its own input and output types, composed into
-one function whose signature states the whole contract.
+A workflow decides one business process: a command comes in, with the
+values a handler read for it, and events come out. Modelled as a
+pipeline, it is a sequence of small total functions, each with its own
+input and output types, composed into one function whose signature
+states the whole contract.
 
 This shape is what makes a domain model executable. The types along the
 pipeline record which checks have already happened, so no step re-checks;
-the ends of the pipeline mark exactly where effects are allowed; and the
-whole use case can be read in one place instead of being assembled in a
-reader's head from four services.
+the pipeline is pure from end to end, so the only places an effect can
+be are before it and after it; and the whole use case can be read in one
+place instead of being assembled in a reader's head from four services.
 
 ## When to use
 
@@ -36,20 +37,27 @@ Not for: designing the data itself, which is
 ## Core rules
 
 1. Default. **Start with the end points.** Write the workflow's own signature
-   before its steps: command in, `Result` of events out.
+   before its steps: the command and the values read for it in, `Result`
+   of events out.
 2. Default. **One type per stage.** The output of a step is a type that did not
    exist before it ran, so later steps cannot receive unvalidated data.
-3. Rule. **Each step is total.** Everything that can go wrong is in the return
-   type. No exceptions, no nulls, no hidden failure.
-4. Rule. **Effects at the ends only.** Steps that need the world take their
-   capability as a parameter; the shell supplies it. See
-   [functional-parameterizing-dependencies](../functional-parameterizing-dependencies/SKILL.md).
+3. Rule. **Each step is total.** Every failure the business can name is in
+   the return type. No exception, no null, no hidden failure.
+4. Rule. **A workflow performs nothing.** What its steps need from the
+   world is read by the handler and passed in as values, and what it
+   decides is written by the handler after it returns. Where a read
+   depends on a rule, the pipeline is cut there into two pure functions
+   and the handler reads between them. See
+   [functional-separating-pure-core-from-shell](../functional-separating-pure-core-from-shell/SKILL.md).
 5. Default. **Steps are named in the domain's words**, and each one is
    meaningful to a domain expert.
 6. Default. **The pipeline is the documentation.** Reading the composed function
    should tell a reader what the business process is.
-7. Rule. **Emit events, do not perform them.** The workflow returns what
-   happened; the shell decides who is told.
+7. Rule. **Return events, not actions.** A workflow returns the events it
+   decided, each a fact that is true once the decision is saved. The
+   handler saves them with the state. What follows from an event, a
+   message to send or a schedule to update, is the work of whichever
+   handler receives it.
 
 ## Pattern
 
@@ -67,45 +75,49 @@ validation rule now has two homes.
 As a pipeline:
 
 ```text
-type ConfirmBookingWorkflow =
-  UnvalidatedBooking
-    -> AsyncResult<List<ConfirmBookingEvent>, ConfirmBookingError>
+confirmBooking :
+  Catalogue -> Instant -> UnvalidatedBooking
+    -> Result<List<ConfirmBookingEvent>, ConfirmBookingError>
 
-confirmBooking checkTreatment getPrice =
-  validateBooking checkTreatment
-    >=> priceBooking getPrice
-    >=> acknowledgeBooking
-    >=> createEvents
+confirmBooking catalogue now unvalidated =
+  validateBooking catalogue unvalidated
+    |> mapError Validation
+    |> bind (priceBooking catalogue >> mapError Pricing)
+    |> map (issueConfirmation now)
+    |> map (\booking -> [BookingConfirmed booking])
 ```
 
-Four steps, each with its own types:
+Three steps, each with its own types, and a last line that reports what
+was decided:
 
 ```text
 validateBooking :
-  CheckTreatmentExists -> UnvalidatedBooking
-    -> Result<ValidatedBooking, ValidationError>
+  Catalogue -> UnvalidatedBooking
+    -> Result<ValidatedBooking, NonEmptyList<ValidationError>>
 
 priceBooking :
-  GetTreatmentPrice -> ValidatedBooking -> Result<PricedBooking, PricingError>
+  Catalogue -> ValidatedBooking -> Result<PricedBooking, PricingError>
 
-acknowledgeBooking : PricedBooking -> AcknowledgedBooking
-createEvents : AcknowledgedBooking -> List<ConfirmBookingEvent>
+issueConfirmation : Instant -> PricedBooking -> ConfirmedBooking
 ```
 
 The signature of `confirmBooking` states the whole contract. The steps state
 the process. Nothing else in the system needs to know the order of them.
 
+`Catalogue` and `Instant` are values. The catalogue is the treatments
+the clinic offers and their prices, read before the workflow runs, and
+the instant is the one clock reading taken for this command.
+
 ## Anatomy
 
 | Part         | Rule                                          |
 | ------------ | --------------------------------------------- |
-| Command      | A record named as an imperative               |
-| Input type   | Untrusted, from the edge                      |
+| Command      | The caller's unchecked input, as a record     |
+| Values read  | Parameters, read by the handler beforehand    |
 | Stage types  | One per completed step, never reused          |
-| Dependencies | Function types, passed as parameters          |
 | Error type   | One choice type for the whole workflow        |
-| Output       | A list of events, or one event type           |
-| Composition  | `>=>` for fallible steps, `>>` for total ones |
+| Output       | A list of events                              |
+| Composition  | `bind` for a step that can fail, `map` if not |
 
 More on each in
 [pipeline-anatomy.md](references/pipeline-anatomy.md).
@@ -123,39 +135,54 @@ their sentences. Then check each candidate step against three tests:
 3. **Could it fail for its own reason?** If two adjacent steps always
    fail together and for the same reason, they are one step.
 
-Typical shapes: validate, enrich, decide, price or calculate, record,
-acknowledge. Not every workflow has all of them, and inventing empty ones
-is how pipelines become ceremony.
+Typical shapes: validate, decide, price or calculate, acknowledge. Not
+every workflow has all of them, and inventing empty ones is how
+pipelines become ceremony. Enriching is not on the list because it is a
+read the handler makes before the workflow, and recording is the write
+it makes after.
 
-## Effects in the middle
+## Effects around the pipeline
 
-Some steps genuinely need I/O: a stock check, a price lookup. Two ways to
-handle it, in order of preference:
-
-**Pass the capability in.** The step stays a function of its inputs; the
-effect is a parameter.
-
-```text
-validateBooking :
-  CheckTreatmentExists -> UnvalidatedBooking
-    -> AsyncResult<ValidatedBooking, ValidationError>
-```
-
-**Split around the effect.** Fetch first in the shell, then run a pure
-step over the fetched data. Better when the fetch is one lookup that the
-whole workflow needs.
+No step performs an effect, and no step takes a capability. A step that
+seems to need I/O, a slot availability check or a price lookup, needs a
+value, and the handler reads that value first.
 
 ```text
--- shell fetches, core decides
-priceBooking : PriceList -> ValidatedBooking -> Result<PricedBooking, Error>
+type ConfirmBookingFailure =
+  | Rejected of ConfirmBookingError
+  | Unavailable of StoreError
+
+-- shell: the handler reads, calls the workflow, and writes
+handleConfirmBooking :
+  Pool -> Instant -> UnvalidatedBooking
+    -> AsyncResult<List<ConfirmBookingEvent>, ConfirmBookingFailure>
+handleConfirmBooking pool now unvalidated =
+  loadCatalogue pool                                    -- read
+    |> mapError Unavailable
+    |> bind (\catalogue ->
+         confirmBooking catalogue now unvalidated       -- decide
+           |> mapError Rejected)
+    |> bind (saveEvents pool >> mapError Unavailable)   -- write
 ```
 
-See [effect-alignment.md](references/effect-alignment.md) for how to keep
-the types consistent when some steps are async and others are not.
+The handler's failure type has two cases because two different things
+can go wrong: the rules refused the booking, or storage could not be
+reached. The workflow's own error type knows only the first.
+`saveEvents` writes the booking and its events in one transaction and
+hands the events back.
+
+Where what to read depends on a rule, as when a rule picks which price
+list applies, cut the pipeline at that point and let the handler read
+between the two halves.
+[functional-parameterizing-dependencies](../functional-parameterizing-dependencies/SKILL.md)
+shows the shape and says when it is warranted.
+[effect-alignment.md](references/effect-alignment.md) covers how a
+handler's chain keeps its types consistent.
 
 ## Red flags
 
 - The workflow function has no signature that states its failures
+- A step, or the workflow, takes a capability or has an effect type
 - A step takes and returns the same type
 - Validation happens in two steps of the same pipeline
 - A step writes to the database and also decides business rules
@@ -172,8 +199,9 @@ the types consistent when some steps are async and others are not.
 - **Letting a step perform side effects it decided on.** Return the
   decision, let the shell act, or the workflow cannot be tested or
   retried.
-- **One error type per step, unified by casting.** One error choice type
-  for the workflow, with a case per failure, keeps callers sane.
+- **Unifying step errors by casting.** Each step keeps its own narrow
+  error, and the pipeline lifts each into the workflow's one choice type
+  with `mapError`, a case per failure.
 - **Putting the pipeline in the controller.** The controller translates
   transport; the workflow is domain code and belongs with the domain.
 
@@ -188,7 +216,8 @@ the types consistent when some steps are async and others are not.
 
 - [pipeline-anatomy.md](references/pipeline-anatomy.md) details each part
   and how to size the steps.
-- [effect-alignment.md](references/effect-alignment.md) covers mixing
-  pure, fallible and asynchronous steps in one pipeline.
+- [effect-alignment.md](references/effect-alignment.md) covers joining
+  steps that can fail with steps that cannot, and the handler's chain of
+  reads and writes.
 - [worked-example.md](references/worked-example.md) builds a complete
   workflow end to end, from event storming output to composed code.
