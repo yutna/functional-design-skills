@@ -66,30 +66,34 @@ effect.
    type, receives a capability, or calls one.
 2. Default. **Read, decide, write.** A handler reads everything the core
    needs, calls the core with those values, and writes what the core
-   returned. Where what to read depends on a rule, the core is two pure
-   functions and the handler reads between them;
+   returned. Where a read cannot come first, the core is two pure
+   functions and the handler reads between them. Rule 1 of
    [functional-parameterizing-dependencies](../functional-parameterizing-dependencies/SKILL.md)
-   says when that is warranted.
+   says when a read cannot come first.
 3. Rule. **The core returns decisions; the shell acts on them.** A
    decision is a value: a result, a new state, events, or instructions.
    The core performs nothing.
 4. Rule. **Nothing inward-facing imports outward.** No driver, framework,
    or transport type appears in the core.
 5. Rule. **Time, randomness and identifiers reach the core as values.**
-   The shell reads the clock once for each command, so every rule sees
-   the same instant, and draws the identifiers the core will use.
+   The shell reads the clock once for each command or event it handles,
+   so every rule sees the same instant, and draws the identifiers the
+   core will use.
 6. Rule. **The shell holds no business rule.** A handler branches on two
    things only: which case a pure function returned, and how a
    capability call came out. A condition on the contents of a value it
    read is a rule, and belongs in a pure function. Retry counts,
-   timeouts and batch sizes are the adapter's, set by configuration.
-7. Default. **Keep handlers thin.** Read, call, write: nothing that
-   needs a test to explain. Where the machinery is hard, as transactions,
-   retries and ordering are, the work is real and goes into the adapter,
-   where it is tested against the real thing.
+   timeouts and batch sizes are the adapter's, set by configuration;
+   what makes a write safe to try again is in
+   [functional-making-effects-reliable](../functional-making-effects-reliable/SKILL.md).
+7. Judgement. **Keep handlers thin.** A handler that only reads, calls
+   and writes needs no test of its own. A transaction, a retry or an
+   ordering guarantee does: that work is real, and it goes into the
+   adapter, where it is tested against the real thing.
 8. Default. **Wire in one place.** One function at the edge of each
-   program, the composition root, hands every handler its capabilities.
-   A test is a program of its own and wires its own.
+   program, the composition root, gives every handler what it reaches
+   the world through: its capabilities, or the connection its adapters
+   take. A test is a program of its own and wires its own.
 9. Rule. **Remove an effect where it is introduced, not where it
    surfaced.** Calling something that has an effect gives the caller an
    effect, so one lookup buried deep changes the type of every function
@@ -104,14 +108,14 @@ Tangled:
 ```text
 processRefund : RefundRequest -> AsyncResult<Unit, RefundError>
 processRefund req =
-  let booking = await Db.load req.bookingId              -- effect
-  let days = daysBetween booking.placed (Clock.now ())   -- effect
-  if days > 60 then Error TooOld                         -- rule
-  else
-    let amount = min req.amount booking.total            -- rule
-    await Db.insertRefund booking.id amount              -- effect
-    await Email.send booking.patient "refunded"          -- effect
-    Ok ()
+  let booking = Db.load req.bookingId                       -- effect
+  let days = daysBetween booking.placed (Clock.now ())      -- effect
+  in if days > 60 then Error TooOld                         -- rule
+     else
+       let amount = min req.amount booking.total            -- rule
+       let saved = Db.insertRefund booking.id amount        -- effect
+       let sent = Email.send booking.patient "refunded"     -- effect
+       in Ok ()
 ```
 
 The two rules cannot be tested without a database, a clock, and a mail
@@ -121,30 +125,41 @@ Separated:
 
 ```text
 -- core: pure, total, imports nothing
-type RefundDecision =
-  | Approve of { amount: Money, notify: EmailAddress }
-  | Reject of RefundError
-
-decideRefund : Instant -> Booking -> RefundRequest -> RefundDecision
+decideRefund :
+  Instant -> Booking -> RefundRequest
+    -> Result<RefundApproved, RefundError>
 
 -- shell: a handler, which reads, calls the core, and writes
+type RefundFailure =
+  | NotFound
+  | Rejected of RefundError
+  | Unavailable of StoreError
+
 handleRefund :
   Pool -> Instant -> RefundRequest
-    -> AsyncResult<RefundDecision, StoreError>
+    -> AsyncResult<RefundApproved, RefundFailure>
 handleRefund pool now request =
-  loadBooking pool request.bookingId                       -- read
-    |> map (\booking -> decideRefund now booking request)  -- decide
-    |> bind (recordDecision pool)                          -- write
+  loadBooking pool request.bookingId                      -- read
+    |> mapError Unavailable
+    |> bind (toResult NotFound)
+    |> bind (\booking ->
+         decideRefund now booking request                 -- decide
+           |> mapError Rejected)
+    |> bind (saveRefund pool >> mapError Unavailable)     -- write
 ```
 
 `decideRefund` is tested with three plain values and no setup. The
-handler is three lines with no condition in them. `recordDecision`
-matches on the case the core returned. For `Approve` it saves the refund
-and the message to send in one transaction, and a relay sends the
-message afterwards; for `Reject` it saves nothing. Either way it hands
-the decision back. Why the message is saved and not sent on the spot is
-the subject of
-[functional-making-effects-reliable](../functional-making-effects-reliable/SKILL.md).
+handler has no condition in it. Its failure type has three cases because
+three different things can go wrong: nothing was found to decide about,
+the rules refused, or storage could not be reached. Only the second is
+the core's.
+
+`RefundApproved` is an event, the fact that was decided, and
+`saveRefund` writes it with the refund in one transaction. Telling the
+patient is not this handler's work. The handler that receives
+`RefundApproved` does that, and
+[functional-designing-workflow-pipelines](../functional-designing-workflow-pipelines/SKILL.md)
+says why.
 
 ## What goes where
 

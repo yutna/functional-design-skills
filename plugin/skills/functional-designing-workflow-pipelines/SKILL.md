@@ -22,6 +22,8 @@ pipeline record which checks have already happened, so no step re-checks;
 the pipeline is pure from end to end, so the only places an effect can
 be are before it and after it; and the whole use case can be read in one
 place instead of being assembled in a reader's head from four services.
+A workflow whose reads cannot all come first is two such pipelines, with
+the read between them.
 
 ## When to use
 
@@ -38,15 +40,16 @@ Not for: designing the data itself, which is
 
 1. Default. **Start with the end points.** Write the workflow's own signature
    before its steps: the command and the values read for it in, `Result`
-   of events out.
+   of events out. A decision nothing can refuse returns its events with
+   no `Result` around them.
 2. Default. **One type per stage.** The output of a step is a type that did not
    exist before it ran, so later steps cannot receive unvalidated data.
 3. Rule. **Each step is total.** Every failure the business can name is in
-   the return type. No exception, no null, no hidden failure.
+   the return type, never thrown and never a null.
 4. Rule. **A workflow performs nothing.** What its steps need from the
    world is read by the handler and passed in as values, and what it
    decides is written by the handler after it returns. Where a read
-   depends on a rule, the pipeline is cut there into two pure functions
+   cannot come first, the pipeline is cut there into two pure functions
    and the handler reads between them. See
    [functional-separating-pure-core-from-shell](../functional-separating-pure-core-from-shell/SKILL.md).
 5. Default. **Steps are named in the domain's words**, and each one is
@@ -54,10 +57,11 @@ Not for: designing the data itself, which is
 6. Default. **The pipeline is the documentation.** Reading the composed function
    should tell a reader what the business process is.
 7. Rule. **Return events, not actions.** A workflow returns the events it
-   decided, each a fact that is true once the decision is saved. The
-   handler saves them with the state. What follows from an event, a
-   message to send or a schedule to update, is the work of whichever
-   handler receives it.
+   decided, each a fact that is true once the decision is saved. An
+   event carries what changed, as `BookingConfirmed` carries the
+   confirmed booking, and the handler saves the event and the state in
+   one transaction. What follows from an event, a message to send or a
+   schedule to update, is the work of whichever handler receives it.
 
 ## Pattern
 
@@ -99,6 +103,10 @@ priceBooking :
   Catalogue -> ValidatedBooking -> Result<PricedBooking, PricingError>
 
 issueConfirmation : Instant -> PricedBooking -> ConfirmedBooking
+
+type ConfirmBookingError =
+  | Validation of NonEmptyList<ValidationError>
+  | Pricing of PricingError
 ```
 
 The signature of `confirmBooking` states the whole contract. The steps state
@@ -148,11 +156,11 @@ seems to need I/O, a slot availability check or a price lookup, needs a
 value, and the handler reads that value first.
 
 ```text
+-- shell: the handler reads, calls the workflow, and writes
 type ConfirmBookingFailure =
   | Rejected of ConfirmBookingError
   | Unavailable of StoreError
 
--- shell: the handler reads, calls the workflow, and writes
 handleConfirmBooking :
   Pool -> Instant -> UnvalidatedBooking
     -> AsyncResult<List<ConfirmBookingEvent>, ConfirmBookingFailure>
@@ -171,11 +179,15 @@ reached. The workflow's own error type knows only the first.
 `saveEvents` writes the booking and its events in one transaction and
 hands the events back.
 
-Where what to read depends on a rule, as when a rule picks which price
-list applies, cut the pipeline at that point and let the handler read
-between the two halves.
+Where a read cannot come first, as when a rule picks which catalogue
+applies, cut the pipeline at that point and let the handler read between
+the two halves. Each half is then a pure pipeline with a signature and
+an error type of its own, and the handler lifts both into its failure
+type. Rule 1 of
 [functional-parameterizing-dependencies](../functional-parameterizing-dependencies/SKILL.md)
-shows the shape and says when it is warranted.
+says when a read cannot come first, and
+[worked-example.md](references/worked-example.md) builds a workflow that
+is cut this way.
 [effect-alignment.md](references/effect-alignment.md) covers how a
 handler's chain keeps its types consistent.
 

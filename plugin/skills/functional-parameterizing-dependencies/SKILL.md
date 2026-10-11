@@ -21,11 +21,11 @@ its inputs: a value that had to be read, or the capability that reads
 it.
 
 The functional answer needs no container and no framework. Most of the
-time the dependency disappears: a handler reads first and passes the
-value in, and the logic stays pure. Where a read cannot come first, the
-handler takes the capability as a parameter, a function type declared in
-the domain's words, and the shell supplies the real one once, at the
-edge.
+time the capability disappears from the logic: a handler reads first and
+passes the value in, and the logic stays pure. Where a read cannot come
+first, the handler takes the capability as a parameter, a function type
+declared in the domain's words, and the shell supplies the real one
+once, at the edge.
 
 ## When to use
 
@@ -46,13 +46,12 @@ decision is one pure function.
 
 ```text
 -- before: a rule and a capability call in one function
-alias GetTreatmentPrice = TreatmentCode -> AsyncResult<Price, StoreError>
-priceBooking :
-  GetTreatmentPrice -> ValidatedBooking
-    -> AsyncResult<PricedBooking, StoreError>
+alias GetTreatmentPrice = TreatmentCode -> Async<Price>
+priceBooking : GetTreatmentPrice -> ValidatedBooking -> Async<PricedBooking>
 
--- after: the handler read the price list first
-priceBooking : PriceList -> ValidatedBooking -> PricedBooking
+-- after: the handler read the catalogue first
+priceBooking :
+  Catalogue -> ValidatedBooking -> Result<PricedBooking, PricingError>
 ```
 
 It leaves the core pure, and its tests need no stub at all. It costs a
@@ -62,47 +61,65 @@ read the decision may turn out not to use.
 parameter and reads between two pure functions.
 
 ```text
--- core: one rule names the price list, another prices from it
-priceListFor : ValidatedBooking -> PriceListId
-priceBooking : PriceList -> ValidatedBooking -> PricedBooking
+-- core: one rule names the catalogue, another prices from it
+catalogueFor : ValidatedBooking -> CatalogueId
+priceBooking :
+  Catalogue -> ValidatedBooking -> Result<PricedBooking, PricingError>
 
 -- shell: the handler declares what it needs and reads between them
-alias LoadPriceList = PriceListId -> AsyncResult<PriceList, StoreError>
+alias LoadCatalogue = CatalogueId -> AsyncResult<Catalogue, StoreError>
 
-priceFromList :
-  LoadPriceList -> ValidatedBooking
-    -> AsyncResult<PricedBooking, StoreError>
-priceFromList loadPriceList booking =
-  loadPriceList (priceListFor booking)
-    |> map (\prices -> priceBooking prices booking)
+type PricingFailure =
+  | Rejected of PricingError
+  | Unavailable of StoreError
+
+priceFromCatalogue :
+  LoadCatalogue -> ValidatedBooking
+    -> AsyncResult<PricedBooking, PricingFailure>
+priceFromCatalogue loadCatalogue booking =
+  loadCatalogue (catalogueFor booking)
+    |> mapError Unavailable
+    |> bind (\catalogue ->
+         priceBooking catalogue booking |> mapError Rejected)
 ```
 
-The rules stay in the two pure functions. The handler reads, calls, and
-passes on what came back. It costs a stub for each capability in the
-handler's tests, and the order of reads becomes code to test.
+The rules stay in the two pure functions: which catalogue applies, the
+clinic's own or an insurer's, and what the booking costs under it. The
+handler reads, calls, and passes on what came back. It costs a stub for
+each capability in the handler's tests, and the order of reads becomes
+code to test.
 
 **3. Interpretation.** The core returns instructions for the effects to
 perform, and the shell executes them.
 
 ```text
-type Instruction = Charge of Money | Notify of EmailAddress
-settle : ConfirmedBooking -> List<Instruction>
+type Instruction =
+  | HoldSlot of SlotId
+  | TakePayment of Money
+  | ReleaseSlot of SlotId
+
+advance :
+  Instant -> BookingProcess -> BookingEvent
+    -> (BookingProcess, List<Instruction>)
 ```
 
-It costs an instruction type and a shell that interprets it. What it
-buys is that the effects are values, which can be stored, compared,
-shown to an auditor, and replayed.
+This process runs for days and across three systems. What it does next
+is saved with its state, so it can resume after a restart, and that is
+what makes its effects worth having as values. The price is an
+instruction type and a shell that interprets it.
 
 ## Core rules
 
 1. Default. **Prefer rejection, then parameterization, then
-   interpretation.** Read everything first. Read between two pure
-   functions when what to read cannot be named until a rule has run,
-   when reading it all has been measured to cost too much, or when a
-   check must pass before a read is allowed. Return instructions when
-   the sequence of effects is itself something the business cares
-   about: it has to be stored so that a long-running process can
-   resume, shown to an auditor, or replayed.
+   interpretation.** Read everything first. A read cannot come first in
+   three cases, and then the handler reads between two pure functions:
+   what to read cannot be named until a rule has run; the read has a
+   known cost too high to pay every time, such as a charge for each
+   call, a rate limit, or a delay that has been measured; or a check
+   must pass before the read is allowed. Return instructions when the
+   sequence of effects is itself something the business cares about:
+   it has to be stored so that a long-running process can resume, shown
+   to an auditor, or replayed.
 2. Default. **Declare a capability's type in the domain's words**, where
    the handler that takes it can see it and no adapter is imported.
    `LoadPriceList`, not `IPriceListRepository`.
@@ -111,14 +128,16 @@ shown to an auditor, and replayed.
    [functional-applying-solid-functionally](../functional-applying-solid-functionally/SKILL.md).
 4. Default. **Dependencies first, data last**, so partial application produces
    the shape a pipeline wants.
-5. Default. **Bind dependencies once, at the edge.** The wiring happens in one
+5. Default. **Bind capabilities once, at the edge.** The wiring happens in one
    composition-root function, not at every call site.
 6. Rule. **Never hand a dependency to a function that only passes it
-   on.** Apply it where it is used, so the signatures in between stay
-   clean.
+   on.** The function that composes the steps applies the dependency to
+   the step that uses it, so no signature in between names it.
 7. Rule. **Time, randomness, and identifier generation are
    dependencies.** They are I/O wearing an innocent face. The core
-   receives the value; only the shell calls the source.
+   receives the value; only the shell calls the source. Where only a
+   rule can count how many identifiers are needed, pass one that the
+   core derives the rest from, or draw them between two pure functions.
 
 ## Pattern
 
@@ -137,32 +156,39 @@ Rejected:
 
 ```text
 -- core: which quotes have expired is a rule
-expired : Instant -> List<Quote> -> List<QuoteId>
+expire : Instant -> List<Quote> -> List<QuoteExpired>
 
 -- shell: reads, asks the core, writes
 expireQuotes : Pool -> Instant -> AsyncResult<Integer, StoreError>
 expireQuotes pool now =
   loadOpenQuotes pool
-    |> map (expired now)
-    |> bind (markExpired pool)
+    |> map (expire now)
+    |> bind (saveExpired pool)
 ```
 
 The rule is tested with an instant and a list, and no stub. The handler
 has no condition in it, and takes the instant from whoever read the
-clock for this run.
+clock for this run. It takes the connection and calls its adapters by
+name: with one read and one write it has no path worth a stub, and an
+integration test covers it.
 
-Where a read has to wait for a rule, the handler declares the capability
-and the composition root supplies it:
+Where there are too many open quotes to load, a pure function works out
+the cutoff from the instant and the handler passes it to the query. How
+old a quote may grow is still stated in the core.
+
+A handler that reads between pure functions has paths. It takes its
+capabilities as function-typed parameters, so that a test can stub each
+one, and the composition root supplies the real ones:
 
 ```text
 -- declared beside the handler, in the domain's words
-alias LoadPriceList = PriceListId -> AsyncResult<PriceList, StoreError>
+alias LoadCatalogue = CatalogueId -> AsyncResult<Catalogue, StoreError>
 
 -- supplied once, at the edge
-priceFromListLive = priceFromList (loadPriceListFrom pool)
+priceFromCatalogueLive = priceFromCatalogue (loadCatalogueFrom pool)
 ```
 
-The handler's test supplies a one-line function for `LoadPriceList` and
+The handler's test supplies a one-line function for `LoadCatalogue` and
 asserts on a plain value.
 
 ## Avoiding the threading problem
