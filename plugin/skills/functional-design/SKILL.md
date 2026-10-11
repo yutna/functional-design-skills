@@ -188,7 +188,7 @@ matches the project and use it alongside the core skill.
 | Where does validation go?    | At the boundary, into domain types      |
 | Where does I/O go?           | Edges only; core stays pure             |
 | How are errors returned?     | Result values, not exceptions           |
-| How are dependencies passed? | As function parameters                  |
+| How does the core get data?  | A handler reads it, and passes values   |
 | What makes an interface good | It hides far more than it reveals       |
 | Does this shape need a type? | Yes, unless its fields come from config |
 | When is a design done?       | When the red-flag audit finds none      |
