@@ -26,8 +26,8 @@ type BookingId = BookingId of Uuid
 -- out
 toDto o = { id: uuidToString (unwrap o.id), ... }
 
--- in
-fromDto d =
+-- in: one field-level step, which fromDto uses below
+parseBookingId d =
   parseUuid d.id |> mapError BadBookingId |> map BookingId
 ```
 
@@ -67,12 +67,16 @@ pick one and be consistent. See
 treatments: NonEmptyList<BookedTreatment>
 
 -- transfer: a plain array
--- inward: reject an empty array with a named error
-fromDto d =
-  NonEmptyList.fromList d.treatments |> toResult EmptyBooking
+-- inward: parse each element, then reject an empty array by name
+parseTreatments d =
+  d.treatments
+    |> traverse parseBookedTreatment
+    |> bind (NonEmptyList.fromList >> toResult EmptyBooking)
 ```
 
-The constraint is checked exactly once, here.
+`parseBookedTreatment` maps one `BookedTreatmentDto` to a
+`BookedTreatment`, failing with a `BookingDtoError`, as `EmptyBooking`
+does. The constraint is checked exactly once, here.
 
 ## Optional values
 
@@ -115,6 +119,17 @@ resources; that invites callers to modify a part without the root's
 invariants. See
 [functional-enforcing-consistency-boundaries](../../functional-enforcing-consistency-boundaries/SKILL.md).
 
+The mapping for an aggregate assembles the field-level steps, and stops
+at the first error:
+
+```text
+fromDto d =
+  parseBookingId d |> bind (\id ->
+  parseTreatments d |> bind (\treatments ->
+  parseLifecycle d |> map (\lifecycle ->
+    { id, treatments, lifecycle })))
+```
+
 ## Where the mapping lives
 
 One module per boundary, holding both directions and the transfer types.
@@ -137,7 +152,8 @@ The transfer type is the thing with versions; the domain type is not.
 
 1. Add a new transfer type: `BookingDtoV2`.
 2. Add a mapping from it into the same domain type.
-3. Keep the old mapping while old clients or old rows exist.
+3. Keep the old mapping while old clients or old rows exist. Until then
+   a boundary has one inward function for each transfer version.
 4. Retire the old one when telemetry says nobody uses it.
 
 ```text

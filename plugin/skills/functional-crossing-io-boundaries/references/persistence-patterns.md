@@ -17,18 +17,32 @@ identity, and concurrency. The domain stays ignorant of all three.
 ## The shape
 
 ```text
--- declared by the domain, in the domain's words
-alias LoadBooking = BookingId -> AsyncResult<Option<Booking>, LoadError>
-alias SaveBooking = Booking -> AsyncResult<Unit, SaveError>
+-- declared in the domain's words; the version is the store's
+type Versioned<T> = { value: T, version: Integer }
+type StoreError =
+  | Unreachable of DbError
+  | BadRow of RowError
+alias LoadError = StoreError
+type SaveError =
+  | Conflict
+  | Failed of StoreError
+alias LoadBooking =
+  BookingId -> AsyncResult<Option<Versioned<Booking>>, LoadError>
+alias SaveBooking =
+  Versioned<Booking> -> AsyncResult<Unit, SaveError>
 
 -- implemented in the shell, over rows
 loadBookingFromDb pool id =
-  selectRow pool id
-    |> map (map fromRow)          -- Result, because rows can be wrong
+  selectRow pool id        -- AsyncResult<Option<Row>, DbError>
+    |> mapError Unreachable
+    |> bind (traverse fromRow >> mapError BadRow)
 ```
 
-There is no repository interface in the domain, no base class, and no
-framework attribute on any domain type.
+`fromRow` returns a `Result`, because rows can be wrong. `traverse`
+turns the `Option<Result<...>>` that mapping a missing row would give
+into a `Result<Option<...>, ...>`, so a missing row is `None` inside
+`Ok`. There is no repository interface in the domain, no base class, and
+no framework attribute on any domain type.
 
 ## Read, decide, write
 
@@ -36,29 +50,54 @@ Every command follows the same cycle, and the pure part sits in the
 middle:
 
 ```text
+type CancelFailure =
+  | NotFound
+  | Rejected of CancelError
+  | VersionChanged
+  | Unavailable of StoreError
+
+toFailure : SaveError -> CancelFailure
+toFailure e =
+  match e with
+  | Conflict -> VersionChanged
+  | Failed fault -> Unavailable fault
+
 handleCancel pool now id reason =
-  withTransaction pool (\tx ->
-    loadBooking tx id
-      |> bind (toResult BookingNotFound)
-      |> bind (cancelBooking now reason)     -- pure
-      |> bind (saveBooking tx))
+  loadBooking pool id                                  -- read
+    |> mapError Unavailable
+    |> bind (toResult NotFound)
+    |> bind (\versioned ->
+         cancelBooking now reason versioned.value      -- decide
+           |> mapError Rejected
+           |> map (\booking -> { ...versioned, value: booking }))
+    |> bind (saveBooking pool >> mapError toFailure)   -- write
 ```
 
-The pure function cannot start a transaction, commit one, or be affected
-by a rollback. That is what makes it testable and reusable.
+The store owns the transaction. The handler never holds one, and it
+passes the pool only so that the adapters can reach the database. The
+pure function cannot start a transaction, commit one, or be affected by
+a rollback. That is what makes it testable and reusable.
+
+Where two things must be written together, the store offers one
+function that writes both, such as a `saveCancellation` that takes the
+booking and the refund it leads to. A handler that has to hold a
+transaction open across two calls has been given the wrong interface.
 
 ## Concurrency
 
 Use an optimistic version rather than a lock.
 
-1. Read the aggregate together with its version.
-2. Apply the pure transition.
+1. Read the aggregate together with its version, as a
+   `Versioned<Booking>`.
+2. Apply the pure transition to the `value`, and keep the version.
 3. Write conditional on the version being unchanged; increment it.
-4. On zero rows updated, re-read and re-apply, or return a conflict.
+4. On zero rows updated, the save returns `Conflict`. The handler
+   re-reads and re-applies, or returns the conflict.
 
-The version lives in the storage representation, not in the domain type.
-If the domain genuinely needs to know about revisions, that is a domain
-concept with a domain name, not an infrastructure counter.
+The wrapper belongs to the shell: the pure transition takes and returns
+a `Booking`, and the version never enters the domain type. If the domain
+genuinely needs to know about revisions, that is a domain concept with a
+domain name, not an infrastructure counter.
 
 ## Commands and queries
 
@@ -74,9 +113,9 @@ couples the screen to the domain's shape. Query a purpose-built view
 type instead:
 
 ```text
-type BookingListItem = { id: String, customer: String,
+type BookingListItem = { id: String, patient: String,
                        total: Money, status: String }
-listBookings : Filter -> Async<List<BookingListItem>>
+listBookings : Filter -> AsyncResult<List<BookingListItem>, LoadError>
 ```
 
 This is not a violation of the model; it is the recognition that reading
@@ -104,9 +143,14 @@ When history is part of the domain, store what happened and fold to get
 the current state.
 
 ```text
-current : List<BookingEvent> -> Booking
-current = fold applyEvent emptyBooking
+current : List<BookingEvent> -> Option<Booking>
+current = fold applyEvent None
 ```
+
+`applyEvent` takes the state so far, `None` before the first event, and
+the next event. The first event creates the `Booking`, because there is
+no empty `Booking` to start from: its `id` and its non-empty treatments
+come from that event.
 
 Gains: complete audit, replay, and the ability to answer questions nobody
 asked when the schema was designed. Costs: a projection step, an

@@ -35,17 +35,23 @@ Not for: deciding what the domain types should be, which is
 
 ## Core rules
 
-1. Rule. **Two type families, always.** Domain types inside; transfer types
-   at the edge. Even when they look identical today.
+1. Rule. **Two type families, wherever a rule is enforced.** Domain types
+   inside; transfer types at the edge, even when they look identical
+   today. A view that only reads and enforces nothing is outside this
+   rule; [worked-read-model.md](references/worked-read-model.md) says
+   when.
 2. Rule. **Transfer types are dumb.** Primitives, plain records, nullable
    fields, no invariants. Their job is to survive transmission.
-3. Rule. **Parse inward, serialise outward.** One function each direction, per
-   boundary.
-4. Rule. **Parsing returns `Result`.** The outside can always send something the
+3. Rule. **Parse inward, serialise outward.** Where a rule is enforced,
+   write one function in each direction for each boundary and each
+   transfer version.
+4. Rule. **Parsing returns `Result`.** Code that enforces a rule parses
+   into a `Result`, because the outside can always send something the
    domain forbids.
 5. Rule. **Serialising is total.** A valid domain value can always be written
    out, so it needs no failure case.
-6. Rule. **Validate once, at the boundary.** Nothing downstream re-checks.
+6. Rule. **Validate once, at the boundary.** Where a rule is enforced,
+   nothing downstream re-checks it.
 7. Default. **Version the transfer type, not the domain type.** Add a new
    transfer version and a new mapping; leave the domain alone.
 8. Rule. **Keep the domain persistence-ignorant.** No annotations, no base
@@ -59,8 +65,8 @@ Domain type doing both jobs:
 type Booking = {
   id: String,                  -- because JSON has no Uuid
   status: String,              -- because the column is varchar
-  treatments: List<BookedTreatment>,      -- may be empty, because the join may
-  cancelledAt: Option<Instant>, -- return nothing
+  treatments: List<BookedTreatment>,  -- may be empty: the join can miss
+  cancelledAt: Option<Instant>,  -- because the column is nullable
   version: Integer,            -- because the ORM needs it
 }
 ```
@@ -119,8 +125,9 @@ Details and worked mappings in
 
 ## Persistence specifically
 
-Storage is a boundary like any other, with three extra concerns:
-transactions, identity, and concurrency.
+Storage is a boundary like any other. Three rules apply to it here, and
+[persistence-patterns.md](references/persistence-patterns.md) covers its
+three extra concerns: transactions, identity, and concurrency.
 
 - **The domain does not know it is stored.** No repository interface
   inside the domain; the handler takes `LoadBooking` and `SaveBooking`
@@ -175,5 +182,5 @@ More in
 - [persistence-patterns.md](references/persistence-patterns.md) covers
   transactions, concurrency, queries, and event storage.
 - [worked-read-model.md](references/worked-read-model.md) builds one
-  screen end to end, where the aggregate rules deliberately do not apply
-  and a query returns its own view type.
+  screen end to end, where nothing is enforced, so the rules above do
+  not apply and a query returns its own view type.
