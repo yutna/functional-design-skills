@@ -95,7 +95,10 @@ valuable on its own, give it a module and an interface of its own.
 ## Duplicated business rules
 
 **Leak.** The same threshold, rate, or eligibility rule is implemented in
-two places.
+two places, and one person or one event would change both together. If
+different people would change them, they are two rules that agree today,
+and each stays with its own owner; see
+[srp-and-ocp.md](../../functional-applying-solid-functionally/references/srp-and-ocp.md).
 
 **Detect.** Grep for numeric literals that appear more than once, and for
 predicates with similar names in different modules.

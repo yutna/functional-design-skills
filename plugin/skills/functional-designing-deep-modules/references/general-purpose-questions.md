@@ -38,27 +38,43 @@ Ask these in order, about the module you are designing.
 Requirement: a scheduling screen must move an appointment to the next
 free slot.
 
-**Special purpose.** `moveToNextFreeSlot : AppointmentId -> Calendar ->
-Calendar`. Every new scheduling action adds another such function, each
-one knowing about slots, working hours, and clashes.
+**Special purpose.** Only `moveToNextFreeSlot : AppointmentId ->
+Calendar -> Result<Calendar, MoveError>`. Every new scheduling action
+adds another such function, each one knowing about slots, working hours,
+and clashes.
 
 **Too general.** `apply : Calendar -> Change -> Result<Calendar, Error>`
 where `Change` is an open-ended script. Every caller must now build
 changes, and the module cannot say which are valid.
 
-**Somewhat general.** A small set of primitives over intervals:
+**Somewhat general.** A small set of primitives over intervals, and the
+one call the screen makes, written on top of them:
 
 ```text
+find      : AppointmentId -> Calendar -> Option<Interval>
 place     : Interval -> AppointmentId -> Calendar
                      -> Result<Calendar, Clash>
 remove    : AppointmentId -> Calendar -> Calendar
 freeAfter : Instant -> Duration -> Calendar -> Option<Interval>
+
+type MoveError = NotBooked | NoFreeSlot | Clashed of Clash
+
+moveToNextFreeSlot id calendar =
+  find id calendar
+    |> toResult NotBooked
+    |> bind (\current ->
+         freeAfter current.end (lengthOf current) calendar
+           |> toResult NoFreeSlot
+           |> bind (\target ->
+                place target id (remove id calendar)
+                  |> mapError Clashed))
 ```
 
-`moveToNextFreeSlot` becomes three lines in the caller, and rescheduling,
-cancel-and-refill, and drag-to-move are all expressible without new
+The screen's use is one call, and rescheduling, cancel-and-refill, and
+drag-to-move are all expressible from the primitives without new
 interface. This is the shape to aim for: primitives at the level of the
-domain, not at the level of the current feature.
+domain, not at the level of the current feature, and the common case a
+single call.
 
 ## Two failure signatures
 
@@ -75,6 +91,9 @@ that callers actually vary.
 ## The relationship to depth
 
 Generality and depth pull the same way. A somewhat general interface is
-usually smaller than a set of special-purpose ones, and hides more. When
-they conflict, depth wins: prefer a smaller interface over a more general
-one.
+usually smaller than the set of special-purpose ones it replaces, and
+hides more: in the example above, the special-purpose interface gains a
+function with every new action, and the primitives do not. When they
+conflict for the callers that exist today, depth wins: prefer a smaller
+interface over a more general one, and leave out a primitive that only
+one caller would use.

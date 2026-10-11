@@ -45,8 +45,20 @@ every `Booking` has at least one treatment, then every case that constructs a
 `Booking` must guarantee it, or the assumption belongs in the type.
 
 ```text
-type Booking = { treatments: NonEmptyList<BookedTreatment>, ... }
+-- breaks the assumption: one case builds a Booking with no treatments
+type Booking =
+  | Made of { treatments: NonEmptyList<BookedTreatment>, ... }
+  | Imported of { treatments: List<BookedTreatment>, ... }
+
+-- the assumption in the type: no case can break it
+type Booking =
+  | Made of { treatments: NonEmptyList<BookedTreatment>, ... }
+  | Imported of { treatments: NonEmptyList<BookedTreatment>, ... }
 ```
+
+Callers that take `treatments.first` are right for `Made` and wrong for
+`Imported` in the first form. In the second, the import step must reject
+a legacy record with no treatments before it can build a `Booking`.
 
 ### Detecting violations
 

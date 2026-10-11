@@ -28,10 +28,10 @@ write-path discipline stops and what replaces it.
 The write path already has aggregates, so reuse them:
 
 ```text
-listToday : Date -> AsyncResult<List<Appointment>, LoadError>
+listToday : Date -> AsyncResult<List<BoardRow>, LoadError>
 listToday date =
   findAppointmentIds date
-    |> traverse loadAppointment          -- each rebuilds an aggregate
+    |> bind (traverse loadAppointment)   -- each rebuilds an aggregate
     |> map (map toBoardRow)
 ```
 
@@ -70,7 +70,11 @@ queries.
 ## The view type
 
 Name it for the screen, hold exactly what the screen shows, and make it
-serialisable as it stands.
+serialisable as it stands. A view that only reads and enforces nothing
+has no invariant to protect, so a second family of transfer types would
+add a mapping with nothing to map. The view gets a transfer type of its
+own once code starts to enforce a rule on it, such as a screen whose
+edits are sent back as commands.
 
 ```text
 type BoardRow = {
@@ -86,10 +90,10 @@ type BoardRow = {
 type BoardStatus = Upcoming | InProgress | Done | NoShow | Cancelled
 ```
 
-`BoardStatus` is deliberately not `Lifecycle`. The board collapses
-several domain states into `Done` and does not distinguish the three
-kinds of cancellation, because the front desk does not act on the
-difference. Mapping the domain type into a screen type is a design
+`BoardStatus` is deliberately not `Lifecycle`. The board collapses the
+stored states `completed` and `billed` into `Done`, and the three
+cancellations into `Cancelled`, because the front desk does not act on
+the difference. Mapping the stored status into a screen type is a design
 decision, made once, here.
 
 ## The query
@@ -98,15 +102,16 @@ One query, projecting straight into the view type.
 
 ```text
 listBoard :
-  Date -> Option<DoctorId> -> Async<List<BoardRow>>
+  Date -> Option<DoctorId> -> AsyncResult<List<BoardRow>, LoadError>
 ```
 
 Three properties worth noting:
 
-1. **It returns `Async`, not `AsyncResult`.** A missing row is an empty
-   board, not an error. Storage failures still propagate as exceptions at
-   the very edge, where they become a 500; there is no per-row failure to
-   model because there is no per-row validation.
+1. **Its error is the storage fault and nothing else.** A missing row
+   is an empty board, not an error. A storage failure is a value in the
+   `LoadError`, as on the write path. The per-row parse error is the one
+   thing the read model drops: there is no per-row failure to model
+   because there is no per-row validation.
 2. **It joins across contexts in the query**, not in the domain. Patient
    name comes from the records context and the balance from billing. That
    is legitimate because nothing here enforces a rule; it is a report.
@@ -121,21 +126,28 @@ The write path rejects a row it cannot understand. The read path must
 not.
 
 ```text
-toBoardStatus : String -> BoardStatus
+toBoardStatus : String -> Option<BoardStatus>
 toBoardStatus s =
   match s with
-  | "confirmed" -> Upcoming
-  | "in_progress" -> InProgress
-  | "completed" -> Done
-  | "no_show" -> NoShow
-  | "cancelled" -> Cancelled
-  | _ -> Upcoming            -- unknown legacy value: show it, flag it
+  | "confirmed" -> Some Upcoming
+  | "in_progress" -> Some InProgress
+  | "completed" -> Some Done
+  | "billed" -> Some Done
+  | "no_show" -> Some NoShow
+  | "cancelled_by_patient" -> Some Cancelled
+  | "cancelled_by_clinic" -> Some Cancelled
+  | "cancelled_late" -> Some Cancelled
+  | _ -> None                -- unknown legacy value
 ```
 
-This is the one place in the pack where a permissive fallback is right,
-and it needs the reason written next to it: the board must render, and an
-unknown status is better shown pessimistically than not at all. Pair it
-with a counter so the unknown values are visible rather than silent. See
+The function says that it did not recognise the value, and nothing more.
+Where the query builds each row, it shows a `None` as `Upcoming` and
+adds one to a counter. That is the one place in the pack where a
+permissive fallback is right, and it needs the reason written next to
+it: the board must render, and an unknown status is better shown as
+`Upcoming`, which sends the front desk to look at the appointment, than
+not at all. The counter makes the unknown values visible rather than
+silent. See
 [functional-designing-what-to-observe](../../functional-designing-what-to-observe/SKILL.md).
 
 ## Where the read model lives
@@ -144,7 +156,8 @@ with a counter so the unknown values are visible rather than silent. See
 module Scheduling.Board          -- read only
   type BoardRow
   type BoardStatus
-  listBoard : Date -> Option<DoctorId> -> Async<List<BoardRow>>
+  listBoard :
+    Date -> Option<DoctorId> -> AsyncResult<List<BoardRow>, LoadError>
 ```
 
 Rules for the module:
@@ -175,7 +188,7 @@ query, measure, and move only when the number says so. See
 | ------------------------------- | ---------------------------------- |
 | A view type per screen          | Screen fields on the aggregate     |
 | Query instead of reconstruct    | 200 aggregate loads per refresh    |
-| `Async`, not `AsyncResult`      | A blank board from one bad row     |
+| No per-row parse error          | A blank board from one bad row     |
 | Screen vocabulary in the type   | The front desk reading `Lifecycle` |
 | Cross-context join in the query | Two more aggregates pulled in      |
 | A read-only module              | Any risk of a write sneaking in    |

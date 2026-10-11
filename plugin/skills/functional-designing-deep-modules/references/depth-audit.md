@@ -16,8 +16,9 @@ The last group is the one people forget, and it is usually the largest.
 
 ## Step 2: write the purpose in one sentence
 
-State what the module does, without "and", without listing functions. If
-you cannot, the module has more than one purpose; see
+State what the module does, without "and", without listing functions. A
+category such as "date utilities" is not a purpose. If you cannot state
+one, the module has more than one purpose; see
 [functional-splitting-and-joining-code](../../functional-splitting-and-joining-code/SKILL.md).
 
 ## Step 3: score it
@@ -35,6 +36,7 @@ you cannot, the module has more than one purpose; see
 | A caller must know the storage or wire format       | -2     |
 | Any export exists only for tests                    | -1     |
 | Purpose sentence needs "and"                        | -1     |
+| Purpose is a category, not a purpose                | -1     |
 
 ## Step 4: act on the score
 
@@ -42,8 +44,12 @@ you cannot, the module has more than one purpose; see
 | --------- | ---------------------------------------------------- |
 | 6 or more | Deep. Leave it alone.                                |
 | 3 to 5    | Adequate. Fix the negatives you scored.              |
-| 0 to 2    | Shallow. Merge it into its caller.                   |
+| 0 to 2    | Shallow. Merge it into its caller, or wrap it.       |
 | Below 0   | The boundary is wrong. Redesign before adding to it. |
+
+A shallow module with one caller is merged into that caller. One with
+several callers has no single caller to merge into: put a deep module
+above it, as the worked audit does.
 
 ## Worked audit
 

@@ -46,7 +46,15 @@ change them independently.
 
 For each function, name the person who would ask for it to change. Two
 names on one module means two modules, unless one of them is clearly
-downstream of the other.
+downstream of the other. The same test tells two copies of a rule apart:
+one person or one event changing both together makes them one decision,
+which one module owns and the other calls; different people changing
+them makes them two rules that agree today.
+
+The requesters come from an owners file, the issue, or the user's
+description. Where none of them says, ask once. Without an answer, keep
+one module and record the assumption; see
+[working-alone.md](../../functional-design/references/working-alone.md).
 
 ### What SRP does not mean
 
@@ -96,8 +104,8 @@ A table from a tag to behaviour, when the set of variants is loaded at
 runtime or comes from configuration.
 
 ```text
-alias Handlers = Map<EventTag, Event -> AsyncResult<Unit, Error>>
-dispatch : Handlers -> Event -> AsyncResult<Unit, Error>
+alias Handlers = Map<EventTag, Event -> AsyncResult<Unit, HandlerError>>
+dispatch : Handlers -> Event -> AsyncResult<Unit, HandlerError>
 ```
 
 Open to new variants without recompiling. The cost is that nothing checks

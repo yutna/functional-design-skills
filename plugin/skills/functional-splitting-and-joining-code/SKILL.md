@@ -58,7 +58,8 @@ Not for: judging whether a module's interface is worth its cost, which is
 3. **Only one needs to be understood by callers.** The other can be
    hidden behind it.
 4. **They belong to different layers.** Different vocabulary means a real
-   boundary. See [functional-separating-layers](../functional-separating-layers/SKILL.md).
+   boundary, and that is the only layer reason; a layer that is just a
+   folder name is not one. See [functional-separating-layers](../functional-separating-layers/SKILL.md).
 
 ## Pattern
 
@@ -103,7 +104,8 @@ Length alone is not a reason to split. Split a function when:
 
 Do not split when:
 
-- The extracted part takes six parameters, half of them for context
+- The extracted part takes more than three parameters, half of them for
+  context
 - Its name has to be `doPart2` or `helperFor...`
 - Reading it requires reading the parent anyway
 - It exists only because a style rule sets a line limit
@@ -120,7 +122,7 @@ the reader must now hold both, plus the mapping between them.
 | Always called as a pair           | Together         |
 | One is general, one is special    | Apart            |
 | Different reasons to change       | Apart            |
-| Extracting needs six parameters   | Leave together   |
+| Extracting needs 4+ parameters    | Leave together   |
 | Only one is meant for callers     | Apart, and hide  |
 | Reader must read both to get one  | Together         |
 | Same nouns, different layer names | Together, remove |
@@ -137,8 +139,9 @@ the reader must now hold both, plus the mapping between them.
 
 - **Splitting to satisfy a length limit.** Line limits measure nothing
   that matters; abstraction boundaries do.
-- **Splitting by structure.** One file per type, per layer, or per verb
-  distributes decisions rather than isolating them.
+- **Splitting by structure.** One file per type or per verb, or a folder
+  per layer for every entity, distributes decisions rather than
+  isolating them.
 - **Joining things that merely resemble each other.** Two functions with
   similar shapes and different reasons to change should stay apart even
   if that means similar code.

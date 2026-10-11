@@ -35,7 +35,10 @@ Not for: deciding whether two things belong in the same module, which is
 ## Core rules
 
 1. Default. **Each layer changes the abstraction.** If the layer above and the
-   layer below use the same nouns, delete one of them.
+   layer below use the same nouns, delete one of them. The exception is a
+   mapping that isolates an external contract, such as a wire format, a storage
+   schema, or a vendor type: keep it even when the types look identical today.
+   See [functional-crossing-io-boundaries](../functional-crossing-io-boundaries/SKILL.md).
 2. Default. **Delete pass-through functions.** A function that takes the same
    arguments and calls one function with them adds interface and hides nothing.
    Let the caller call directly.
@@ -49,10 +52,13 @@ Not for: deciding whether two things belong in the same module, which is
    only where callers genuinely differ.
 6. Judgement. **Keep decorators rare.** A wrapper that adds one small behaviour
    is usually better as a parameter or as part of the thing it wraps.
-7. Default. **Order the layers by how often each changes**, fastest at the top,
-   and keep every function above what it calls. A general utility that knows a
-   business rule has pinned the rule to the slowest-moving thing in the system.
-   See [layer-smells.md](references/layer-smells.md).
+7. Default. **Order the layers on two axes.** Dependencies point at the domain,
+   which is stable against vendors: code that is vendor-specific imports the
+   domain, and the domain imports none of it. Inside the domain, order the
+   layers by how often each changes, fastest at the top: rules above concepts
+   above utilities, and every function above what it calls. A general utility
+   that knows a business rule has pinned the rule to the slowest-moving thing
+   in the domain. See [layer-smells.md](references/layer-smells.md).
 
 ## Pattern
 
@@ -78,11 +84,12 @@ Layers that each translate:
 ```text
 -- api layer: HTTP words in, HTTP words out
 handleGetBooking : Request -> Async<Response>
--- translates path parameters and status codes
+-- translates path parameters and status codes; None becomes a 404
 
--- domain layer: booking words only
-loadBooking : BookingId -> AsyncResult<Booking, LoadError>
--- knows nothing about HTTP or SQL
+-- application layer: booking words only; it has an effect type, so it
+-- is shell code, and the pure domain sits beneath its callers
+loadBooking : BookingId -> AsyncResult<Option<Booking>, LoadError>
+-- knows nothing about HTTP or SQL; a missing booking is None inside Ok
 
 -- storage layer: row words only
 selectBooking : BookingId -> AsyncResult<Option<BookingRow>, DbError>
@@ -97,7 +104,7 @@ another and hides the vocabulary below it.
 | Situation             | Upward (wrong)         | Downward (right)   |
 | --------------------- | ---------------------- | ------------------ |
 | Result needs cleaning | Every caller cleans it | Returned ready     |
-| Failure is retryable  | Caller writes retries  | Module retries     |
+| Failure is retryable  | Caller writes retries  | Adapter retries    |
 | Defaults nearly fixed | Caller passes them     | Module defaults    |
 | An edge case exists   | Caller checks for it   | Module handles it  |
 | Two shapes are needed | Caller converts        | Module exports two |
@@ -111,10 +118,11 @@ See [pulling-complexity-down.md](references/pulling-complexity-down.md).
 ## Red flags
 
 - A function body is one call with the same arguments
-- Layer names differ but their types are identical
+- Layer names differ but their types are identical, and neither isolates
+  an external contract
 - Every caller of a function follows it with the same two lines
 - A module exports options rather than making a decision
-- A wrapper adds a single log line or a single retry
+- A wrapper for one function adds one small behaviour
 - Following a call takes four hops before reaching real work
 
 ## Common mistakes

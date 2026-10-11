@@ -30,7 +30,7 @@ naming.
 **Solves:** letting one step of an algorithm vary.
 
 ```text
-sortBy : (A -> A -> Ordering) -> List<A> -> List<A>
+sortWith : (A -> A -> Ordering) -> List<A> -> List<A>
 roundTotal : RoundingRule -> PricedBooking -> PricedBooking
 ```
 
@@ -49,10 +49,12 @@ type Command =
   | ConfirmBooking of BookingRequest
   | CancelBooking of { id: BookingId, reason: Reason }
 
-execute : Command -> AsyncResult<List<Event>, Error>
+decide : Command -> Result<List<BookingEvent>, CommandError>
 ```
 
-Still worth naming. A command as data is the basis of queues, audit
+`decide` is the pure workflow. The handler that receives a `Command` is
+shell: it reads what `decide` needs, calls it, and writes what it
+returns. Still worth naming. A command as data is the basis of queues, audit
 trails, and replay.
 
 ## Factory and Abstract Factory
@@ -89,18 +91,24 @@ runImport : (Row -> Result<A, E>) -> (A -> AsyncResult<Unit, E>)
 ```
 
 Pass the varying steps. Inheritance is not needed and couples the caller
-to a base type.
+to a base type. `runImport` is a handler, so it is shell: the
+`Row -> Result<A, E>` argument is the pure part, and the function itself
+and the write it is given perform the effects.
 
 ## Decorator
 
 **Solves:** adding behaviour without changing an interface.
 
 ```text
-withRetry : Policy -> (A -> AsyncResult<B,E>) -> (A -> AsyncResult<B,E>)
-withTiming : Metric -> (A -> B) -> (A -> B)
+withRetry :
+  RetryPolicy -> (A -> AsyncResult<B, E>) -> (A -> AsyncResult<B, E>)
+withTiming : Metric -> (A -> Async<B>) -> (A -> Async<B>)
 ```
 
-A function of the same shape. Use sparingly; see the alternatives in
+A function of the same shape. Recording a duration reads a clock and
+writes a measurement, so `withTiming` wraps a function that has an
+effect type, such as one of the shell's adapters, and not a pure
+function. Use sparingly; see the alternatives in
 [layer-smells.md](../../functional-separating-layers/references/layer-smells.md).
 
 ## Adapter
@@ -127,10 +135,12 @@ pattern name adds nothing. See
 
 ```text
 -- the decision returns what happened
-confirmBooking : BookingRequest -> Result<List<BookingEvent>, ConfirmBookingError>
+confirmBooking :
+  Catalogue -> Instant -> UnvalidatedBooking
+    -> Result<List<ConfirmBookingEvent>, ConfirmBookingError>
 
--- the shell decides who hears about it
-dispatch : List<BookingEvent> -> AsyncResult<Unit, DispatchError>
+-- the shell delivers it to whoever subscribed
+dispatch : List<ConfirmBookingEvent> -> AsyncResult<Unit, DispatchError>
 ```
 
 Returning events beats registering callbacks: the decision stays pure,
@@ -183,7 +193,9 @@ structure.
 Exhaustive matching, or a fold that takes one function per case:
 
 ```text
-foldShape : (Radius -> R) -> (W -> H -> R) -> Shape -> R
+type Shape = Circle of Radius | Rect of (W, H) | Triangle of (B, H)
+foldShape :
+  (Radius -> R) -> ((W, H) -> R) -> ((B, H) -> R) -> Shape -> R
 ```
 
 The double dispatch of the object-oriented version exists to work around
@@ -233,8 +245,10 @@ The previous immutable value. Keep it; restoring is using it again. See
 
 **Solves:** sharing common data between many objects.
 
-Automatic. Immutable values are shared by default, and persistent
-structures share unchanged parts.
+Sharing is safe because the values are immutable: no holder can change
+what the others see. The code creates the shared value once, at the
+composition root, and passes it in. Persistent structures share their
+unchanged parts after an update without being asked.
 
 ## Interpreter
 
