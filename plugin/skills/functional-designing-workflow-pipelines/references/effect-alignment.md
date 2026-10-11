@@ -1,9 +1,9 @@
 # Aligning Effects in a Pipeline
 
-A pipeline usually mixes three kinds of step: pure, fallible, and
-asynchronous. They do not compose directly, and the fix is to lift each
-one into the pipeline's common shape rather than to give up and use
-imperative glue.
+Steps come in shapes that do not compose directly. The fix is to lift
+each one into the shape of the chain it joins rather than to give up and
+use imperative glue. A workflow joins two shapes. A handler's chain
+joins three.
 
 ## Contents
 
@@ -12,70 +12,89 @@ imperative glue.
 - [Keep steps at their natural shape](#keep-steps-at-their-natural-shape)
 - [Aligning error types](#aligning-error-types)
 - [Lists inside a pipeline](#lists-inside-a-pipeline)
-- [Parallel steps](#parallel-steps)
+- [Independent reads](#independent-reads)
 - [Where the effects actually run](#where-the-effects-actually-run)
 
 ## The three shapes
 
 ```text
-pure     : A -> B
-fallible : A -> Result<B, E>
-async    : A -> AsyncResult<B, E>
+cannot fail : A -> B
+can fail    : A -> Result<B, E>
+capability  : A -> AsyncResult<B, E>
 ```
 
-Pick the widest shape the pipeline needs as its common shape, and lift
-everything into it. If any step does I/O, the common shape is
-`AsyncResult`.
+A workflow joins the first two, and its common shape is `Result`: a step
+that cannot fail is mapped into it, and a step that can is bound. A
+handler's chain joins all three, and its common shape is `AsyncResult`,
+because a capability call is in it. A capability whose call cannot fail
+is `A -> Async<B>`, and is lifted the same way.
 
 ## Lifting
 
-| From               | To                 | Operation                |
-| ------------------ | ------------------ | ------------------------ |
-| `A -> B`           | `A -> Result<B,E>` | Wrap the result in Ok    |
-| `A -> Result<B,E>` | `A -> AsyncResult` | Wrap in a resolved async |
-| `A -> Async<B>`    | `A -> AsyncResult` | Wrap the result in Ok    |
-| `Result<B, E1>`    | `Result<B, E2>`    | Map the error            |
+| From               | To                 | Operation                 |
+| ------------------ | ------------------ | ------------------------- |
+| `A -> B`           | `A -> Result<B,E>` | `map` on the value        |
+| `A -> Result<B,E>` | `A -> AsyncResult` | `bind`; a `Result` joins  |
+| `A -> Async<B>`    | `A -> AsyncResult` | `map` on the value        |
+| `Result<B, E1>`    | `Result<B, E2>`    | `mapError`                |
 
 ```text
-confirmBooking =
-  validateBooking      -- Result, lifted
-    |> asyncResult
-    >=> priceBooking   -- AsyncResult, already the common shape
-    >=> (acknowledgeBooking |> pure >> asyncResult)
+-- the handler's chain: a capability call, then a step that can fail
+loadCatalogue pool
+  |> mapError Unavailable
+  |> bind (\catalogue ->
+       confirmBooking catalogue now unvalidated
+         |> mapError Rejected)
 ```
 
-The names differ by language; the operations are always these four. The
+The names differ by language; the operations are always these. The
 language packs give the concrete spellings.
 
 ## Keep steps at their natural shape
 
-Do not make every step asynchronous because one of them is. A pure step
-should have a pure signature, so that it can be tested with plain values
-and reused outside the pipeline. Lift at the point of composition, not in
-the step's own definition.
+Do not give a step an effect type because the chain it sits in has one.
+A pure step keeps a pure signature, so that it can be tested with plain
+values and reused outside the pipeline. Lift at the point of
+composition, not in the step's own definition.
 
 ```text
--- good: honest signature, lifted at the call site
+-- good: honest signature, lifted where the chain is written
 calculateTotal : PricedBooking -> Money
 
--- bad: pretends to need the world
-calculateTotal : PricedBooking -> AsyncResult<Money, Never>
+-- bad: claims to reach the world, and cannot fail
+calculateTotal : PricedBooking -> Async<Money>
 ```
 
 ## Aligning error types
 
-Steps have narrow error types; the workflow has one. Map at composition.
+Steps have narrow error types; the workflow has one. Lift each at
+composition, with `>> mapError Case` on a function or `|> mapError Case`
+on a value.
 
 ```text
-confirmBooking =
-  validateBooking |> mapError Validation
-    >=> (priceBooking |> mapError Pricing)
-    >=> (saveBooking |> mapError Storage)
+confirmBooking catalogue now unvalidated =
+  validateBooking catalogue unvalidated
+    |> mapError Validation
+    |> bind (priceBooking catalogue >> mapError Pricing)
+    |> map (issueConfirmation now)
 ```
 
-Every step stays honest about what it can produce, and the caller matches
-on one type. Do not widen the step's own error type to the workflow's;
-that couples steps to the workflow they happen to be used in.
+The handler that calls the workflow has a failure type of its own, with
+a case for the workflow's error and a case for the capability's, and
+lifts each the same way:
+
+```text
+type ConfirmBookingFailure =
+  | Rejected of ConfirmBookingError
+  | Unavailable of StoreError
+
+loadCatalogue pool |> mapError Unavailable
+```
+
+Every step stays honest about what it can produce, and the caller
+matches on one type. Do not widen the step's own error type to the
+workflow's; that couples steps to the workflow they happen to be used
+in.
 
 ## Lists inside a pipeline
 
@@ -96,25 +115,30 @@ second when a user is going to fix them, since fixing one error at a time
 is a bad experience. See
 [functional-handling-errors-with-results](../../functional-handling-errors-with-results/SKILL.md).
 
-## Parallel steps
+## Independent reads
 
-When two steps are independent, run them together and combine.
+When a handler needs two reads and neither depends on the other, it
+starts both at once.
 
 ```text
--- both fetches start at once, both must succeed
-combine2 :
-  AsyncResult<A, E> -> AsyncResult<B, E>
-    -> ((A, B) -> C) -> AsyncResult<C, E>
+-- both reads start at once, and the first failure wins
+both :
+  AsyncResult<A, E> -> AsyncResult<B, E> -> AsyncResult<(A, B), E>
 ```
 
-The rule: parallelism belongs to the shell, or to explicit combinators
-like this one. A step must never start background work whose result the
-pipeline does not carry, because nothing then owns its failure.
+This is not `map2` in
+[composition-toolkit.md](../../functional-composing-functions/references/composition-toolkit.md),
+which collects every failure. Here a failed read means the decision
+cannot be made, so the first failure is the answer.
+
+The rule: parallelism belongs to the handler, or to an explicit
+combinator like this one. A step must never start background work whose
+result the chain does not carry, because nothing then owns its failure.
 
 ## Where the effects actually run
 
-Nothing above performs an effect; it builds a description of one that the
-shell runs at the edge. That is what keeps the workflow testable: supply
-stub capabilities and the whole pipeline runs synchronously with plain
-values. See
+The workflow performs none. The handler's chain performs them in the
+order written: read, decide, write. That is what keeps the workflow
+testable: it runs on plain values, and only the handler needs stub
+capabilities. See
 [functional-separating-pure-core-from-shell](../../functional-separating-pure-core-from-shell/SKILL.md).
