@@ -24,19 +24,24 @@ shape:
 1. Read the current value, with a version.
 2. Compute the new value with a pure function.
 3. Install it, conditional on the version being unchanged.
-4. On conflict, go to step 1.
+4. On conflict, go to step 1, up to a bound; then report the conflict.
 
 ```text
-updateAtomically ref f =
-  loop:
+updateAtomically :
+  Integer -> Reference<S> -> (S -> S) -> AsyncResult<S, Conflict>
+updateAtomically attempts ref f =
+  repeat at most `attempts` times:
     let (current, version) = read ref
     let next = f current
-    if compareAndSet ref version next then next else loop
+    if compareAndSet ref version next then return Ok next
+  return Error Conflict
 ```
 
-Properties worth noticing: the pure function is unchanged and untested by
-concurrency; the retry is in one place; and no reader is blocked at any
-point.
+`read` and `compareAndSet` reach shared state, so `updateAtomically` has
+an effect type; `f` is the pure function and stays pure. Properties
+worth noticing: the pure function is unchanged and untested by
+concurrency; the retry is in one place and bounded; and no reader is
+blocked at any point.
 
 ## Choosing the coordination primitive
 
@@ -47,6 +52,14 @@ point.
 | Actor or process       | State with a lifecycle and a mailbox     |
 | Queue plus one writer  | High contention, ordering matters        |
 | Immutable snapshot     | Many readers, rare writers               |
+
+In Elixir, an `Agent` runs each update function inside the agent
+process, one at a time, so it serves as the atomic reference and as a
+small actor; `:atomics` has `compare_exchange` but holds only 64-bit
+integers. In JavaScript, a synchronous read-compute-write with no
+`await` between the read and the write cannot be interleaved with other
+code in the same thread. Across threads, `Atomics.compareExchange` works
+on integers in a `SharedArrayBuffer`.
 
 Locks are still appropriate for genuine resources: a file handle, a
 device, a connection. They are not needed for data.
@@ -67,9 +80,10 @@ effect, not of the decision.
 
 ## Reading two sequences against each other
 
-The failures immutability does not remove are all the same shape: two
+The failures the diagram below catches are all the same shape: two
 sequences of effects running at once, interleaving in a way nobody
-wrote down. They are hard to reason about in prose and easy to see
+wrote down. The other failure modes, listed further down, are outside
+that claim. They are hard to reason about in prose and easy to see
 drawn, so draw them.
 
 One column per thing that runs independently — a request, a worker, a
@@ -104,26 +118,29 @@ Three questions to ask of any such drawing:
    required, the diagram is now a requirement and something must
    enforce it — a sequence number, a single writer, or a queue.
 
-Three repairs, in order of preference:
+Four repairs, in order of preference:
 
 - **Delete a column.** Make the work independent, so there is nothing
   to interleave. Splitting the shared cell so unrelated work stops
   contending is this, and it is why small aggregates help.
-- **Make the rows commute.** An operation whose outcome does not depend
-  on the order it lands in needs no coordination.
-  `setStatus(confirmed)` commutes with a retry of itself;
-  `addPayment(amount)` does not.
+- **Make the rows commute.** Operations whose outcome does not depend
+  on the order they land in need no coordination. Two `addPayment`
+  calls give the same sum in either order; two `setStatus` calls with
+  different statuses do not, because the last write wins.
+- **Make the rows idempotent.** Where a row may be repeated, applying it
+  twice must equal applying it once. `setStatus(confirmed)` twice is
+  safe. `addPayment(amount)` twice is not, so it needs an identity.
 - **Join the columns.** Where neither works, one writer or one atomic
   swap forces a single order, and the update cycle above is that.
 
 Keep the drawing. A comment beside the shared cell saying which columns
-reach it, and which of the three repairs was chosen, is the kind of
+reach it, and which of the four repairs was chosen, is the kind of
 fact no type states and the next reader cannot recover. See
 [functional-writing-useful-comments](../../functional-writing-useful-comments/SKILL.md).
 
 ## What immutability does not fix
 
-**Lost updates across aggregates.** Two operations that each change a
+**Invariants across aggregates.** Two operations that each change a
 different aggregate consistently can still produce a combined state the
 business forbids. That is a boundary question. See
 [functional-enforcing-consistency-boundaries](../../functional-enforcing-consistency-boundaries/SKILL.md).
@@ -183,16 +200,26 @@ and the thing it returns is held.
 
 ```text
 scope (fun spawn ->
-  let priced   = spawn (priceTreatments booking)
-  let reserved = spawn (reserveSlot booking)
-  await2 priced reserved)
+  let catalogue = spawn (loadCatalogue clinic)
+  let openSlots = spawn (loadOpenSlots clinic)
+  await2 catalogue openSlots)
 ```
 
 The scope does not return until both children have. If either fails,
 the other is cancelled rather than left to finish work whose result is
-already useless. Runtimes name this differently -- a nursery, a task
-group, a supervised scope -- and a language without one is a language
-where you write the join by hand and must not forget it.
+already useless. Both children here only read. A child that changed the
+world, such as one that held a slot, would leave the hold in place when
+its sibling failed, and would need a compensation step to release it;
+see the cancellation section below.
+
+Runtimes name the scope differently -- a nursery, a task group, a
+supervised scope. In Elixir, `Task.Supervisor` supervises the children,
+and `Task.async_stream` runs a bounded number of linked tasks and waits
+for all of them. In JavaScript and TypeScript, `Promise.all` rejects as
+soon as one child rejects but does not cancel the others, so pass each
+child the `signal` of one `AbortController` and call `abort()` when
+`Promise.all` rejects. A language without a scope is a language where
+you write the join by hand and must not forget it.
 
 ### Cancellation is cooperative, and it is a value
 
