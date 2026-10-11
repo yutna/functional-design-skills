@@ -22,6 +22,12 @@ them. It sits outside `plugin/`, so none of it ships, and it is not a
 copy of skill content. A prelude says what an example assumes, never
 what a skill teaches.
 
+A file whose examples hold on two majors of a library is checked against
+both. The second major is installed under an alias (`effect-4` is
+`effect` at its fourth major), and its prelude sits beside the file's own
+as `SKILL.effect-4.ts` and opens with `// @resolve effect effect-4`. The
+examples keep saying `from "effect"` and are checked twice.
+
 There are forty-three skills, and every one is named `functional-something`.
 The prefix is not decoration: skills install flat into
 `~/.claude/skills`, where a name like `hiding-information` is one any
