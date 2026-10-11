@@ -4,7 +4,7 @@ description: Use when designing a module interface, when it exports nearly as mu
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.1.0
+  version: 3.2.0
 ---
 
 # Designing Deep Modules

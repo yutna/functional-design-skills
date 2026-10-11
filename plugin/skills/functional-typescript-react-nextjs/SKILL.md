@@ -4,7 +4,7 @@ description: Use when placing logic across the server and client boundary in Nex
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.1.0
+  version: 3.2.0
 ---
 
 # Functional Next.js

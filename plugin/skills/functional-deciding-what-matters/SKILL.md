@@ -4,7 +4,7 @@ description: Use when code is correct but hard to follow, when deciding what an 
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.1.0
+  version: 3.2.0
 ---
 
 # Deciding What Matters

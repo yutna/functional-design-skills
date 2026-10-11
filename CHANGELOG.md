@@ -6,6 +6,149 @@ skills or guidance, a patch one corrects what is already there.
 
 [semantic versioning]: https://semver.org
 
+## 3.2.0
+
+Every core skill was read a second time, line by line, for rules that
+contradict each other, examples that break their own rule, names with
+two shapes, and steps an agent working alone cannot take. Each finding
+was answered. The pack now gives one answer to where an effect goes, and
+its words mean one thing each.
+
+### Three skills gave three answers to where an effect goes
+
+- `functional-separating-pure-core-from-shell` said the core returns
+  decisions. The workflow in `functional-designing-workflow-pipelines`
+  took capabilities and called them. `functional-parameterizing-dependencies`
+  ranked the same choices in another order. A reader given all three and
+  asked where a confirmation email is sent from found three answers.
+- There is one model now. The core is pure: no function in it has an
+  effect type or receives a capability. A handler, in the shell, reads,
+  calls the core, and writes. Reading first is the default. A read
+  cannot come first in three cases, which rule 1 of the parameterizing
+  skill names, and then the handler reads between two pure functions.
+  The core returns instructions only where the effects have to exist as
+  data, as in a process that must resume after a restart. What follows
+  from an event is another handler's work.
+- The rules of the pure-core skill were rewritten to say this, and there
+  are nine where there were eight.
+- `worked-example.md` in the pipelines skill had a workflow that took
+  four capabilities and held a slot in another system halfway through.
+  It is rewritten on the same story as two pure functions with a read
+  between them, with the type of every stage written out.
+
+### Words that meant two things
+
+- `notation.md` now defines the words the rules lean on: pure,
+  deterministic, total, crash, rule, capability, core, shell, handler,
+  workflow, command, event, instruction, decision, edge and idempotent.
+  A command comes in from a caller; an instruction goes out from the
+  core. The page had used one word for both.
+- It also defines the forms the examples had been using without saying
+  so: a lambda, `let`, a record copy, a list and its split, `where`,
+  function clauses, and `map`, `bind` and `mapError` on a value from the
+  left of a pipe.
+- One name has one shape across the pack. `validateBooking`,
+  `priceBooking` and `confirmBooking` take the catalogue, which had also
+  been called a price list. A handler's failure type has a case for what
+  the rules refused and a case for what storage could not do. The
+  transition of a long-running process is `advance`, and it returns a
+  list of `Instruction`. Reading the catalogue is `LoadCatalogue`, or
+  `LoadCatalogueById` for one that a rule names. `withRetry` has one
+  signature on the three pages that show it.
+
+### Steps that assumed a person who is not there
+
+- About thirty steps said to ask a domain expert, hand a diff to a
+  colleague, or take numbers to whoever owns a convention. One skill
+  said what to do alone; the others did not.
+- `functional-design/references/working-alone.md` is new. It gives four
+  substitutes in order: the repository, the user, a reader with no
+  context, and saying plainly that the step was not done. It also says
+  what does not substitute: the author's judgement of their own work, an
+  invented answer, and a feeling where something can be counted.
+- Each such step now says what is wanted and what to hand over, and
+  links that page. Where a trigger was an opinion, it also names
+  something to look at: the files a typical commit touches, the exports
+  nobody imports, the history of a name.
+
+### Rules their own pages broke
+
+- A rule labelled `Rule.` that the pack excused somewhere else is now
+  worded so the excuse falls outside it. The algebraic-types rule on
+  wildcards forbids an arm that returns a value for a case it does not
+  name. The rule that every command needs an identity covers commands
+  whose effects cross a process boundary. The rule against magic values
+  forbids a value that stands for a failure the caller must notice. The
+  refactoring rule against widening a type forbids widening it to hold a
+  different concept, and its rule on commits forbids two moves in one.
+- Two rules could not be scoped and are `Default.` now, each with its
+  condition in a sentence of its own: rule 3 of
+  `functional-choosing-precise-names` and rule 7 of
+  `functional-programming-strategically`.
+- The deletion test in `functional-diagnosing-complexity` said to delete
+  whatever the requirement does not mention. By that test the pack's own
+  stage types and boundary types would go. What the test finds is a list
+  of candidates, and it has a fourth outcome: keep what isolates a
+  decision that changes on its own, or records a check that has run.
+- Where two skills gave opposite advice, one test now separates the
+  cases: copies that one person or one event changes together are one
+  decision, and copies that different people change are two. Layers are
+  ordered on two axes, with dependencies pointing at the domain.
+- Decisions that were written in several places have one owner: patch or
+  restructure, the note that records a debt, how much better a change
+  leaves the code, and whose confusion counts as a finding.
+
+### Two worked examples that could not be followed
+
+- `worked-long-running.md` had nothing that started its process and
+  nothing that led out of undoing, and its one deadline clause released
+  a slot while the charge it was waiting for might have landed. A wait
+  that runs out no longer moves the process: the state stays where a
+  late answer will find it, and the core returns an instruction to tell
+  a person. `Stuck` comes from a refused undo alone. An adapter's error
+  says whether the call was refused or its outcome is unknown. Each
+  effect takes a key derived from the command's key and the operation,
+  because a provider that honours idempotency keys answers a reused key
+  with the first call's result.
+- `worked-refactor.md` said no commit changes behaviour. Checked commit
+  by commit against its starting code, that was false in fourteen ways.
+  The page now says what behaviour means, which is what its
+  characterisation tests pin, and makes move 7 two commits: moving the
+  reads in front of the checks is a change a caller can see, so it is
+  made alone and says what moved. The page has eleven commits for ten
+  moves, and `migration-moves.md` says when that half is a commit of its
+  own.
+
+### A clinic
+
+- Lead examples that were a shipment, a cart, a conference or an invoice
+  are a clinic's appointments, bookings and treatments. The customers in
+  the core skills and in the JavaScript, TypeScript and React packs are
+  patients.
+- `CLAUDE.md` lists parcel shipments among the secondary example
+  domains, since two language packs build their tagged-union pages on
+  one.
+
+### Checking pages that no check can read
+
+- The notation has no parser, so nothing mechanical reads those
+  examples. Pages that set the pack's doctrine were given to readers
+  with no context, who type-checked them by hand and tried to build from
+  them: the notation page; the three skills on effects, with six tasks;
+  the ten pages those skills own; the reliability pages, three times;
+  and the worked refactor, twice. Each report was answered before the
+  page merged.
+- A script listed every name declared with more than one shape in a
+  `text` fence across the pack, and the ones that were the same thing
+  written two ways were made one.
+- Claims about tools were checked against the tools' own documentation:
+  that `Oban.insert/5`, and not `insert/3`, adds a job to an
+  `Ecto.Multi`; what Oban hands a worker and what it does with a job out
+  of attempts; where pg-boss and BullMQ keep their jobs; and what Stripe
+  returns for a reused idempotency key.
+
+No skill is added, renamed or removed, and no description changed.
+
 ## 3.1.0
 
 The Effect pack serves Effect 4 as well as Effect 3, and the checks hold
