@@ -15,23 +15,25 @@ Change what the operation means so the awkward case becomes ordinary.
 ### Deletion of nothing
 
 ```text
-removeItem : ItemId -> Cart -> Result<Cart, ItemNotInCart>
+removeTreatment :
+  TreatmentCode -> Booking -> Result<Booking, TreatmentNotInBooking>
 ```
 
-Callers that want the item gone do not care whether it was there. The
+Callers that want the treatment gone do not care whether it was there. The
 error exists because the implementer thought about the internal lookup
 rather than the caller's intent.
 
 ```text
-removeItem : ItemId -> Cart -> Cart
+removeTreatment : TreatmentCode -> Booking -> Booking
 ```
 
 Keep the error only if a caller genuinely needs to distinguish, for
-example to report "that item was already removed by someone else". Then
+example to report "that treatment was already removed by someone else". Then
 the correct interface is different again: it returns what changed.
 
 ```text
-removeItem : ItemId -> Cart -> { cart: Cart, removed: Boolean }
+removeTreatment :
+  TreatmentCode -> Booking -> { booking: Booking, removed: Boolean }
 ```
 
 ### Absent configuration
@@ -62,9 +64,11 @@ take : Integer -> List<A> -> List<A>
 ### Redefinition gone wrong
 
 Defining away a case the business names. "Treatment code not found" during
-booking validation is a real outcome: the customer typed something wrong,
+booking validation is a real outcome: the patient typed something wrong,
 and silently dropping the treatment produces a wrong booking. The test is
-whether a domain expert would want to know.
+whether the specification, the ticket, or the codebase names the case as
+one to report. Where none does, see
+[working-alone.md](../../functional-design/references/working-alone.md).
 
 ## 2. Mask it
 
@@ -97,22 +101,30 @@ Good masking has three properties:
 Let errors travel to one place that handles them uniformly.
 
 ```text
--- one handler for every workflow error in the service
-toResponse : ConfirmBookingError -> Response
-toResponse e =
+-- one handler per workflow failure type, at the edge
+rejectionResponse : ConfirmBookingError -> Response
+rejectionResponse e =
   match e with
   | Validation errs -> badRequest (renderAll errs)
   | Pricing _ -> unprocessable "pricing failed"
-  | Storage _ -> serverError
+
+toResponse : ConfirmBookingFailure -> Response
+toResponse f =
+  match f with
+  | Rejected e -> rejectionResponse e
+  | Unavailable _ -> serverError
 ```
+
+Both failure types are declared in
+[functional-designing-workflow-pipelines](../../functional-designing-workflow-pipelines/SKILL.md).
 
 Aggregation works because the response to an error is usually a property
 of the boundary, not of the step that produced it. The same rule applies
 to logging, metrics, and user-facing messages: do it once, where the
 context is complete.
 
-The counterpart inside the domain is one error type per workflow, so the
-aggregation point has one thing to match on. See
+The counterpart inside the domain is one failure type per handler, so
+the aggregation point has one thing to match on. See
 [error-taxonomy.md](../../functional-handling-errors-with-results/references/error-taxonomy.md).
 
 ### Aggregation gone wrong
@@ -141,8 +153,12 @@ Crash when all of these hold:
 
 In a server, crash the unit of work, not the process: fail the request,
 return a generic response, and record enough to debug. In a batch job,
-failing fast on the first corrupt record is usually better than
-processing nine thousand and discovering it later.
+failing fast on the first corrupt record the program wrote itself is
+usually better than processing nine thousand and discovering it later.
+A corrupt record that arrives from outside is an input problem, not a
+bug: return it and accumulate, as
+[applicative-validation.md](../../functional-handling-errors-with-results/references/applicative-validation.md)
+describes.
 
 ### Crashing gone wrong
 
