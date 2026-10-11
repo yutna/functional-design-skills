@@ -5,6 +5,14 @@ things happen rather than around the knowledge each part holds. It is the
 most common cause of information leakage, because execution order is the
 first structure a developer sees.
 
+## Contents
+
+- [How it happens](#how-it-happens)
+- [The test](#the-test)
+- [The repair](#the-repair)
+- [Where the pipeline shape still applies](#where-the-pipeline-shape-still-applies)
+- [Recognising it in review](#recognising-it-in-review)
+
 ## How it happens
 
 You are told: read the file, validate it, enrich it from the database,
@@ -34,13 +42,14 @@ of them.
 
 ## The repair
 
-Group by knowledge, then let the workflow call across those groups.
+Group by knowledge, then let one pure function and one handler call
+across those groups.
 
 ```text
 -- knowledge: the file format, read and written in one place
 module RowFile
   read  : Path -> AsyncResult<List<Row>, RowFileError>
-  write : Path -> List<Row> -> AsyncResult<Unit, RowFileError>
+  write : Path -> List<EnrichedRow> -> AsyncResult<Unit, RowFileError>
 
 -- knowledge: what makes a row acceptable
 module RowRules
@@ -48,20 +57,48 @@ module RowRules
 
 -- knowledge: how a row is completed from stored data
 module RowEnrichment
-  enrich : LookupCustomer -> ValidRow -> Result<EnrichedRow, EnrichError>
+  enrich : Customers -> ValidRow -> Result<EnrichedRow, EnrichError>
 ```
 
-The workflow that runs them in order is one small function, and it is the
-only thing that knows the order:
+`Customers` is a value: the handler read it before the rows were
+enriched. The pure function over the rows is the only thing that knows
+the order of validating and enriching:
 
 ```text
-importFile = RowFile.read >=> traverse RowRules.validate
-               >=> traverse (RowEnrichment.enrich lookup)
-               >=> RowFile.write outPath
+type ImportError =
+  | Invalid of RowError
+  | Unenriched of EnrichError
+
+importRows :
+  Customers -> List<Row> -> Result<List<EnrichedRow>, ImportError>
+importRows customers rows =
+  rows
+    |> traverse (RowRules.validate >> mapError Invalid)
+    |> bind (traverse (RowEnrichment.enrich customers
+                         >> mapError Unenriched))
+```
+
+The handler reads the file and the customers, calls it, and writes:
+
+```text
+type ImportFailure =
+  | Rejected of ImportError
+  | FileFailed of RowFileError
+  | Unavailable of DbError
+
+handleImportFile :
+  Pool -> Path -> Path -> AsyncResult<Unit, ImportFailure>
+handleImportFile pool inPath outPath =
+  both
+      (RowFile.read inPath |> mapError FileFailed)
+      (loadCustomers pool |> mapError Unavailable)
+    |> bind (\(rows, customers) ->
+         importRows customers rows |> mapError Rejected)
+    |> bind (RowFile.write outPath >> mapError FileFailed)
 ```
 
 Change the order, add a step, or run two steps concurrently, and only
-this function changes.
+these two functions change.
 
 ## Where the pipeline shape still applies
 

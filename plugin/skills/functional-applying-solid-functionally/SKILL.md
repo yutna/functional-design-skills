@@ -97,8 +97,10 @@ opposite of the OCP failure mode, where a missed site fails silently.
 Wide dependency, violating ISP and DIP at once:
 
 ```text
-confirmBooking : BookingRepository -> Booking -> AsyncResult<Unit, Error>
--- BookingRepository has 22 functions; confirmBooking uses two of them,
+handleConfirmBooking :
+  BookingRepository -> Instant -> UnvalidatedBooking
+    -> AsyncResult<List<ConfirmBookingEvent>, ConfirmBookingFailure>
+-- BookingRepository has 22 functions; the handler uses two of them,
 -- and the domain module now imports the storage module
 ```
 
@@ -106,16 +108,21 @@ Narrow dependencies, defined by the domain:
 
 ```text
 -- declared by the domain, in the domain's words
-alias CheckTreatmentExists = TreatmentCode -> Boolean
-alias SaveBooking = Booking -> AsyncResult<Unit, SaveError>
+alias LoadCatalogue = Unit -> AsyncResult<Catalogue, StoreError>
+alias SaveEvents =
+  List<ConfirmBookingEvent> -> AsyncResult<Unit, StoreError>
 
-confirmBooking :
-  CheckTreatmentExists -> SaveBooking -> Booking
-    -> AsyncResult<BookingConfirmed, ConfirmBookingError>
+handleConfirmBooking :
+  LoadCatalogue -> SaveEvents -> Instant -> UnvalidatedBooking
+    -> AsyncResult<List<ConfirmBookingEvent>, ConfirmBookingFailure>
 ```
 
-Now the domain states its needs, the shell satisfies them, tests supply
-two one-line functions, and no storage type crosses the boundary.
+Each capability's type has an effect, so the function that takes them is
+a handler, and the rules stay in the pure `confirmBooking` it calls. The
+handler states its needs in the domain's words, the shell satisfies
+them, tests supply two one-line functions, and no storage type crosses
+the boundary. `ConfirmBookingFailure` is defined in
+[functional-designing-workflow-pipelines](../functional-designing-workflow-pipelines/SKILL.md).
 
 See
 [functional-parameterizing-dependencies](../functional-parameterizing-dependencies/SKILL.md)

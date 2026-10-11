@@ -12,26 +12,27 @@ A function type is a promise. Any function used where that type is
 expected must keep the whole promise, not just the shape.
 
 ```text
-alias GetTreatmentPrice = TreatmentCode -> Price
+alias LoadTreatmentPrice =
+  TreatmentCode -> AsyncResult<Price, StoreError>
 ```
 
 A substitute violates the contract if it:
 
-- **Throws** where the type promises a `Price` for every `TreatmentCode`
+- **Throws** where the type promises a `Price` or a `StoreError`
 - **Demands more** of its input than the type states, such as requiring
   the code to be upper case
 - **Promises less** about its output, such as returning zero for unknown
   codes when callers assume a real price
-- **Has an effect** the type does not mention: writing a log row, taking
-  a lock, mutating a cache that callers can observe
+- **Has an effect** the type does not mention: taking a lock, or
+  mutating a cache that callers can observe
 - **Is not total**: hangs, or fails for a subset of legal inputs
 
 If any of those is unavoidable, the type is wrong, not the
 implementation. Widen it until it is honest:
 
 ```text
-alias GetTreatmentPrice =
-  TreatmentCode -> AsyncResult<Price, PriceLookupError>
+alias LoadTreatmentPrice =
+  TreatmentCode -> AsyncResult<Option<Price>, StoreError>
 ```
 
 An honest type is worth more than a convenient one, because every caller
@@ -62,10 +63,10 @@ smallest thing is a single function type.
 
 ```text
 -- wide: 22 operations, two of them used
-confirmBooking : BookingRepository -> ...
+handleConfirmBooking : BookingRepository -> ...
 
 -- narrow: exactly what is used, named in the domain's words
-confirmBooking : CheckTreatmentExists -> SaveBooking -> ...
+handleConfirmBooking : LoadCatalogue -> SaveEvents -> ...
 ```
 
 Benefits that follow immediately:
@@ -80,7 +81,7 @@ Benefits that follow immediately:
 If a parameter's type has members the function never calls, the parameter
 is too wide. Split it into the function types actually used, and name
 each one for what it means to the domain, not for where it comes from.
-`SaveBooking`, not `BookingRepositoryPort`.
+`SaveEvents`, not `BookingRepositoryPort`.
 
 ### When a record is right
 
@@ -90,20 +91,23 @@ is a lot; twenty is a module pretending to be a parameter.
 
 ## Dependency inversion: which way the arrows point
 
-The domain declares the function types it needs. The shell provides
-implementations and wires them in. Nothing in the domain imports storage,
-transport, or framework code.
+The handler's module declares the function types it needs, in the
+domain's words. The shell provides implementations and wires them in.
+Nothing in the domain imports storage, transport, or framework code.
 
 ```text
--- domain module: declares needs, imports nothing external
-alias LoadCustomer = CustomerId -> AsyncResult<Customer, LoadError>
+-- handler module: declares needs, imports nothing external
+alias LoadCatalogue = Unit -> AsyncResult<Catalogue, StoreError>
+alias SaveEvents =
+  List<ConfirmBookingEvent> -> AsyncResult<Unit, StoreError>
 
-confirmBooking : LoadCustomer -> SaveBooking -> BookingRequest
-               -> AsyncResult<BookingConfirmed, ConfirmBookingError>
+handleConfirmBooking :
+  LoadCatalogue -> SaveEvents -> Instant -> UnvalidatedBooking
+    -> AsyncResult<List<ConfirmBookingEvent>, ConfirmBookingFailure>
 
 -- shell module: imports the driver, the domain, and connects them
-confirmBookingWired =
-  confirmBooking (loadCustomerFromDb pool) (saveBookingToDb pool)
+handleConfirmBookingWired =
+  handleConfirmBooking (loadCatalogueFrom pool) (saveEventsTo pool)
 ```
 
 The arrow points from the shell to the domain. That is the inversion: the
@@ -112,7 +116,7 @@ never the reverse.
 
 ### Where the abstraction lives matters
 
-Declaring `LoadCustomer` in the storage module and importing it into the
+Declaring `LoadCatalogue` in the storage module and importing it into the
 domain is not inversion; it is the same dependency with an extra hop. The
 function type must be declared by the consumer, in the consumer's
 vocabulary.
