@@ -39,13 +39,17 @@ type PaymentMethod =
 -- single-case wrapper: a distinct type over a primitive
 type BookingId = BookingId of String
 
+-- a type with a parameter
+type Secret<T> = Secret of T
+
 -- alias: the same type under another name, no new guarantees
 alias Notes = String
 ```
 
 `|` reads "or". A comma between record fields reads "and". A choice with
 no payload (`Cash`) carries only the fact that it is that case. `--`
-starts a comment.
+starts a comment. A type an example uses and does not declare, such as
+`Money` or `Duration`, is a domain type whose name says what it holds.
 
 ## Function signatures
 
@@ -64,17 +68,21 @@ roundTotal : RoundingRule -> PricedBooking -> PricedBooking
 
 Read `->` right-associatively: `A -> B -> C` is a function from `A` to a
 function from `B` to `C`, so `priceBooking prices` is itself a function,
-waiting for the booking. Every signature in this pack is **total**.
+waiting for the booking. Every signature in this pack is **total**, as
+[defined below](#words-with-one-meaning). An example of what not to do
+marks the promise it breaks in a comment, such as `-- throws`.
 
 ## Expressions
 
 ```text
--- a function with no name
+-- a function with no name, and one that takes a pair apart
 \booking -> booking.treatments
+\(slot, patient) -> hold slot patient
 
--- naming a step
-let total = sumOf priced.lines
-in roundTotal nearestBaht total
+-- naming a step; several `let` lines may come before one `in`
+let lines = booking.treatments
+let total = sumOf lines
+in nearestBaht total
 
 -- a choice between two values
 if total > limit then Error OverLimit else Ok total
@@ -82,6 +90,7 @@ if total > limit then Error OverLimit else Ok total
 -- building a case of a choice, and a record
 Card number
 { bank: code, ref: reference }
+{ code, quantity }      -- short for { code: code, quantity: quantity }
 
 -- a copy of a record with one field replaced
 { ...booking, treatments: remaining }
@@ -94,10 +103,28 @@ first :: rest
 -- a helper named after the line that uses it
 describe booking = join ", " names
   where names = treatmentNames booking
+
+-- a function written as one clause for each shape of its argument
+count [] = 0
+count (first :: rest) = 1 + count rest
 ```
 
 Nothing in an expression changes a value that already exists. The record
 copy builds a new record and leaves `booking` as it was.
+
+A dot reads a field (`booking.treatments`), or names a function that
+belongs with a type (`TreatmentCode.parse`). Applying a function is
+written with a space and binds tighter than any operator, so
+`1 + count rest` adds one to the count of the rest. Comparison and
+arithmetic are written as usual, and an operator in parentheses is the
+function it stands for: `(+)`.
+
+A few names are used without being declared. `identity` returns its
+argument, `const x` returns `x` whatever it is given, `fold` reduces a
+list to one value, `tryCatch` turns a thrown exception into an `Error`,
+and `crash` stops with a message. Any other name an example uses and
+does not declare, such as `trim` or `sumOf`, is an ordinary function
+that does what its name says.
 
 ## Composition and pipelines
 
@@ -114,8 +141,8 @@ readCode = parseTreatmentCode >=> checkOffered catalogue
 
 `>>` composes plain functions. `>=>` composes functions that each return
 a `Result` with the same error type, and stops at the first `Error`.
-Three more names move a value that is already a `Result`, and each sits
-to the right of `|>`:
+Three more names work on a value that is already a `Result`, and take
+it from the left of `|>`:
 
 ```text
 priced |> map addTax              -- the next step cannot fail
@@ -123,11 +150,11 @@ validated |> bind (priceBooking prices)   -- the next step can
 priced |> mapError Pricing        -- change the error, keep the value
 ```
 
-The same three work on an `AsyncResult`, and a `Result` met in such a
-chain joins it without ceremony. `map` is also the usual name for
-applying a function to each element of a `List`. To adapt a function
-rather than a value, compose: `priceBooking prices >> mapError Pricing`.
-The full set is in
+`map` and `bind` mean the same on an `Option`, and all three on an
+`AsyncResult`, where a `Result` met in the chain joins it without
+ceremony. `map` is also the name for applying a function to each element
+of a `List`. To adapt a function rather than a value, put the name after
+`>>`: `priceBooking prices >> mapError Pricing`. The full set is in
 [composition-toolkit.md](../../functional-composing-functions/references/composition-toolkit.md).
 
 ## Standard types
@@ -190,30 +217,43 @@ That guarantee is what makes the core testable. See
 - **deterministic.** The same input always gives the same output. Every
   pure function is deterministic; pure adds that nothing else happens.
 - **total.** For every value its input type admits, the function returns
-  a value of its output type. No input the type allows makes it throw or
-  return nothing. Totality is about inputs, not effects: a function that
-  saves a booking is total and not pure.
+  a value of its output type. No input the type allows makes it throw,
+  return nothing, or return a placeholder that is not an answer.
+  Totality is about inputs, not effects: a function that saves a booking
+  is total and not pure.
 - **crash.** Stopping because the program is wrong: a state arrived that
   the types were supposed to rule out. A crash is a bug to fix, never a
   value to return, and a failure the business can name is never a crash.
-  A total function does not crash on any input its type admits; it may
-  crash when code upstream broke that type's promise.
+  Nor is a fault in the machinery, such as a database that cannot be
+  reached: the capability returns that as a value, as
+  [error-taxonomy.md](../../functional-handling-errors-with-results/references/error-taxonomy.md)
+  says. A total function does not crash on any input its type admits; it
+  may crash when code upstream broke that type's promise.
 - **capability.** A function with an effect type that the shell supplies
   so that a handler can reach the world through it: load a row, send a
   message, draw an identifier. Whatever calls one has an effect type
   too.
-- **core.** The pure functions that hold the domain's types and rules.
-  No function in the core has an effect type or receives a capability.
+- **core.** The pure functions that hold the domain's types and rules:
+  constructors, calculations, state transitions, and the workflows that
+  compose them. No function in the core has an effect type or receives a
+  capability.
 - **shell.** Everything else: the code that reaches the world, and the
-  code that wires, translates and sequences for it.
+  code that wires, translates and sequences for it. Some of it is pure,
+  such as a mapping from a domain value to a database row, and is shell
+  all the same: it serves the world's shape, not a rule.
 - **handler.** The shell function that carries out one command, or
-  reacts to one event. It reads, calls the core, and writes.
-- **workflow.** The pure function a handler calls to decide one command:
-  values in, a `Result` of events out. A workflow performs nothing.
+  reacts to one event. It reads, calls the core, and writes. A query,
+  which changes nothing, needs no core: it is a read and a mapping, and
+  both are shell.
+- **workflow.** The pure function a handler calls to decide what one
+  command, or one event, leads to. Values go in, and a `Result` comes
+  out that holds the events it decided, with the new state where one is
+  kept. A workflow performs nothing.
 - **command.** What a caller asks for: a record of the caller's input,
   parsed for shape at the edge and not yet checked against any rule. It
-  is named for the request (`CancelBooking`), or for its stage where the
-  workflow's first step validates it (`UnvalidatedBooking`).
+  is named for the request (`CancelBooking`). Where the workflow's first
+  step is to validate it, the name may say that instead
+  (`UnvalidatedBooking`).
 - **event.** A fact, named in the past tense. A workflow returns the
   events it decided, and each must be true once that decision is saved
   and nothing else has happened: `BookingConfirmed` is, and
@@ -221,22 +261,30 @@ That guarantee is what makes the core testable. See
   is reported by the shell, after it has (`PaymentTaken`).
 - **instruction.** A value by which the core tells the shell which
   effect to perform (`SendReminder`). A command comes in from a caller;
-  an instruction goes out from the core.
+  an instruction goes out from the core. The same record can be an
+  instruction to the program that sends it and a command to the one
+  that receives it. The core returns instructions only where the effects
+  have to exist as data; see
+  [functional-parameterizing-dependencies](../../functional-parameterizing-dependencies/SKILL.md).
 - **decision.** What the core returns to a handler: a result, a new
   state, events, or instructions. It is always a value, never an action.
-- **edge.** The shell code that touches the world directly: the entry
-  point that receives a request or a message, and the adapter that
-  makes a call out.
+- **edge.** Where the program meets what is outside it: the entry point
+  that receives a request or a message and hands a command to a
+  handler, the adapter a handler calls to reach a database or another
+  system, and the composition root that wires them. "At the edge" means
+  in that code, and not in the core.
 - **idempotent.** Doing it twice leaves the same state as doing it once.
   It is said of an operation on state, such as a write or a transition.
-  A pure decision is deterministic, which is a different property: the
-  same decision applied twice may still charge twice.
+  Calling a pure function twice is harmless, because it performs
+  nothing; that is determinism, not idempotence, and performing the same
+  decision twice may still charge twice.
 
 ## Translating to a real language
 
-Each language pack has a "Notation mapping" section in its `SKILL.md`
-that gives the real spelling of every form on this page: the choice
-type, the single-case wrapper, `Result`, `>=>`, and `AsyncResult`.
+`functional-javascript`, `functional-typescript` and `functional-elixir`
+each open with a "Notation mapping" table that gives the real spelling
+of the types on this page and of an exhaustive match. How a `Result` is
+chained in that language is shown in the pack's own examples.
 
 Pick the pack that matches the project from
 [functional-design](../SKILL.md).

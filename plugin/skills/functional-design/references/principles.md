@@ -101,8 +101,9 @@ Skill: `functional-choosing-types-or-plain-data`.
 
 ## Functions and workflows
 
-1. Every function is total: every input its type admits gets an output
-   of its type, and a failure the business can name is in that type.
+1. Every function a module exports is total: every input its type
+   admits gets an output of its type, and a failure the business can
+   name is in that type.
 2. A workflow is a command in and events out, written as a pipeline of
    total functions with one type per completed stage.
 3. Dependencies are parameters. Prefer fetching first and deciding
@@ -162,7 +163,8 @@ duplicated, or lost.
 
 1. Give every command an identity the caller controls, and carry it into
    every effect.
-2. Make the effect idempotent, not the decision. The core already is.
+2. Make the effect idempotent, not the decision. Deciding again is
+   harmless; charging again is not.
 3. Assume at-least-once delivery and de-duplicate on receipt.
 4. Never write state and publish an event in two transactions.
 5. Retry at the shell, bounded in attempts and in total time.

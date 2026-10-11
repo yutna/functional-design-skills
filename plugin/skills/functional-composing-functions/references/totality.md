@@ -97,7 +97,7 @@ performing I/O. The repair has a familiar shape: make the hidden input
 an explicit parameter.
 
 ```text
-isExpired : Quote -> Boolean            -- total, but reads the clock
+isExpired : Quote -> Boolean            -- reads the clock; the type hides it
 isExpired : Instant -> Quote -> Boolean -- total and pure
 ```
 
@@ -111,10 +111,11 @@ See
 ## Where partial functions are tolerable
 
 Inside a module, in a function that is not exported, where the caller is
-the module itself and the invariant is proven a few lines above. Even
-then, prefer to encode the invariant in a type if the module is going to
-grow. Never across a module boundary: there the signature is the contract
-and there is no context to rely on.
+the module itself and the invariant is proven a few lines above. Such a
+helper crashes if the invariant is ever broken, which is the right
+outcome for a bug. Even then, prefer to encode the invariant in a type
+if the module is going to grow. Never across a module boundary: there
+the signature is the contract and there is no context to rely on.
 
 ## Verifying totality
 

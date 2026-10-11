@@ -86,7 +86,7 @@ relay : Unit -> AsyncResult<Relayed, RelayError>
 Properties this gives you:
 
 - The event exists if and only if the state change happened.
-- The relay can crash and restart; unsent rows are still there.
+- The relay can die and restart; unsent rows are still there.
 - Delivery is at-least-once, because the relay may publish and then fail
   before marking. Consumers de-duplicate.
 

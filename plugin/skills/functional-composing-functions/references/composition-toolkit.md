@@ -105,7 +105,7 @@ Break a chain and name an intermediate value when:
 
 ```text
 -- clearer than one nine-step chain
-let validated = raw |> bind validate
+let validated = validate raw
 let priced = validated |> bind (price catalogue)
 in priced |> map acknowledge
 ```

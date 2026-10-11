@@ -138,8 +138,8 @@ handle event =
 
 The order matters and is the whole reliability argument: **persist the
 new state and the commands together, then dispatch from the outbox.** If
-the process crashes after saving, the commands are still there. If it
-crashes after dispatching but before marking, the command is sent twice,
+the process dies after saving, the commands are still there. If it
+dies after dispatching but before marking, the command is sent twice,
 which step 4 made safe.
 
 ## Step 6: bound everything

@@ -161,14 +161,19 @@ never crashes and never returns a value violating the rule. See
 ## Placing constructors in a pipeline
 
 Parsers belong at the boundary, in one step, before the domain sees
-anything.
+anything. Each parser keeps its own error, and the step lifts both into
+the one it returns.
 
 ```text
+type LineError = BadCode of CodeError | BadQuantity of QuantityError
+
 parseBookedTreatment : RawLine -> Result<BookedTreatment, LineError>
 parseBookedTreatment raw =
   TreatmentCode.parse raw.code
+    |> mapError BadCode
     |> bind (\code ->
        Quantity.parse raw.qty
+         |> mapError BadQuantity
          |> map (\qty -> { code, qty }))
 ```
 

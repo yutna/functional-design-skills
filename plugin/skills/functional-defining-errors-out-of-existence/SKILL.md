@@ -54,10 +54,10 @@ never see it.
 
 ```text
 -- every caller retries
-send : Message -> Result<Ack, ConnectionLost>
+send : Message -> AsyncResult<Ack, ConnectionLost>
 
 -- the transport reconnects; callers see success or real failure
-send : Message -> Result<Ack, SendFailed>
+send : Message -> AsyncResult<Ack, SendFailed>
 ```
 
 Masking is right when the recovery is always the same and belongs to the
@@ -73,9 +73,9 @@ handleRequest =
   runWorkflow >> either renderError renderSuccess
 ```
 
-**4. Crash.** For conditions that are rare, unrecoverable, and not the
-caller's business, stop. A process that continues in an unknown state
-produces damage that is worse and harder to trace.
+**4. Crash.** For a condition that means the program is wrong, stop. A
+process that continues in an unknown state produces damage that is worse
+and harder to trace.
 
 ## Core rules
 

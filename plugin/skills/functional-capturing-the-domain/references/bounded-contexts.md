@@ -89,7 +89,7 @@ Rules for a border:
 
 1. The translation function is the only place the foreign shape appears.
 2. It returns `Result`: a foreign model can always send something this
-   context cannot accept, and that is a normal event, not a crash.
+   context cannot accept, and that is a normal outcome, not a crash.
 3. It produces this context's own types, fully validated, so nothing
    downstream re-checks.
 4. It does not leak identifiers with foreign semantics; if the upstream
