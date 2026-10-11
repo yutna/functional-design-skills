@@ -329,10 +329,10 @@ purposes. An "and" between attributes of one thing is fine.
 
 **Detect.** A reader who is competent, fluent in the language and the
 domain, and new to this code stumbles. Their stumble is the measurement,
-not their skill. Ask the user to read it, or give a fresh reader only the
-code, as
+not their skill.
 [working-alone.md](../../functional-design/references/working-alone.md)
-says; without either, leave this flag unrecorded and say so.
+says who that reader is; with none, leave this flag unrecorded and say
+so.
 
 **Costs.** Every later reader pays for the same stumble.
 

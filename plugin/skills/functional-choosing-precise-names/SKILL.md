@@ -84,12 +84,11 @@ Write the sentence you would use to explain the thing. If the sentence
 contains a word that is not in the name and cannot be inferred, the name
 is missing information.
 
-A second test needs a reader. If the user is available, ask them to say
-what the bare name means; otherwise give a reader that has not seen the
-code only the name and its signature, as
+A second test needs a reader who has not seen the code. Give them only
+the name and its signature, and ask what it holds or what it does;
 [working-alone.md](../functional-design/references/working-alone.md)
-says. If they are wrong, or vague, the name is wrong. Do not explain the
-name to them; their first reading is the measurement.
+says who that reader is. If they are wrong, or vague, the name is wrong.
+Do not explain the name to them; their first reading is the measurement.
 
 ## Common vague names and their repairs
 

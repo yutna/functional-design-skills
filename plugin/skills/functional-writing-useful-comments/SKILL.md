@@ -71,7 +71,7 @@ The second is worth examining honestly. Comments written first save time
 in the same session, because they expose a bad interface before it is
 implemented. See [comments-first.md](references/comments-first.md).
 
-## Six kinds worth writing
+## The kinds worth writing
 
 **Interface comments** describe what a caller must know and the signature
 cannot say. Their contents, in order, are listed in

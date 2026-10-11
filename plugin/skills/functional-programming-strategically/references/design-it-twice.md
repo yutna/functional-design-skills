@@ -62,12 +62,11 @@ every caller that offers "all formats" changes.
 `Format` choice type. Adding a format is one new case, and the compiler
 or test suite lists every place that must handle it.
 
-Scored against the six criteria:
+Scored against each criterion:
 
 - **Interface simplicity.** A tie. A has no argument to choose and B has
   one, and both are easy to use correctly.
-- **Depth.** B, which hides behind one function which format is made
-  where.
+- **Depth.** B. One function hides which module makes which format.
 - **Illegal states.** A tie. Neither lets a caller ask for a format that
   does not exist.
 - **Testability.** A tie.
@@ -75,8 +74,8 @@ Scored against the six criteria:
 - **Failure clarity.** A tie.
 
 B wins on depth and change absorption; A wins on nothing except that it
-is what came to mind first. Take from A the idea that each format
-lives in its own module, and have B dispatch to those.
+is what came to mind first. Take from A the idea that each format lives
+in its own module, and have B dispatch to those.
 
 ## Common failure
 

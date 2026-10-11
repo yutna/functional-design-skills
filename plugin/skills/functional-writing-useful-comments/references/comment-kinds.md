@@ -97,6 +97,8 @@ Fields whose meaning or units are not obvious.
 
 ```text
 type RetryPolicy = {
+  maxAttempts: Integer,
+  perAttemptTimeout: Seconds,
   -- An attempt already in flight is not cancelled when this expires.
   totalBudget: Seconds,
   backoff: Backoff,

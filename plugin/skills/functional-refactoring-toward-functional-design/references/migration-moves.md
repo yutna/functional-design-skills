@@ -1,7 +1,8 @@
 # Migration Moves
 
-Each move is small, behaviour-preserving, and independently valuable.
-Apply in order where possible; each makes the next easier.
+Each move is small and independently valuable, and each preserves
+behaviour; move 7 names the one place where that takes a commit of its
+own. Apply in order where possible; each makes the next easier.
 
 ## Contents
 
@@ -23,7 +24,9 @@ Apply in order where possible; each makes the next easier.
 **Mechanics.** Create the wrapper and its parser in one module. Change
 one function's signature to take the wrapper. Follow the compile errors
 or test failures outward, converting at each call site, until the
-conversions have moved to the boundary.
+conversions have moved to the boundary. A conversion that can fail stays
+where its check was until move 4, so that the order of the checks does
+not change.
 
 **Verify.** Tests pass at each step; the parser has its own tests.
 
@@ -84,7 +87,8 @@ testing and parallel execution.
 **Mechanics.** For each service member the function actually uses,
 declare a function type in the domain module. Change the signature to
 take those. At the call site, pass method references bound to the
-service.
+service. Where the service throws, wrap each reference so that what it
+throws comes back as a value in that function type's error.
 
 **Verify.** The tests replace the mock with plain functions.
 
@@ -99,6 +103,12 @@ middle into its own function taking values and returning a decision: a
 new state, the events it decided, or instructions for the shell. The
 original function becomes the shell.
 
+Putting a read in front of a check, or reading once what was read item
+by item, changes which reads a request costs, and which failure a caller
+sees when a dependency is down. Where the reads were not at the top
+already, make that half a commit of its own, say in its message what
+moved, and lift the middle in the next.
+
 **Verify.** The extracted function has no imports of infrastructure, and
 its tests need no setup.
 
@@ -111,7 +121,7 @@ the move that most changes how the code feels.
 `ValidatedX`, initially a copy. Change the validation step to return it,
 and the next step to require it. Repeat for each stage.
 
-**Verify.** No step accepts the raw input type any more.
+**Verify.** No step but the first accepts the raw input type.
 
 **Payoff.** Steps can no longer receive unprepared data, and re-checks
 can be deleted.

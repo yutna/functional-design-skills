@@ -68,7 +68,7 @@ you. Two booleans and an optional boolean are twelve states, not three
 things to remember.
 
 For each candidate, ask what breaks if it vanishes. The answer sorts it
-into one of four outcomes, set out in
+into one of the outcomes set out in
 [essential-and-accidental.md](references/essential-and-accidental.md):
 delete it, keep it for a measured performance need, move the rule it
 carries into a type and then delete it, or keep it because it is a

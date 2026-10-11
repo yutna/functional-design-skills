@@ -88,11 +88,11 @@ bare name is ambiguous: `...At` for an instant, `...On` for a date,
 Named for their role in this function, not their type.
 
 ```text
-transfer : CustomerId -> AccountId -> AccountId -> Money -> Result<...>
--- which account is the source?
+moveAppointment : PatientId -> SlotId -> SlotId -> Result<...>
+-- which slot is the one being given up?
 
-transfer : { by: CustomerId, from: AccountId,
-             to: AccountId, amount: Money } -> Result<...>
+moveAppointment : { patient: PatientId, from: SlotId, to: SlotId }
+                    -> Result<...>
 ```
 
 Where two parameters share a type, either give them distinct types or
@@ -139,7 +139,7 @@ Keep a short list of the words the codebase uses, and use them exactly:
 
 - One verb per kind of retrieval: not `load`, `fetch` and `get` for the
   same kind
-- One noun per concept: `customer` or `client`, not both
+- One noun per concept: `patient` or `client`, not both
 - One spelling of every domain term, matching the spelling in the
   project's docs and tests; if there is none, ask the user which spelling
   the business uses, as

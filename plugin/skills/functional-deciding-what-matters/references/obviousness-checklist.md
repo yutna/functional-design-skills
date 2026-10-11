@@ -79,12 +79,12 @@ none.
 
 ## Final question
 
-Ask the user to read the diff and say what it does. If the user is not
-available, give a reader that has not seen the code only the diff and ask
-the same; [working-alone.md](../../functional-design/references/working-alone.md)
-says how. Every hesitation is a defect in the code, not in the reader.
-Record what they hesitated at, fix that, and do not argue.
+Give the diff, and nothing else, to a reader who has not seen the code,
+and ask them to say what it does;
+[working-alone.md](../../functional-design/references/working-alone.md)
+says who that reader is. Every hesitation is a defect in the code, not
+in the reader. Record what they hesitated at, fix that, and do not
+argue.
 
-If neither reader is available, report the answers to the questions above
-as unconfirmed, and name what a reader who has not seen the code should
-be asked.
+With no such reader, report the answers to the questions above as
+unconfirmed, and name what the reader should be asked.

@@ -83,8 +83,8 @@ responsibilities became their own steps in a pipeline. See
 
 The same technique at a larger scale. Before creating a module, write its
 one-sentence purpose and its list of exports. If the sentence joins two
-unrelated purposes, or if some exported name has no caller outside the
-module, redesign before writing code.
+unrelated purposes, or if you cannot name a caller outside the module
+for one of the exports, redesign before writing code.
 
 ## Keeping them true
 

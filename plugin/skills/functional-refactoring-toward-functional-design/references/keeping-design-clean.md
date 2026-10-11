@@ -105,9 +105,8 @@ that no longer exists. Then:
 
 ## The test that catches decay early
 
-Ask the user to describe what the module does from its name and header
-alone, or give a reader that has not seen the code only the module's
-name, doc comment and exported names and ask what it does;
+Give a reader who has not seen the code only the module's name, its doc
+comment and its exported names, and ask what the module does;
 [working-alone.md](../../functional-design/references/working-alone.md)
-says how. If the answer is a list, the module has lost its abstraction,
-and it will keep absorbing whatever arrives next.
+says who that reader is. If the answer is a list, the module has lost
+its abstraction, and it will keep absorbing whatever arrives next.

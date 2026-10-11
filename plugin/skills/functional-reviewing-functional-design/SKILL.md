@@ -139,12 +139,11 @@ and let them choose.
 ## Reviewing your own work
 
 The same pass, with two differences. You cannot judge obviousness from
-the inside, so ask the user to read the diff and say what it does, or
-give a reader that has not seen the code only the diff, and ask the same.
-If neither is available, write the step as unverified in the review. See
-[functional-deciding-what-matters](../functional-deciding-what-matters/SKILL.md)
-and
-[working-alone.md](../functional-design/references/working-alone.md).
+the inside, so that step needs a reader who has not seen the code;
+[working-alone.md](../functional-design/references/working-alone.md)
+says who that is. With no such reader, write the step as unverified in
+the review. See
+[functional-deciding-what-matters](../functional-deciding-what-matters/SKILL.md).
 The second difference is in the obviousness checklist: on your own code
 you fix at the first "no", and on someone else's diff you record each
 one and fix none.

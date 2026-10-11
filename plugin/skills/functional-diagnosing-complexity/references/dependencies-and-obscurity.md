@@ -51,9 +51,9 @@ Two concepts have the same shape, so a caller can pass one where the
 other is meant and nothing objects.
 
 ```text
-alias CustomerId = String
+alias PatientId = String
 alias BookingId = String
-lookup : CustomerId -> BookingId -> Result<Booking, Error>   -- swappable
+lookup : PatientId -> BookingId -> Result<Booking, LookupError>  -- swappable
 ```
 
 **Remove it** with distinct types, even in dynamically typed languages,

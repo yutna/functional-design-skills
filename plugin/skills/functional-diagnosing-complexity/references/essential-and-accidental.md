@@ -77,7 +77,7 @@ acts on from the other direction.
 Two kinds of state, distinguished sharply:
 
 - **Essential state.** The facts the business would still have on paper:
-  the bookings that exist, their current status, the stock on hand. This is
+  the bookings that exist, their current status, the slots still free. This is
   irreducible. Represent it plainly and hold it in one place.
 - **Accidental state.** Everything derived, cached, memoised, flagged,
   or held mid-computation. Every item is a second copy of a fact, and can
@@ -89,8 +89,8 @@ Most state in most systems is accidental. That is where to look first.
 
 Control is the specification of _order_: what runs, when, in what
 sequence. Some order is essential: a treatment cannot start before the
-patient is checked in. Most
-is not: it is the order our implementation happens to need.
+patient is checked in. Most is not: it is the order our implementation
+happens to need.
 
 Accidental control shows up as an initialisation sequence, a setup call
 that must precede a use, a flag consulted to decide whether an earlier
@@ -127,7 +127,7 @@ Add these three steps in front of the procedure in the main skill.
    caches, orderings, adapters, intermediate representations, defensive
    checks. This is a list of candidates, not verdicts.
 3. **For each candidate, ask what would break if it vanished.** The
-   answers sort into four outcomes:
+   answers sort into these outcomes:
 
    - **Nothing breaks.** Delete it.
    - **A measured performance need.** Keep it, isolate it, and label it
@@ -137,7 +137,7 @@ Add these three steps in front of the procedure in the main skill.
    - **It isolates a decision that changes on its own, or records a
      check that has run.** Keep it. This is a boundary type, such as a
      transfer type for a wire format, or a stage type such as
-     `ValidatedBooking`. The pack prescribes both.
+     `ValidatedBooking`. This pack asks for both.
 
 Only then run the locality procedure on what is left. Refactoring
 accidental complexity is how it becomes permanent: once it has a clean
@@ -174,7 +174,7 @@ because pricing a `ValidatedBooking` produces a new value and cannot be
 applied to an already-priced one.
 
 `ValidatedBooking` and `PricedBooking` are not in the sentence either.
-They stay under the fourth outcome: each records a check that has run,
+They stay under the last outcome: each records a check that has run,
 which is what makes the second pricing impossible. Had the search found
 a reader for the timestamp, such as a finance report, the sentence would
 have missed a requirement, and the timestamp would be essential and

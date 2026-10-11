@@ -38,7 +38,7 @@ Not for: designing something new, which starts at
 1. Rule. **Ask what breaks if the thing is deleted, before choosing a move
    for it.** A flag, a cache, a required call order or an unread field may be
    complexity you added, and refactoring it is how it becomes permanent. The
-   test, and the four outcomes it has, are in
+   test, and the outcomes it has, are in
    [essential-and-accidental.md](../functional-diagnosing-complexity/references/essential-and-accidental.md).
 2. Default. **Refactor where you are already working.** Unrelated cleanup is
    hard to review and hides the real change.
@@ -56,11 +56,14 @@ Not for: designing something new, which starts at
 8. Rule. **Never widen a type to hold a different concept.** A new case of
    the same kind of thing is added as a case; a different concept gets its
    own type.
-9. Rule. **One move per commit, tests green, reviewable alone.** For a
-   tactical move, if the tests are not green after the first edit and run,
-   or the diff reaches outside the module, revert and take a smaller move.
-   Moves 8 to 10 are module-scale and carry no time limit. A half-applied
-   move is the worst state the code can be in.
+9. Rule. **Never two moves in one commit, and tests green after each.**
+   A commit is reviewable alone. A move may take more than one commit, as
+   move 7 does where the reads have to move first, and the code works
+   after every one. For a tactical move, if the tests are not green after
+   the first edit and run, or the diff reaches outside the module, revert
+   and take a smaller move. Moves 8 to 10 are module-scale and carry no
+   time limit. A move left half-applied, with the tests red, is the worst
+   state the code can be in.
 
 ## The ordered moves
 
@@ -116,33 +119,36 @@ A typical starting point, shortened from
 
 ```text
 class BookingService {
-  confirm(dto) {
+  async confirm(dto) {
     if (!dto.patientId) throw new Error("bad booking")
-    const booking = this.repo.load(dto.id) ?? { id: dto.id, treatments: [] }
-    if (booking.status === "confirmed") throw new Error("already confirmed")
 
     let total = 0
     for (const treatment of dto.treatments) {
-      const priced = this.catalogue.find(treatment.code)
+      const priced = await this.catalogue.find(treatment.code)
       if (!priced) throw new Error("unknown treatment " + treatment.code)
       total += priced.price * treatment.qty
     }
 
+    const booking = (await this.repo.load(dto.id)) ?? { id: dto.id }
+    if (booking.status === "confirmed") throw new Error("already confirmed")
+
     booking.status = "confirmed"
     booking.confirmedAt = new Date()
     booking.total = total
-    this.repo.save(booking)
-    this.mailer.send(dto.email, "Booking confirmed", render(booking))
+    await this.repo.save(booking)
+    await this.mailer.send(dto.email, "Booking confirmed", render(booking))
     return booking
   }
 }
 ```
 
-After moves 1, 2, 4, 5, 6 and 7, in six separate commits, the decision is
-a pure function and the service is the handler around it. The aliases
-`LoadBooking`, `LoadCatalogue`, `SaveBooking` and `SendMail` are the
-function types of commits 6 and 7 there, and `ConfirmFailure` has the
-cases `Rejected`, `Unavailable` and `NotSent`.
+After moves 1 to 7 the decision is a pure function and the service is
+the handler around it. Each move was one commit except the seventh,
+which took two: moving the reads in front of the checks is a change a
+caller can see, so it was made alone. The aliases `LoadCatalogue`,
+`LoadBooking`, `SaveBooking` and `SendMail` are the function types of
+commits 6 and 7 there, and `ConfirmFailure` has the cases `Rejected`,
+`Unavailable` and `NotSent`.
 
 ```text
 -- pure
@@ -152,19 +158,21 @@ decideConfirmation :
 
 -- shell
 handleConfirm :
-  LoadBooking -> LoadCatalogue -> SaveBooking -> SendMail
+  LoadCatalogue -> LoadBooking -> SaveBooking -> SendMail
     -> Instant -> BookingDto -> AsyncResult<Booking, ConfirmFailure>
-handleConfirm loadBooking loadCatalogue saveBooking sendMail now dto =
-  both (loadBooking dto.id) (loadCatalogue ())                 -- read
+handleConfirm loadCatalogue loadBooking saveBooking sendMail now dto =
+  loadCatalogue ()                                             -- read
+    |> bind (\catalogue ->
+         loadBooking dto.id |> map (\found -> (catalogue, found)))
     |> mapError Unavailable
-    |> bind (\(found, catalogue) ->
+    |> bind (\(catalogue, found) ->
          decideConfirmation now catalogue (orDraft dto.id found) dto
            |> mapError Rejected)                               -- decide
     |> bind (\booking ->
          saveBooking booking                                   -- write
            |> mapError Unavailable
            |> bind (\_ ->
-                sendMail (confirmationFor booking)
+                sendMail (confirmationFor dto.email booking)
                   |> mapError NotSent)
            |> map (\_ -> booking))
 ```
@@ -253,4 +261,4 @@ See
 - [keeping-design-clean.md](references/keeping-design-clean.md) covers
   absorbing new requirements without decay.
 - [worked-refactor.md](references/worked-refactor.md) moves one legacy
-  service through ten commits, with the verification at each step.
+  service through the ten moves, with the verification at each commit.

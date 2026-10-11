@@ -53,7 +53,7 @@ applyPayment :
 Three of the four facts are now in the signature. The fourth, that
 calling it twice double-counts, either becomes impossible by
 construction or, where retries are expected, is handled by an idempotent
-adapter keyed by the command; see
+adapter keyed from the command's key; see
 [functional-making-effects-reliable](../../functional-making-effects-reliable/SKILL.md).
 
 **Exposing question:** list everything a new developer must be told
