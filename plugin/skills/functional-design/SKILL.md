@@ -93,6 +93,12 @@ in the room, and no amount of modelling substitutes for it. Types
 written over an undecided problem still compile; they encode the guess
 and make it expensive to revisit.
 
+Working alone, write the rule you were able to state, or the list of
+questions, in your reply. Mark an owner unknown unless a file names one,
+and stop before modelling.
+[working-alone.md](references/working-alone.md) says what stands in for
+the people a step assumes.
+
 [functional-capturing-the-domain](../functional-capturing-the-domain/SKILL.md)
 covers part of this. Its discovery procedure produces the events, the
 vocabulary, and the places where the experts disagree, which is most of the way
@@ -209,6 +215,9 @@ only with evidence -- a measurement, a reproduced bug, or a failing test.
   compressed onto one page, for when there is no time to read a skill.
 - [calibration.md](references/calibration.md) is how much of the pack a
   given task actually warrants, and the cost of getting that wrong.
+- [working-alone.md](references/working-alone.md) is what to do where a
+  step asks for an expert, a reviewer, or an owner and there is none to
+  ask.
 - [essential-and-accidental.md](../functional-diagnosing-complexity/references/essential-and-accidental.md)
   is the question to ask before any refactor: did we add this
   complexity, or is it in the problem?
