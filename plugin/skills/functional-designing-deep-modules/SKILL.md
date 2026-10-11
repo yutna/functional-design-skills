@@ -94,7 +94,7 @@ A deep module: the same functionality, one thing to know.
 ```text
 -- BookingStore
 saveBooking : Booking -> AsyncResult<Unit, SaveError>
-loadBooking : BookingId -> AsyncResult<Option<Booking>, LoadError>
+loadBooking : BookingId -> AsyncResult<Option<Booking>, StoreError>
 ```
 
 Transactions, rows, retries, and the mapping between `Booking` and storage

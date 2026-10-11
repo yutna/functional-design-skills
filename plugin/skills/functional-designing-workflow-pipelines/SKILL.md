@@ -214,9 +214,9 @@ handler's chain keeps its types consistent.
 - **Letting a step perform side effects it decided on.** Return the
   decision, let the shell act, or the workflow cannot be tested or
   retried.
-- **Unifying step errors by casting.** Each step keeps its own narrow
-  error, and the pipeline lifts each into the workflow's one choice type
-  with `mapError`, a case per failure.
+- **Unifying step errors by casting instead of lifting.** Each step
+  keeps its own narrow error, and the pipeline lifts each into the
+  workflow's one choice type with `mapError`, a case per failure.
 - **Putting the pipeline in the controller.** The controller translates
   transport; the workflow is domain code and belongs with the domain.
 

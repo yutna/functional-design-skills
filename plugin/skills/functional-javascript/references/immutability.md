@@ -60,9 +60,9 @@ Spreading deeply gets unreadable fast.
 // three levels: already too much
 const updated = {
   ...booking,
-  customer: {
-    ...booking.customer,
-    address: { ...booking.customer.address, city },
+  patient: {
+    ...booking.patient,
+    address: { ...booking.patient.address, city },
   },
 };
 ```
@@ -74,7 +74,7 @@ Three better options, in order of what they cost:
    and its own update functions. Free, and it usually improves the
    design rather than only the syntax.
 2. **Write the update function beside the type it updates.**
-   `Address.withCity`, `Customer.withAddress`, one spread each, composed
+   `Address.withCity`, `Patient.withAddress`, one spread each, composed
    at the call site. Three small named functions read better than one
    nested literal and cost nothing to test.
 3. **Use `immer`.** Its `produce` takes a mutable-looking draft and
@@ -85,7 +85,7 @@ import { produce } from "immer";
 
 const withCity = (booking, city) =>
   produce(booking, (draft) => {
-    draft.customer.address.city = city;
+    draft.patient.address.city = city;
   });
 ```
 

@@ -45,7 +45,8 @@ sub-kinds, because different people fix them:
 ```text
 parseBooking : Json -> Result<UnvalidatedBooking, ParseError>
 validateBooking :
-  UnvalidatedBooking -> Result<ValidatedBooking, NonEmptyList<ValidationError>>
+  Catalogue -> UnvalidatedBooking
+    -> Result<ValidatedBooking, NonEmptyList<ValidationError>>
 ```
 
 ### Transient fault

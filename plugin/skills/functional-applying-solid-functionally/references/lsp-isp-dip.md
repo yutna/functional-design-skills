@@ -78,7 +78,7 @@ smallest thing is a single function type.
 handleConfirmBooking : BookingRepository -> ...
 
 -- narrow: exactly what is used, named in the domain's words
-handleConfirmBooking : ReadCatalogue -> SaveEvents -> ...
+handleConfirmBooking : LoadCatalogue -> SaveEvents -> ...
 ```
 
 Benefits that follow immediately:
@@ -109,12 +109,12 @@ Nothing in the domain imports storage, transport, or framework code.
 
 ```text
 -- handler module: declares needs, imports nothing external
-alias ReadCatalogue = Unit -> AsyncResult<Catalogue, StoreError>
+alias LoadCatalogue = Unit -> AsyncResult<Catalogue, StoreError>
 alias SaveEvents =
   List<ConfirmBookingEvent> -> AsyncResult<Unit, StoreError>
 
 handleConfirmBooking :
-  ReadCatalogue -> SaveEvents -> Instant -> UnvalidatedBooking
+  LoadCatalogue -> SaveEvents -> Instant -> UnvalidatedBooking
     -> AsyncResult<List<ConfirmBookingEvent>, ConfirmBookingFailure>
 
 -- shell module: imports the driver, the domain, and connects them
@@ -128,7 +128,7 @@ never the reverse.
 
 ### Where the abstraction lives matters
 
-Declaring `ReadCatalogue` in the storage module and importing it into the
+Declaring `LoadCatalogue` in the storage module and importing it into the
 handler's module is not inversion; it is the same dependency with an
 extra hop. The
 function type must be declared by the consumer, in the consumer's

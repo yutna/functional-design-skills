@@ -109,14 +109,14 @@ handler reads a catalogue that a rule names, as in
 [functional-parameterizing-dependencies](../functional-parameterizing-dependencies/SKILL.md):
 
 ```text
-let stubFindCatalogue = \_ -> done (Ok standardCatalogue)
+let stubLoadCatalogueById = \_ -> done (Ok standardCatalogue)
 
 test "prices a booking from the catalogue its rule names" =
-  expect (priceFromCatalogue stubFindCatalogue validBooking)
+  expect (priceFromCatalogue stubLoadCatalogueById validBooking)
     toFinishWith (Ok pricedAtStandardRates)
 ```
 
-`stubFindCatalogue` has the type `FindCatalogue`, which is
+`stubLoadCatalogueById` has the type `LoadCatalogueById`, which is
 `CatalogueId -> AsyncResult<Catalogue, StoreError>`, so the test
 compiles only if the handler asks for what it says. No framework, no
 expectations, no verification of calls. If a test needs to assert that a

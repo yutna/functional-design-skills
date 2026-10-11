@@ -71,18 +71,18 @@ A reader cannot tell which of these are meant for them. Every name is a
 question they must answer before they dare call anything.
 
 ```text
--- focused: one entry point and the types it needs, the rest hidden
-export priceBooking, PricedBookingInput, PricedBooking, PricingError,
-       Currency
+-- focused: one entry point and the types it returns, the rest hidden
+export priceBooking, PricedBooking, PricingError
 
-type PricedBookingInput = { booking: ValidatedBooking, currency: Currency }
-priceBooking : PricedBookingInput -> Result<PricedBooking, PricingError>
+priceBooking :
+  Catalogue -> ValidatedBooking -> Result<PricedBooking, PricingError>
 ```
 
-Now the interface states what matters: one entry point, its input and
-output types, one failure type. `Currency` is exported because the input
-type holds one. The tax table, rounding rule and conversion are
-implementation, and a change to any of them cannot reach a caller.
+Now the interface states what matters: one entry point, its output type
+and one failure type. `Catalogue` and `ValidatedBooking` come from the
+modules that own them. The tax table, the rounding rule and the currency
+conversion are implementation, and a change to any of them cannot reach
+a caller.
 
 ## What matters, in order
 

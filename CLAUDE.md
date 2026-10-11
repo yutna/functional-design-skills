@@ -219,7 +219,8 @@ The default rules bite in specific ways. The ones that catch people out:
 - Examples are written fresh. The running domain is clinic bookings:
   bookings, treatments, appointments, patients, clinicians. Rotate
   secondary domains — library lending, bike share, parking, subscription
-  billing — rather than building one example everywhere.
+  billing, parcel shipments — rather than building one example
+  everywhere.
 - Name the tools. Guidance that says "use a persistent collection
   library" cannot be acted on. Name the library, and verify the name
   against its current documentation rather than from memory.

@@ -1,8 +1,8 @@
-// "transfer(bookingId, customerId) is now a compile error."
+// "transfer(bookingId, patientId) is now a compile error."
 declare const bookingId: BookingId;
-declare const customerId: CustomerId;
+declare const patientId: PatientId;
 // @ts-expect-error the arguments are the wrong way round
-transfer(bookingId, customerId);
+transfer(bookingId, patientId);
 
 // "Branded numbers still support arithmetic operators, which is a real
 // limitation: `quantity + percent` compiles."

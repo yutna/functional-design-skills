@@ -9,7 +9,7 @@ type ValidBooking = { readonly slot: string };
 type PricedBooking = ValidBooking & { readonly total: number };
 type FieldProblem = { readonly tag: string };
 type Catalogue = { readonly fee: number };
-type Customer = { readonly name: string };
+type Patient = { readonly name: string };
 type Row = readonly (string | number | boolean | null)[];
 type Booking = { readonly id: string };
 
@@ -31,5 +31,5 @@ declare function parseEmail(raw: string): Result<string, FieldProblem>;
 declare function parseAge(raw: number): Result<number, FieldProblem>;
 declare const INSERT: string;
 declare function toRow(booking: Booking): Row;
-declare function loadCustomer(id: string): Promise<Result<Customer, FieldProblem>>;
+declare function loadPatient(id: string): Promise<Result<Patient, FieldProblem>>;
 declare function loadCatalogue(): Promise<Result<Catalogue, FieldProblem>>;

@@ -111,12 +111,12 @@ Narrow dependencies, defined by the domain:
 
 ```text
 -- declared beside the handler, in the domain's words
-alias ReadCatalogue = Unit -> AsyncResult<Catalogue, StoreError>
+alias LoadCatalogue = Unit -> AsyncResult<Catalogue, StoreError>
 alias SaveEvents =
   List<ConfirmBookingEvent> -> AsyncResult<Unit, StoreError>
 
 handleConfirmBooking :
-  ReadCatalogue -> SaveEvents -> Instant -> UnvalidatedBooking
+  LoadCatalogue -> SaveEvents -> Instant -> UnvalidatedBooking
     -> AsyncResult<List<ConfirmBookingEvent>, ConfirmBookingFailure>
 ```
 

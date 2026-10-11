@@ -56,17 +56,17 @@ day the code is written and false within a quarter.
 
 ## Case 2 — a form whose fields an admin defines
 
-**Situation.** Customers build intake forms in an admin screen: they add
+**Situation.** Clinics build intake forms in an admin screen: they add
 fields, name them, choose types, mark them required. End users fill the
 forms in. The system stores the answers and shows them back.
 
 **The tempting answer.** Model the fields. `type IntakeForm = { name:
-CustomerName, email: EmailAddress, ... }` — then add a branded type per
-field as customers ask for more.
+PatientName, email: EmailAddress, ... }` — then add a branded type per
+field as clinics ask for more.
 
 That answer cannot work, and it is worth being precise about why: the
 field set is not known when the code is compiled. Every new field would
-be a deployment, and two customers with different fields would either get
+be a deployment, and two clinics with different fields would either get
 two types or one type with everything optional. The second is the shape
 [functional-making-illegal-states-unrepresentable](../../functional-making-illegal-states-unrepresentable/SKILL.md)
 exists to forbid.
@@ -104,11 +104,11 @@ submit :
 The envelope is fully modelled: three fields, all known, all branched on.
 The one varying part is the map. `FieldSpec` is a closed choice type
 because developers decide what kinds of field exist, even though
-customers decide which fields exist.
+clinics decide which fields exist.
 
 **What it cost.** Everything in the
 [checklist](schema-as-data.md#checklist). **What it bought.** A new
-customer field is a row, not a release.
+field for a clinic is a row, not a release.
 
 **The mistake to avoid here** is going generic on the envelope too.
 `{ templateId: String, data: Json }` throws away three fields that had no

@@ -20,7 +20,8 @@ nothing to design away: the check is the conversion.
 ```text
 parseBooking : Json -> Result<UnvalidatedBooking, ParseError>
 validateBooking :
-  UnvalidatedBooking -> Result<ValidatedBooking, ValidationError>
+  Catalogue -> UnvalidatedBooking
+    -> Result<ValidatedBooking, NonEmptyList<ValidationError>>
 ```
 
 Two steps, because they fail for different reasons and different people
