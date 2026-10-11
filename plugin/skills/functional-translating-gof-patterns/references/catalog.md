@@ -30,7 +30,7 @@ naming.
 **Solves:** letting one step of an algorithm vary.
 
 ```text
-sortBy : (A -> A -> Ordering) -> List<A> -> List<A>
+sortWith : (A -> A -> Ordering) -> List<A> -> List<A>
 roundTotal : RoundingRule -> PricedBooking -> PricedBooking
 ```
 
@@ -96,11 +96,15 @@ to a base type.
 **Solves:** adding behaviour without changing an interface.
 
 ```text
-withRetry : Policy -> (A -> AsyncResult<B,E>) -> (A -> AsyncResult<B,E>)
-withTiming : Metric -> (A -> B) -> (A -> B)
+withRetry :
+  RetryPolicy -> (A -> AsyncResult<B, E>) -> (A -> AsyncResult<B, E>)
+withTiming : Metric -> (A -> Async<B>) -> (A -> Async<B>)
 ```
 
-A function of the same shape. Use sparingly; see the alternatives in
+A function of the same shape. Recording a duration reads a clock and
+writes a measurement, so `withTiming` wraps a function that has an
+effect type, such as one of the shell's adapters, and not a pure
+function. Use sparingly; see the alternatives in
 [layer-smells.md](../../functional-separating-layers/references/layer-smells.md).
 
 ## Adapter
@@ -183,7 +187,8 @@ structure.
 Exhaustive matching, or a fold that takes one function per case:
 
 ```text
-foldShape : (Radius -> R) -> (W -> H -> R) -> Shape -> R
+type Shape = Circle of Radius | Rect of W * H | Triangle of B * H
+foldShape : (Radius -> R) -> (W -> H -> R) -> (B -> H -> R) -> Shape -> R
 ```
 
 The double dispatch of the object-oriented version exists to work around
@@ -233,8 +238,10 @@ The previous immutable value. Keep it; restoring is using it again. See
 
 **Solves:** sharing common data between many objects.
 
-Automatic. Immutable values are shared by default, and persistent
-structures share unchanged parts.
+Sharing is safe because the values are immutable: no holder can change
+what the others see. The code creates the shared value once, at the
+composition root, and passes it in. Persistent structures share their
+unchanged parts after an update without being asked.
 
 ## Interpreter
 

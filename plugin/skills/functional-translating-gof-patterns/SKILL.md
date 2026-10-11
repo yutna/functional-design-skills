@@ -52,7 +52,7 @@ Not for: deciding module boundaries, which is
 | Builder          | A record with defaults, or a constructor  |
 | Chain of resp.   | A list of functions returning `Option`    |
 | Memento          | The previous immutable value              |
-| Flyweight        | Structural sharing, which is automatic    |
+| Flyweight        | One immutable value, created once, shared |
 | Interpreter      | A choice type plus an evaluation function |
 | Mediator         | A workflow function                       |
 
@@ -74,11 +74,14 @@ exists to work around a language that cannot match on a value's case.
 Where matching is available, use it.
 
 ```text
+type Shape = Circle of Radius | Rect of W * H | Triangle of B * H
+
 area : Shape -> Area
 area s =
   match s with
   | Circle r -> pi * r * r
   | Rect w h -> w * h
+  | Triangle b h -> b * h / 2
 ```
 
 **Observer becomes returned events.** Instead of registering callbacks
@@ -94,6 +97,8 @@ confirmBooking : BookingRequest -> Result<List<BookingEvent>, ConfirmBookingErro
 
 Not everything shrinks to nothing:
 
+- **Command** is a value describing the action, which is what queues,
+  audit trails, and replay are built on.
 - **Interpreter** is a genuine functional pattern: a choice type for the
   language, a pure evaluator, and the option of several evaluators.
 - **Decorator** remains useful for cross-cutting guarantees such as
@@ -149,5 +154,5 @@ Before naming anything after a pattern, ask:
 ## Further reading
 
 - [catalog.md](references/catalog.md) works each pattern through, with
-  the object-oriented shape, the functional shape, and when the pattern
-  is still worth naming.
+  what it solves, the functional form, and when the pattern is still
+  worth naming.
