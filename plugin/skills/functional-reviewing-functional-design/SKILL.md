@@ -26,16 +26,18 @@ or that a name could apply to anything.
 - Reviewing a pull request or a design document
 - Before merging any non-trivial change
 - Assessing an unfamiliar codebase
-- Deciding what to fix first in code that everyone dislikes
+- Deciding what to fix first in code the user or the history marks as
+  troublesome, such as the files most commits edit
 - Checking your own work before calling it done
 
-Not for: finding bugs, which is a different activity with different
-methods.
+Not for: debugging a failure you already have, which is a different
+activity with different methods.
 
 ## The pass
 
-Run in this order. Stop and record findings; do not fix as you go, or you
-will lose the overview.
+Run in this order. Stop and record flags; do not fix as you go, or you
+will lose the overview. A flag is an observation at a place; the section
+on red flags says when it becomes a finding.
 
 1. **Types.** Can any type hold a state the business forbids? Are domain
    values primitives? Does a record have correlated optional fields?
@@ -58,15 +60,15 @@ will lose the overview.
 
 Fix in this order, because the cost of leaving each is different.
 
-| Rank | Finding                             | Why first         |
-| ---- | ----------------------------------- | ----------------- |
-| 1    | Illegal state representable         | Silent wrong data |
-| 2    | Knowledge duplicated across modules | Drifts apart      |
-| 3    | Hidden failure or hidden effect     | Unknown unknowns  |
-| 4    | Domain depends on infrastructure    | Blocks everything |
-| 5    | Shallow module or leaked internals  | Compounds daily   |
-| 6    | Vague name, stale comment           | Cheap to fix      |
-| 7    | Style and idiom                     | Lowest value      |
+| Rank | Finding                                    | Why first         |
+| ---- | ------------------------------------------ | ----------------- |
+| 1    | Illegal state representable                | Silent wrong data |
+| 2    | Knowledge duplicated across modules        | Drifts apart      |
+| 3    | Hidden failure or effect, false comment    | Unknown unknowns  |
+| 4    | Domain depends on infrastructure           | Blocks everything |
+| 5    | Shallow module, pass-through, overexposure | Compounds daily   |
+| 6    | Vague name, comment that repeats code      | Cheap to fix      |
+| 7    | Style and idiom                            | Lowest value      |
 
 A finding at rank one is worth ten at rank six. Say so in the review, so
 the author knows what to act on.
@@ -76,56 +78,59 @@ the author knows what to act on.
 Each is a symptom you can see without understanding the system. That is
 what makes them cheap to spot, and it is also their limit: **a red flag
 is a place to look, not a finding.** A deliberate convention and a defect
-look identical from outside.
+look identical from outside. The pass records flags; a flag becomes a
+finding only as set out here.
 
 So where the codebase states a rule -- in its instructions file, its own
 rule files, or a lint rule -- that rule is the answer and the flag is
 already settled. Read the reason it gives before doubting it. Everywhere
-else, what turns a flag into a finding is evidence: a measurement, a
-reproduced bug, or a failing test. Reporting the flag itself spends the
-author's time relitigating a decision the team already made, and a review
-that does it twice stops being read.
+else, what turns a flag into a finding is its cost stated for that place,
+or evidence: a measurement, a reproduced bug, or a failing test.
+Reporting the flag itself spends the author's time relitigating a
+decision the project already made, and a review that does it twice stops
+being read.
 
 When a stated convention still looks wrong after you have read its
-reason, measure the claim and take the numbers to whoever owns the
-convention. That is a separate conversation, not a finding in this
-review.
+reason, measure the claim and report the numbers to the user as a
+separate note. It is not a finding in this review.
 
 The full catalogue, with detection and repair for each, is in
 [red-flags.md](references/red-flags.md).
 
-| Flag                    | One-line test                                |
-| ----------------------- | -------------------------------------------- |
-| Shallow module          | Interface nearly as big as the code          |
-| Information leakage     | Same knowledge in two modules                |
-| Temporal decomposition  | Modules named for steps                      |
-| Overexposure            | Common case pays for the rare one            |
-| Pass-through function   | Body is one call, same arguments             |
-| Repetition              | The same fact written twice                  |
-| Special-general mixture | One caller's case inside a primitive         |
-| Conjoined functions     | Neither readable without the other           |
-| Comment repeats code    | Deleting it loses nothing                    |
-| Implementation in a doc | Callers can depend on internals              |
-| Vague name              | Could apply to half the codebase             |
-| Hard to pick a name     | The thing has no single purpose              |
-| Hard to describe        | The purpose sentence needs "and"             |
-| Non-obvious code        | Correct, and a reader stumbles               |
-| Illegal state           | A type permits what the business bans        |
-| Primitive obsession     | Domain values as raw strings                 |
-| Hidden failure          | Throws, and the type does not say            |
-| Hidden effect           | Touches the world, and the type does not say |
-| Wide dependency         | Takes a service, uses one function           |
-| Anaemic pipeline        | Steps that do not change the type            |
-| Over-modelled value     | A wrapper only one function ever sees        |
-| Unparsed generic data   | A map with no schema reaches a rule          |
+| Flag                          | One-line test                                |
+| ----------------------------- | -------------------------------------------- |
+| Shallow module                | Interface nearly as big as the code          |
+| Information leakage           | Same fact in two places, same edit           |
+| Temporal decomposition        | Modules named for steps                      |
+| Overexposure                  | Common case pays for the rare one            |
+| Pass-through function         | Body is one call, same arguments             |
+| Special-general mixture       | One caller's case inside a primitive         |
+| Conjoined functions           | Neither readable without the other           |
+| Threaded value                | Passed through functions that never read it  |
+| Illegal state representable   | A type permits what the business bans        |
+| Primitive obsession           | Domain values as raw strings                 |
+| Anaemic pipeline              | Steps that do not change the type            |
+| Status string                 | String literals compared in many modules     |
+| Over-modelled value           | A wrapper only one function ever sees        |
+| Unparsed generic data         | A map with no schema reaches a rule          |
+| Hidden failure                | Throws, and the type does not say            |
+| Hidden effect                 | Touches the world, and the type does not say |
+| Wide dependency               | Takes a service, uses one function           |
+| Inverted dependency direction | Domain imports a driver or framework         |
+| Comment repeats the code      | Deleting it loses nothing                    |
+| Implementation in a doc       | Callers can depend on internals              |
+| Vague name                    | Could apply to half the codebase             |
+| Hard to pick a name           | The thing has no single purpose              |
+| Hard to describe              | The purpose sentence needs "and"             |
+| Non-obvious code              | Correct, and a reader stumbles               |
 
 ## Writing the review
 
 For each finding, give three things and nothing else:
 
-1. **Where**, precisely.
-2. **What rule it breaks**, named, with the skill that covers it.
-3. **The smallest change** that would fix it.
+1. **Where**, precisely, and what is wrong in one clause.
+2. **The smallest change** that would fix it.
+3. **What rule it breaks**, named, with the skill that covers it.
 
 Do not list findings you would not act on. Do not rewrite the author's
 design in the review; propose the smallest move that removes the flag,
@@ -133,11 +138,16 @@ and let them choose.
 
 ## Reviewing your own work
 
-The same pass, with one addition: you cannot judge obviousness from the
-inside. For that, either hand it to someone else, or leave it and re-read
-it later with the specific question "what would I have to be told to use
-this correctly?". See
-[functional-deciding-what-matters](../functional-deciding-what-matters/SKILL.md).
+The same pass, with two differences. You cannot judge obviousness from
+the inside, so ask the user to read the diff and say what it does, or
+give a reader that has not seen the code only the diff, and ask the same.
+If neither is available, write the step as unverified in the review. See
+[functional-deciding-what-matters](../functional-deciding-what-matters/SKILL.md)
+and
+[working-alone.md](../functional-design/references/working-alone.md).
+The second difference is in the obviousness checklist: on your own code
+you fix at the first "no", and on someone else's diff you record each
+one and fix none.
 
 ## Red flags in the review itself
 
@@ -151,11 +161,13 @@ this correctly?". See
 
 - **Reviewing the diff only.** A change can be locally reasonable and
   make the module's design worse. Read enough context to judge.
-- **Confusing unfamiliarity with obscurity.** Ask the author before
-  calling something non-obvious, and record what the answer was; if it
-  needed an answer, it needed a comment.
-- **Demanding perfection in existing code.** Judge the change by whether
-  it leaves the design better than it found it.
+- **Confusing unfamiliarity with obscurity.** Ask the user, who can ask
+  the author, only when the stumble is over a domain fact or convention
+  you could not have known, and record what the answer was; if it needed
+  an answer, it needed a comment.
+- **Demanding perfection in existing code.** Judge the change by the bar
+  in [functional-programming-strategically](../functional-programming-strategically/SKILL.md):
+  what a change owes the code it touches.
 - **Fixing while reading.** You lose the overview and miss the rank-one
   finding.
 
