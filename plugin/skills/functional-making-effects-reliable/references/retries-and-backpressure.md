@@ -17,11 +17,21 @@ function that retries hides latency, cannot be tested in time, and makes
 its own behaviour depend on the network.
 
 ```text
--- shell: the adapter is wrapped once
+-- shell: the adapter is wrapped once; the wrapped call also takes the
+-- deadline the request has to finish by
 saveBookingResilient = withRetry policy (saveBooking pool)
 
--- domain: unchanged, and unaware
-confirmBooking : SaveBooking -> BookingRequest -> AsyncResult<Placed, Error>
+-- handler: takes the retried save as a capability, and is unaware
+alias SaveBooking = Booking -> AsyncResult<Unit, StoreError>
+type ConfirmFailure =
+  | Rejected of ConfirmBookingError
+  | Unavailable of StoreError
+handleConfirmBooking :
+  SaveBooking -> BookingRequest
+    -> AsyncResult<BookingConfirmed, ConfirmFailure>
+
+-- wiring, per request: the entry point supplies the time left
+handleConfirmBooking (saveBookingResilient deadline)
 ```
 
 ## Retry only what is worth retrying
@@ -58,8 +68,17 @@ type RetryPolicy = {
 - **Total budget** is the number that matters, because it is what the
   caller experiences.
 - **Per-attempt timeout** stops one slow attempt consuming the budget.
-- The budget should shrink as it is passed inward: a request with three
-  seconds left must not start an operation that takes five.
+- The budget should shrink as it is passed inward. The retried call
+  takes a deadline, an `Instant`, and `withRetry` stops at whichever
+  comes first: `policy.totalBudget` from the first attempt, or that
+  deadline. A request with three seconds left therefore does not start
+  an operation that takes five.
+
+```text
+withRetry :
+  RetryPolicy -> (A -> AsyncResult<B, StoreError>)
+    -> Instant -> A -> AsyncResult<B, StoreError>
+```
 
 ## Backoff and jitter
 
@@ -81,7 +100,10 @@ When a dependency is failing consistently, retrying makes it worse and
 delays every caller. A breaker turns that into a fast, clear failure.
 
 ```text
-type BreakerState = Closed | Open of Instant | HalfOpen
+type BreakerState =
+  | Closed of { failures: Integer, windowStart: Instant }
+  | Open of Instant
+  | HalfOpen of { trialInFlight: Boolean }
 ```
 
 - **Closed**: calls pass; failures are counted over a window.

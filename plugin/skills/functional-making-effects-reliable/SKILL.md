@@ -30,15 +30,19 @@ identifiable, so that repeating it is safe and losing it is detectable.
 - Deciding where retries, timeouts, and compensation live
 - A process spans minutes or days and can fail halfway
 
-Not for: in-process concurrency, which is
-[functional-managing-state-immutably](../functional-managing-state-immutably/SKILL.md);
-or choosing transaction boundaries, which is
+Not for: choosing transaction boundaries, which is
 [functional-enforcing-consistency-boundaries](../functional-enforcing-consistency-boundaries/SKILL.md).
+This skill and
+[functional-managing-state-immutably](../functional-managing-state-immutably/SKILL.md)
+meet at work that outlives its request: rule 8 states what it needs, and
+that skill covers the in-process case in full.
 
 ## Core rules
 
-1. Rule. **Give every command an identity.** A client-supplied key, carried
-   through the workflow, is what makes de-duplication possible at all.
+1. Rule. **Give every command whose effects cross a process boundary an
+   identity.** A client-supplied key, carried through the workflow, is
+   what makes de-duplication possible at all. A command whose whole
+   effect is one transaction in one database needs no key.
 2. Rule. **Make the effect idempotent, not the decision.** The pure core is
    already safe to repeat; the write, the charge, and the send are not.
    Idempotency belongs in the adapter.
@@ -65,13 +69,14 @@ or choosing transaction boundaries, which is
 
 ## Pattern
 
-Unreliable: two systems, two failure points, no identity.
+Unreliable: three effects, three failure points, no identity.
 
 ```text
+-- one error type, StepError, all the way along
 confirmBooking cmd =
-  charge cmd.card cmd.amount       -- may time out after succeeding
-    >=> saveBooking                  -- may fail after the charge
-    >=> publishBookingConfirmed         -- may be lost entirely
+  charge cmd.card cmd.amount         -- may time out after succeeding
+    |> bind (saveBooking cmd)        -- may fail after the charge
+    |> bind publishBookingConfirmed  -- may be lost entirely
 ```
 
 A timeout on `charge` leaves nobody knowing whether money moved. A
@@ -79,22 +84,38 @@ process that dies between `saveBooking` and `publishBookingConfirmed`
 loses the event silently, and a retry of the whole workflow charges
 again.
 
-Reliable: an identity, an idempotent adapter, and one transaction.
+Reliable: an identity, an idempotent adapter for each effect, and one
+transaction.
 
 ```text
 type BookingRequest = { key: CommandId, ... }   -- supplied by the caller
 
--- the adapter is idempotent, keyed by the command
-charge : CommandId -> Card -> Money -> AsyncResult<Receipt, ChargeError>
+-- each effect gets a key of its own, derived from the command's key
+type EffectKey = EffectKey of String
+effectKey : CommandId -> String -> EffectKey
+effectKey (CommandId key) operation = EffectKey (join ":" [operation, key])
 
--- state and outbox row written together, relayed afterwards
+-- every adapter takes its effect key and is idempotent on it
+charge : EffectKey -> Card -> Money -> AsyncResult<Receipt, ChargeError>
+
+-- state and outbox rows written together, relayed afterwards; the key
+-- is the unique key of the outbox rows
 saveBookingAndEvents :
-  Booking -> List<BookingEvent> -> AsyncResult<Unit, SaveError>
+  EffectKey -> Booking -> List<BookingEvent>
+    -> AsyncResult<Unit, SaveError>
 ```
+
+The shell calls `effectKey key "charge"` for the charge and
+`effectKey key "save"` for the save. One key shared by every effect is
+wrong: a provider that honours idempotency keys treats a second call
+with the same key as a replay of the first, and answers it with the
+first call's result or an error. A refund must not come back as the
+charge's receipt.
 
 Retrying the workflow with the same `key` is now safe: the charge
 returns the original receipt, the save is a no-op, and the event is
-relayed at most once more, which the consumer de-duplicates.
+relayed again as often as the relay fails before marking it sent, which
+the consumer de-duplicates.
 
 ## Delivery guarantees
 
@@ -110,19 +131,24 @@ down beside the consumer.
 
 ## Where each concern lives
 
-| Concern           | Layer                                |
-| ----------------- | ------------------------------------ |
-| Command identity  | Created at the edge, carried through |
-| Idempotency       | The adapter that performs the effect |
-| Retry and timeout | The shell, bounded                   |
-| De-duplication    | The consumer, on receipt             |
-| Compensation      | A named domain operation             |
-| Ordering          | One writer, or a sequence number     |
-| Backpressure      | The shell, from queue depth          |
+| Concern           | Layer                                    |
+| ----------------- | ---------------------------------------- |
+| Command identity  | Created by the caller before the first   |
+|                   | attempt, carried through                 |
+| Idempotency       | The adapter that performs the effect     |
+| Retry and timeout | The shell, bounded                       |
+| De-duplication    | The consumer, on receipt                 |
+| Compensation      | A named domain operation                 |
+| Ordering          | One writer, or a sequence number         |
+| Backpressure      | The shell, from queue depth              |
 
-Nothing in that table belongs in the pure core, which is the point: the
-core stays a function from values to a decision, and everything here is
-the shell's job. See
+The command's key is the one identifier the shell does not generate: a
+key made on the server changes on every retry. The effects in that
+table are the shell's. The decisions about them, when to compensate and
+which deadline applies, are pure and live in `advance`, the transition
+function of the process (see
+[compensating-workflows.md](references/compensating-workflows.md)). The
+core stays a function from values to a decision. See
 [functional-separating-pure-core-from-shell](../functional-separating-pure-core-from-shell/SKILL.md).
 
 ## Red flags
@@ -161,8 +187,8 @@ the shell's job. See
 ## Further reading
 
 - [idempotency-and-delivery.md](references/idempotency-and-delivery.md)
-  covers command identity, the outbox, the job queues that already
-  implement it, and de-duplication.
+  covers command identity, the outbox, the queues that can carry it, and
+  de-duplication.
 - [compensating-workflows.md](references/compensating-workflows.md)
   covers process managers, compensation, and when a saga is wrong.
 - [retries-and-backpressure.md](references/retries-and-backpressure.md)
