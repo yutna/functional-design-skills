@@ -88,9 +88,11 @@ above at each hop.
 
 Vocabulary decides whether a boundary exists at all. It does not decide
 which side of it a given function belongs on. For that, ask a different
-question. This is the axis inside the domain; which way an import points
-is the other axis, and rule 7 in
-[SKILL.md](../SKILL.md) states both.
+question. This is the axis inside the domain, and rule 7 in
+[SKILL.md](../SKILL.md) states it. Which way an import points is the
+other axis, and rule 6 of
+[functional-applying-solid-functionally](../../functional-applying-solid-functionally/SKILL.md)
+settles that.
 
 > What would have to happen in the world for this to need changing?
 

@@ -139,6 +139,7 @@ converts a failure the caller could handle into a crash.
 const resilient = query(pool, sql).pipe(
   Effect.retry(
     Schedule.exponential("100 millis").pipe(
+      Schedule.jittered,
       Schedule.compose(Schedule.recurs(3)),
     ),
   ),

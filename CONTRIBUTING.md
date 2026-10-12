@@ -68,7 +68,11 @@ node scripts/eval-routing.mjs --profile full  # also score the "When to use" sec
   `Default.`, or `Judgement.` so a reader can tell a contract from a
   preference. `Rule` means breaking it is a defect; `Default` means do
   this unless a stated condition holds; `Judgement` means two answers
-  are defensible.
+  are defensible. The index skill defines the three for the reader, and
+  `scripts/validate-rules.mjs` reads the labels from that section, so a
+  label it does not define is one no rule may carry. A `Default` states
+  its condition in a sentence of its own, or states none because the
+  pack knows no exception to it.
 - Every skill carries `metadata.pack`, which the installer reads to tell
   "already installed" from "another pack owns this name". A name held by
   something that claims no pack is left alone too, `--force` included.

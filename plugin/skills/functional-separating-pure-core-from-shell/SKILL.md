@@ -90,10 +90,12 @@ effect.
    and writes needs no test of its own. A transaction, a retry or an
    ordering guarantee does: that work is real, and it goes into the
    adapter, where it is tested against the real thing.
-8. Default. **Wire in one place.** One function at the edge of each
-   program, the composition root, gives every handler what it reaches
-   the world through: its capabilities, or the connection its adapters
-   take. A test is a program of its own and wires its own.
+8. Default. **Wire in one place.** One function at the edge of each program, the
+   composition root, gives every handler what it reaches the world through: its
+   capabilities, or the connection its adapters take. Two things are bound
+   somewhere else. A test is a program of its own and wires its own. And a
+   capability built from something only a request has, such as a retry around an
+   adapter with that request's deadline, is bound at that request's entry point.
 9. Rule. **Remove an effect where it is introduced, not where it
    surfaced.** Calling something that has an effect gives the caller an
    effect, so one lookup buried deep changes the type of every function

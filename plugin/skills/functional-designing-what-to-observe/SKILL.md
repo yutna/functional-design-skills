@@ -42,7 +42,9 @@ Not for: choosing what an interface exposes to callers, which is
    follow from the questions; the reverse produces data nobody uses.
 2. Default. **Emit domain events, not log lines.** The workflow already returns
    what happened: events on success, and the error on a refusal. The shell
-   projects the result into whatever the platform wants.
+   projects the result into whatever the platform wants. Two records are not
+   domain events, and the shell makes them itself: a span around each call that
+   leaves the process, and an error-level line for a failure nobody expected.
 3. Rule. **Record each event once.** A step that logs and returns an error
    produces two records of one event and buries the useful one. The shell
    records it, once, where it handles the result.
@@ -52,12 +54,17 @@ Not for: choosing what an interface exposes to callers, which is
    context object that accumulates.
 5. Default. **Structured errors are already structured logs.** The error type
    built for callers has the case, the identifiers, and the values. Do not
-   flatten it to a sentence before recording it.
+   flatten it to a sentence before recording it. A field that can hold personal
+   data is the one part not recorded as it is: it is wrapped in the redacting
+   type, as rule 6 requires.
 6. Rule. **Never record secrets, or personal data beyond an identifier.**
    Decide this at the type level, so a careless serialisation cannot leak it.
 7. Default. **Alert on what users feel**, not on what a machine noticed. The
    oldest unprocessed item, or a queue depth that keeps rising, beats processor
-   utilisation. A fixed threshold on a resource number is the alert to avoid.
+   utilisation. A fixed threshold on a resource number is the alert to avoid. A
+   count of work for users that has failed and now waits for a person, such as
+   dead letters or stuck bookings, is not a resource number and not an expected
+   outcome: one above zero is already a user waiting.
 
 ## Pattern
 

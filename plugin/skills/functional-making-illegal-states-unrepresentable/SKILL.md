@@ -43,14 +43,28 @@ optional, which is the defect this skill exists to remove. See
 1. Default. **Count the states.** List what the type can hold and what the
    business allows. Every extra state is a defect waiting for an input.
 2. Default. **Prefer construction over validation.** A value that exists is
-   already valid. Push the check into the only place a value can be made.
+   already valid. Push the check into the only place a value can be made. A
+   check is the right tool where the answer is not in the value: the rule
+   depends on the time, on another system or on a record stored somewhere else,
+   or the rule is itself data that changes without a release.
+   [when-to-validate-instead.md](references/when-to-validate-instead.md) lists
+   the cases and how to keep the check in one place.
 3. Default. **Give each state its own case, with its own data.** Correlated
-   optional fields become cases of a choice type.
+   optional fields become cases of a choice type. This holds wherever the set of
+   cases is closed. A shape whose fields are decided outside the code stays
+   generic. A draft is outside it only where the specification or the screens
+   themselves have the concept, such as a booking form that is saved
+   half-filled: it is then a type of its own, in which optional fields are
+   legal.
 4. Rule. **Make the constructor the only door.** If a record can be built field
    by field from anywhere, its invariants are advisory.
-5. Default. **Encode the phase in the type.** `UnvalidatedBooking`,
+5. Rule. **Encode the phase in the type.** `UnvalidatedBooking`,
    `ValidatedBooking` and `PricedBooking` are different types, so a function
-   cannot receive the wrong phase.
+   cannot receive the wrong phase. A phase is a point where something new has
+   been established about the value. A step that establishes nothing is not a
+   phase, and
+   [functional-designing-workflow-pipelines](../functional-designing-workflow-pipelines/SKILL.md)
+   says what becomes of it.
 6. Rule. **Never write a guard for a state the type forbids.** If you feel the
    need, either the type is wrong or the guard is dead code pretending to be
    safety. Where the type cannot express an invariant, an assertion that

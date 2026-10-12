@@ -55,13 +55,15 @@ Not for: React itself, deployment, or routing configuration.
    It works out who is calling, parses every field, and leaves the
    workflow to decide whether this caller may do this, whatever the page
    that rendered the form already checked.
-5. Default. **A Server Action is a workflow**: a command arrives, the pure
-   core decides, the shell performs, and the result is returned as data
-   the form can render. Its failures are values in that result, not
-   thrown.
-6. Default. **Server by default; client where there is interaction.**
-   Marking a component as client-side pulls its whole subtree across,
-   so the mark belongs as far down the tree as it can go.
+5. Rule. **A Server Action is a workflow**: a command arrives, the pure core
+   decides, the shell performs, and the result is returned as data the form can
+   render. Its failures are values in that result, not thrown. An action that
+   applies no rule has no core to call, and returns its failures as values all
+   the same.
+6. Default. **Server by default; client where there is interaction.** A
+   component is marked as client-side only when it needs state, an event
+   handler, or a browser API. The mark pulls its whole subtree across, so it
+   belongs as far down the tree as it can go.
 7. Default. **Revalidation is a decision about a cache, not about a
    screen.** Name what became stale, invalidate that, and let the
    rendering follow.

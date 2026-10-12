@@ -281,14 +281,18 @@ A backoff and a limit are combined with `Schedule.max`, not by composing
 one into the other. It continues only while every schedule in the array
 continues, and waits as long as the slowest of them asks. Against a
 query that always fails, the schedule below makes four attempts and
-waits about 700 milliseconds between them in all.
+waits about 700 milliseconds between them in all, each wait varied by up
+to a fifth either way so that clients do not retry in step.
 
 ```ts
 import { Effect, Schedule } from "effect";
 
 const resilient = query(pool, sql).pipe(
   Effect.retry(
-    Schedule.max([Schedule.exponential("100 millis"), Schedule.recurs(3)]),
+    Schedule.max([
+      Schedule.jittered(Schedule.exponential("100 millis")),
+      Schedule.recurs(3),
+    ]),
   ),
   Effect.timeout("5 seconds"),
 );

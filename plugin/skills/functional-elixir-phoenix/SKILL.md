@@ -43,19 +43,21 @@ Not for: the Elixir language, OTP, routing, or deployment.
 3. Rule. **A changeset parses; it does not decide.** Format, presence and
    length belong there. "A discount over twenty per cent needs approval"
    belongs in the domain, where it can be tested without Ecto.
-4. Default. **One assign for the screen state**, as a tagged tuple.
-   Several booleans permit screens that cannot exist.
+4. Default. **One assign for the screen state**, as a tagged tuple. Several
+   booleans permit screens that cannot exist. Flags that vary independently,
+   where every combination is a screen that exists, stay assigns of their own.
 5. Rule. **No business rules in a controller or a LiveView.** They hand
    the request's or the event's params to the context and store the
    outcome.
-6. Default. **Return events; let the shell broadcast them.** Broadcasting
-   from inside a context couples the decision to every subscriber and
-   makes it untestable.
-7. Default. **`Repo.transact/2` around a `with` for a transaction's
-   steps.** A failing step ends the `with`, rolls the transaction back
-   and reaches the caller. Reach for `Ecto.Multi` when the set of steps
-   is built at run time, or when the caller has to learn which step
-   failed.
+6. Rule. **Return events; let the shell broadcast them.** Broadcasting from
+   inside a context couples the decision to every subscriber and makes it
+   untestable.
+7. Default. **`Repo.transact/2` around a `with` for a transaction's steps.** A
+   failing step ends the `with`, rolls the transaction back and reaches the
+   caller. Reach for `Ecto.Multi` when the set of steps is built at run time, or
+   when the caller has to learn which step failed. Before Ecto 3.13 there is no
+   `Repo.transact/2`, and the same shape is written with `Repo.transaction/2`
+   and `Repo.rollback/1`.
 
 ## Pattern
 
@@ -108,7 +110,8 @@ be testable with Ecto uninstalled.
 - A context calling another context's schema module
 - A changeset containing a rule a domain expert would recognise
 - `Repo` called from anywhere but a context
-- A LiveView assign per boolean instead of one state tuple
+- A LiveView assign per boolean, for flags that depend on each other,
+  instead of one state tuple
 - `Phoenix.PubSub.broadcast` inside a context function
 
 ## Common mistakes

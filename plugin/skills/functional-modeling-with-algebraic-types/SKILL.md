@@ -36,23 +36,36 @@ Not for: enforcing value ranges on a single primitive, which is
 ## Core rules
 
 1. Default. **Say AND with a record, OR with a choice.** Read the requirement
-   aloud. Every "or" in the sentence is a case; every "and" is a field.
+   aloud. Every "or" in the sentence is a case; every "and" is a field. An
+   "optionally" is neither: a field that may be absent whatever the others hold
+   stays an `Option` field, and only optional fields whose presence depends on
+   each other become cases.
 2. Rule. **Attach data to the case that owns it.** A field that is meaningful
    only in one state belongs inside that state's case, not beside it.
 3. Default. **Replace booleans that mean something.** A boolean carries one bit
-   and no name. A two-case choice type carries a name, and can grow data.
+   and no name. A two-case choice type carries a name, and can grow data. A
+   boolean means something when other fields make sense under only one of its
+   values, or when it sits beside flags that depend on it. One that passes
+   neither test stays a boolean, whether it records a plain fact, as `isWalkIn`
+   does, or is the answer of a predicate.
 4. Rule. **Match exhaustively.** Name every case, and let no arm return a
    value for a case it does not name, so adding a case produces a list of
    places to think about. A last arm that crashes on an unknown tag
    returns nothing, so it is outside this rule.
 5. Default. **Compose, do not flatten.** Build big types from small named ones.
-   `Booking` holding `PatientInfo` and `ClinicLocation` reads better and
-   changes better than twenty fields in a row.
+   `Booking` holding `PatientInfo` and `ClinicLocation` reads better and changes
+   better than twenty fields in a row. A transfer type is outside this: it stays
+   as flat as the wire or the table it mirrors.
 6. Rule. **Name every case and every field in the domain's words.** The type is
    the documentation; see
    [functional-capturing-the-domain](../functional-capturing-the-domain/SKILL.md).
 7. Default. **Prefer a type over a comment.** If the comment explains which
-   fields are valid together, the type is wrong.
+   fields are valid together, the type is wrong. A constraint whose answer is
+   not in the value, because it depends on the time, on another system or on a
+   record stored somewhere else, cannot be put in the value's type; it is
+   checked, and said in a comment on the interface.
+   [when-to-validate-instead.md](../functional-making-illegal-states-unrepresentable/references/when-to-validate-instead.md)
+   lists those cases.
 
 ## Pattern
 
@@ -141,7 +154,7 @@ illegal combinations from the code that matters.
 - A boolean whose name needs a comment to explain
 - Consumers that check a field before reading another field
 - A wildcard case in a match over a domain type
-- A type with more than about seven fields and no grouping
+- A domain type with more than about seven fields and no grouping
 
 ## Common mistakes
 

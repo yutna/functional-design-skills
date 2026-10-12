@@ -60,7 +60,10 @@ Not for: TypeScript without Effect, which has
 2. Rule. **Put every failure in the error channel**, as a tagged error, never as
    a thrown exception.
 3. Default. **Declare dependencies as services**; let the requirements channel
-   accumulate them, and provide layers only at the edge.
+   accumulate them, and provide layers only at the edge. A service is narrow,
+   two or three related operations, which is this library's form of one function
+   type for each capability. A single capability that one workflow uses is
+   simpler still as a plain function parameter, with no service and no layer.
 4. Rule. **Parse at the boundary with a schema**, producing branded domain
    types, and never let the encoded shape inward.
 5. Default. **One error union per workflow**, built from tagged errors, handled
@@ -84,7 +87,7 @@ class PatientNotFound extends Data.TaggedError("PatientNotFound")<{
 }> {}
 
 // a dependency the domain declares in its own words: `Slots`, a service
-// with one operation, `hold`, that fails with `SlotUnavailable`
+// that holds and releases slots; `hold` fails with `SlotUnavailable`
 
 // the workflow: success, failure, and requirements are all in the type
 const bookAppointment = (

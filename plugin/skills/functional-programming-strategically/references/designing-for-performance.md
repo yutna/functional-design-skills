@@ -27,7 +27,7 @@ easier to change than complex code is.
 | Copying whole structures | Persistent structures share, not copy  |
 | Repeated pure work       | Memoise at one owner, not at callers   |
 | Building large lists     | Stream or fold instead of materialise  |
-| Work not always needed   | Laziness, but only where measured      |
+| Work not always needed   | Laziness, forced at the boundary       |
 | Deep recursion           | Tail calls, or an explicit accumulator |
 | Chatty I/O               | Batch at the shell, keep the core pure |
 

@@ -41,6 +41,7 @@ const SCENARIO_COUNT =
   (readFileSync(join(ROOT, 'evals', 'scenarios.md'), 'utf8')
     .match(/^## \d+\. /gm) ?? []).length
 const SKILL = join('plugin', 'skills', 'functional-folding-over-data', 'SKILL.md')
+const INDEX = join('plugin', 'skills', 'functional-design', 'SKILL.md')
 
 // Two cases below need a description to copy or to replace. Reading them
 // rather than writing them down keeps the cases working after an edit, for
@@ -244,6 +245,21 @@ const CASES = [
   ['a core rule labelled with a word that is not one of the three', SKILL,
     ['1. Default. **Name the accumulator', '1. Maybe. **Name the accumulator'],
     'not one of Rule, Default, Judgement', 'validate-rules.mjs'],
+  // The labels are read from the index, where the reader is told what each
+  // means. These three break that definition rather than a rule: a label
+  // rules still carry and the index no longer defines, the section gone,
+  // and the section there with nothing in it that reads as a definition.
+  ['a label on eleven rules that the index no longer defines', INDEX,
+    ['- **Judgement.**', '- **Judgment.**'],
+    'is labelled "Judgement", not one of Rule, Default, Judgment',
+    'validate-rules.mjs'],
+  ['the section that defines the labels, renamed', INDEX,
+    ['## How strictly a rule is meant', '## Strictness'],
+    'so the labels on every core rule ship with no definition',
+    'validate-rules.mjs'],
+  ['a section of labels in which nothing reads as a definition', INDEX,
+    ['- **', '* **', 'all'],
+    'defines no label', 'validate-rules.mjs'],
   ['a documented count that no longer matches reality',
     join('evals', 'README.md'),
     [SCENARIO_SENTENCE, 'holds nine fuller problems'],

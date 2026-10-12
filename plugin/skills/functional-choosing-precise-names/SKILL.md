@@ -35,20 +35,26 @@ Not for: deciding what to comment, which is
 
 1. Default. **Be precise, not general.** A name should distinguish this thing
    from everything nearby. `blockCount` beats `count`; `remainingBytes` beats
-   `size`.
+   `size`. Precision is owed in proportion to scope: the parameter of a one-line
+   lambda may be a letter and a local of a few lines one short word, as the
+   table in [naming-rules.md](references/naming-rules.md) sets out.
 2. Default. **Name the concept, not the shape.** `pendingInvoices` beats
-   `invoiceList`. The reader can see it is a list.
+   `invoiceList`. The reader can see it is a list. A type that exists to cross a
+   boundary is the exception: `BookingDto` and `BookingRow` are named for the
+   shape they have there, and the plain noun stays with the domain type.
 3. Default. **One word per concept, everywhere.** Use one verb for one kind of
    retrieval and one noun for one concept. Two words are allowed when they
    name different kinds of retrieval, and the table in
    [naming-rules.md](references/naming-rules.md) fixes which is which.
-4. Default. **Do not encode the type or the module.** `bookingService.bookingSave`
-   repeats the noun and adds a type suffix, two redundancies; `Booking.save`
-   says it once. In a flat module the function name has to carry the noun, so
-   keep `saveBooking` and drop the rest.
+4. Default. **Do not encode the type or the module.**
+   `bookingService.bookingSave` repeats the noun and adds a type suffix, two
+   redundancies; `Booking.save` says it once. Where callers write the function's
+   name without the module's, as with a named import, the name has to carry the
+   noun, so keep `saveBooking` and drop the rest.
 5. Default. **Name what it returns, not what it does inside.** `bookingTotal`,
    not `calculateAndCacheTotal`. A pure function that only returns a value may
-   be named for it, as a noun.
+   be named for it, as a noun. A function whose point is its effect is named for
+   the effect, as `saveBooking` and `sendReminder` are.
 6. Default. **Say what a boolean is true of.** `isExpired`,
    `hasUnpaidTreatments`. The names to avoid are listed in
    [naming-rules.md](references/naming-rules.md).
@@ -105,6 +111,10 @@ Do not explain the name to them; their first reading is the measurement.
 | `value`        | The value of which quantity?    |
 | `item`         | An item of what collection?     |
 | `context`      | Which specific values, and why? |
+
+A word in this table is vague when it stands alone. `handleConfirmBooking`
+is this pack's name for the handler of that command, and the command's
+name answers the question the table asks.
 
 More rules, including length and consistency, in
 [naming-rules.md](references/naming-rules.md).

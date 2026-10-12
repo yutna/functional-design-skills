@@ -35,7 +35,10 @@ Not for: values that genuinely are unconstrained free text with no rules.
 ## Core rules
 
 1. Default. **One type per domain concept**, even when the underlying primitive
-   is the same. `PatientId` and `BookingId` are different types.
+   is the same. `PatientId` and `BookingId` are different types. Three kinds of
+   value stay plain: one that lives and dies inside one function, one whose
+   shape is decided by config, a tenant or an admin, and free text that no rule
+   constrains. See [Cost and where to stop](#cost-and-where-to-stop).
 2. Rule. **A constructor that can reject an input returns `Result`.** The
    constructor is the only place the rule lives. A constructor whose
    parameter type has no invalid value, or that clamps by a rule the domain
@@ -45,7 +48,9 @@ Not for: values that genuinely are unconstrained free text with no rules.
 4. Default. **Unwrap late, at the edge.** Inside the domain, pass the wrapper.
    Convert to a primitive only when serialising or displaying.
 5. Default. **Put the unit in the type, not in the name.** `Meters`, not
-   `distanceInMeters: Float`, so mixing units cannot compile.
+   `distanceInMeters: Float`, so mixing units cannot compile. The first
+   condition of rule 1 holds here too: a number that never leaves one function
+   keeps its unit in its name.
 6. Rule. **Choose the constraint the business names.** Encode "a quantity is at
    least one", not "an integer between one and 2147483647".
 7. Rule. **Keep the rule in one place forever.** When it changes, exactly one

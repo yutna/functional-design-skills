@@ -40,9 +40,10 @@ which is
 2. Default. **Discover through events.** Ask what happens, in the past tense:
    "booking confirmed", "payment declined". Events reveal boundaries that nouns
    hide.
-3. Default. **Every workflow starts from one command or one event, and
-   returns events.** Name the trigger, the work, and what the rest of the
-   world learns. That triple is the unit of design. See
+3. Rule. **Every workflow starts from one command or one event, and returns
+   events.** Name the trigger, the work, and what the rest of the world learns.
+   That triple is the unit of design. A read that changes nothing is a query and
+   not a workflow: it returns a view and no events. See
    [functional-designing-workflow-pipelines](../functional-designing-workflow-pipelines/SKILL.md).
 4. Rule. **Draw a context boundary wherever a word changes meaning.** If
    "patient" means a billing account here and a person there, those are two
@@ -53,10 +54,17 @@ which is
    is the other choice, made on purpose. See
    [bounded-contexts.md](references/bounded-contexts.md).
 6. Default. **Persist nothing until the model holds.** Deriving the model from a
-   schema imports the storage's compromises into the domain forever.
+   schema imports the storage's compromises into the domain forever. The model
+   holds once the read-back that rule 7 asks for brings no further change. A
+   schema that is already there, or that belongs to someone else, changes
+   nothing: the model is still written from the domain, and a mapping at the
+   boundary carries the difference.
 7. Default. **Write the model down as types, and read them back to the
    experts.** Types are the cheapest reviewable artefact, and non-programmers
-   can follow a well-named choice type.
+   can follow a well-named choice type. Where there is no expert, the read-back
+   goes to the user with the list of assumptions made, and
+   [working-alone.md](../functional-design/references/working-alone.md) gives
+   the order of the substitutes.
 
 ## Pattern
 

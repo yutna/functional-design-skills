@@ -31,7 +31,10 @@ const wrongOrder = (booking: Booking) =>
     .with({ lifecycle: { tag: "Cancelled" } }, () => "archive")
     .with({ treatment: { tag: "Procedure" } }, () => "procedure room")
     .with(
-      { treatment: { tag: "Procedure" }, minutes: P.when((m) => m > 90) },
+      {
+        treatment: { tag: "Procedure" },
+        minutes: P.when((m) => m > THEATRE_MINUTES),
+      },
       () => "theatre",
     )
     .with({ treatment: { tag: "Consultation" } }, () => "consulting room")

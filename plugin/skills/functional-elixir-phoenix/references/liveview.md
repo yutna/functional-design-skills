@@ -58,3 +58,13 @@ end
 Broadcasting from inside the domain function makes it untestable and
 couples it to every subscriber. Returning events keeps the decision pure
 and puts delivery, ordering, and failure where they can be handled.
+
+A broadcast made this way can be lost: the process may stop between the
+save and the broadcast, and PubSub keeps nothing. That is acceptable for
+what this one is, a hint to other screens to read again, because a
+screen that misses it shows the stored state the next time it loads. An
+event that another context acts on is a different thing. It is written
+in the same transaction as the state, as the `:outbox` step in
+[contexts-and-ecto.md](contexts-and-ecto.md) shows, and rule 4 of
+[functional-making-effects-reliable](../../functional-making-effects-reliable/SKILL.md)
+says why.

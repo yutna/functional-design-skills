@@ -22,10 +22,10 @@ const booking = (id, treatments) =>
   Object.freeze({ id, treatments: Object.freeze([...treatments]) });
 ```
 
-In strict mode, and in every module, assignment to a frozen property
-throws. Without strict mode it fails silently, which is worse than not
-freezing at all, so make sure modules are ES modules or that files start
-with `"use strict"`.
+In strict mode, which every ES module is in, assignment to a frozen
+property throws. Without strict mode it fails silently, which is worse
+than not freezing at all, so make sure modules are ES modules or that
+files start with `"use strict"`.
 
 Freezing costs a little at construction and nothing on read. Freeze
 exported values and anything stored for longer than a function call;

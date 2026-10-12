@@ -11,11 +11,11 @@ metadata:
 
 ## Overview
 
-A statechart is a state machine plus three things a plain union does
-not have: states inside states, regions that are active at once, and
-time as a first-class trigger. Each is a real capability and each costs
-the same thing — the lifecycle stops being a function you can call with
-two arguments and becomes a library value.
+A statechart is a state machine plus four things a plain union does not
+have: states inside states, regions that are active at once, time as a
+first-class trigger, and actors whose lifetime it owns. Each is a real
+capability and each costs the same thing — the lifecycle stops being a
+function you can call with two arguments and becomes a library value.
 
 So this pack is mostly about the second half of that trade. The
 modelling itself is unchanged and lives in
@@ -68,25 +68,33 @@ an exhaustiveness check for features you are not using.
 1. Rule. **The machine owns the lifecycle.** Nothing outside it decides
    what state something is in, and no component keeps a second copy of
    the state value to make rendering easier.
-2. Default. **Reach for a statechart only when a union falls short.**
-   Hierarchy, parallel regions, delays, or an actor per item. Without
-   one of those you have taken on a library and lost exhaustiveness.
+2. Default. **Reach for a statechart only when a union falls short.** It falls
+   short when the lifecycle has states inside states, regions that are active at
+   once, a transition that time fires, or an actor whose lifetime the machine
+   owns. Without one of those you have taken on a library and lost
+   exhaustiveness.
 3. Rule. **Guards are pure predicates over context and event.** A guard
    that reads a clock, a store, or the network is a transition
    pretending not to be one.
 4. Rule. **Actions describe; the interpreter performs.** Keep the effect
    in the actor or at the edge, so the machine stays a value that can be
    stepped in a test.
-5. Default. **`invoke` for work with a lifetime, an action for work
-   without one.** An invoked actor is cancelled when its state is left,
-   which is the whole reason to prefer it for anything that can outlive
-   a keystroke.
+5. Default. **`invoke` for work with a lifetime, an action for work without
+   one.** Work has a lifetime when it can still be running after its state is
+   left: a request, a timer, a subscription. An invoked actor is cancelled when
+   its state is left, and work started any other way has no owner, which rule 8
+   of
+   [functional-making-effects-reliable](../functional-making-effects-reliable/SKILL.md)
+   makes a defect. An action is for a step that is over at once, such as an
+   `assign`.
 6. Rule. **Context is replaced, not mutated.** `assign` returns the new
    value; writing through the draft is the mutation this pack exists to
    remove.
 7. Default. **Test by stepping, not by running.** `transition` and
    `initialTransition` give the next state and the actions without an
-   interpreter, timers, or waiting.
+   interpreter, timers, or waiting. Running an actor is for the few tests of the
+   wiring, which show that an invoked actor starts and that its answer comes
+   back as an event.
 
 ## Pattern
 

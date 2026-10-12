@@ -58,8 +58,9 @@ Not for: judging whether a module's interface is worth its cost, which is
 3. **Only one needs to be understood by callers.** The other can be
    hidden behind it.
 4. **They belong to different layers.** Different vocabulary means a real
-   boundary, and that is the only layer reason; a layer that is just a
-   folder name is not one. See [functional-separating-layers](../functional-separating-layers/SKILL.md).
+   boundary, and a layer that is just a folder name is not one. Rule 1 of
+   [functional-separating-layers](../functional-separating-layers/SKILL.md)
+   lists what else earns a layer.
 
 ## Pattern
 

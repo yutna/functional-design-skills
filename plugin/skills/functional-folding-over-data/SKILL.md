@@ -35,23 +35,33 @@ selecting elements, which is a filter.
 ## Core rules
 
 1. Default. **Name the accumulator type first.** What is being built determines
-   the fold's shape more than the elements do.
+   the fold's shape more than the elements do. Naming it is not always declaring
+   it: a fold that carries one value of a type that exists, such as a total in
+   `Satang`, has its accumulator named already, and a record is declared only
+   where the fold carries more than one value.
 2. Rule. **The combining function is pure and total.** Same accumulator and
    element, same result, no effect.
 3. Default. **Prefer the specific operation when one exists.** `sum`, `maximum`,
-   `groupBy` and `count` say more than a fold with a lambda.
-4. Default. **Fold from the left, and reverse once when a list is built.**
-   A left fold with a forced accumulator is iterative and constant in
-   stack; see the accumulator rule in
+   `groupBy` and `count` say more than a fold with a lambda. One exists only for
+   the type it was written for: a total of `Satang` is a fold with that type's
+   own `add` and `zero`, because `sum` adds plain numbers.
+4. Default. **Fold from the left, and reverse once when a list is built.** A
+   left fold with a forced accumulator is iterative and constant in stack; see
+   the accumulator rule in
    [laziness.md](../functional-using-recursion-and-laziness/references/laziness.md).
-   Use a right fold only in a lazy language, or when the consumer takes
-   the result a piece at a time.
-5. Default. **Merge two folds into one pass only when they share a
-   predicate or an accumulator.** The total and the count of the same
-   treatments are one fold. Folds with nothing in common stay as
-   separate passes, because combining them obscures all of them.
+   Use a right fold only in a lazy language, or when the consumer takes the
+   result a piece at a time. The reverse is for a linked list, whose cheap end
+   is the front; a vector or an array that grows at its end is built in order
+   and needs none.
+5. Default. **Merge two folds into one pass only when they share a predicate or
+   an accumulator.** The total and the count of the same treatments are one
+   fold. Folds with nothing in common stay as separate passes, because combining
+   them obscures all of them. A measurement showing that the extra pass costs is
+   the one thing that joins them.
 6. Default. **Give a recursive type its fold.** Write it once beside the type,
-   and consume the type through it everywhere else.
+   and consume the type through it everywhere else. A recursive type that only
+   one function walks is matched in that function; its fold is written when the
+   walk would otherwise be written a second time.
 
 ## Pattern
 
@@ -161,7 +171,7 @@ partial results combined. See
 
 - A mutable accumulator declared above a loop
 - The same traversal of a tree written in three places
-- A recursive helper whose only job is to walk a structure
+- A second recursive helper whose only job is to walk the same structure
 - An index variable used only to step through a collection
 - Nested loops building a map that a `groupBy` would produce
 - A fold whose combining function performs I/O

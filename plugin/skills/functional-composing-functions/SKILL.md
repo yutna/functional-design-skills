@@ -46,11 +46,16 @@ Not for: designing the domain types themselves.
    parameters into a named record rather than passing six positional
    arguments.
 3. Default. **Put the varying argument last.** Data last, configuration and
-   dependencies first, so partial application produces a useful function.
+   dependencies first, so partial application produces a useful function. In a
+   language whose pipe passes its value as the first argument, as Elixir's does,
+   the order is the other way round: the data first, and what varies least last.
 4. Default. **Name the composed function.** A pipeline assigned to a name that
-   states the business process beats a long anonymous chain.
+   states the business process beats a long anonymous chain. A short chain
+   applied to a value at hand, of about four steps or fewer, needs no name.
 5. Default. **Prefer explicit parameters to captured context.** A closure over
-   module state is a hidden input.
+   module state is a hidden input. Partial application is not capture:
+   `priceBooking catalogue` holds a value that the signature of `priceBooking`
+   names, so anyone who reads that signature sees it.
 6. Judgement. **Stop before the chain becomes unreadable.** Point-free style is
    a tool, not a goal; a named intermediate value is often clearer.
 7. Rule. **Match the shapes before composing.** Lift pure into fallible, and

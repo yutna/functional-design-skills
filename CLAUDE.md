@@ -121,7 +121,14 @@ rejected.
   condition belongs in its own sentence rather than appended to the rule;
   `Judgement` means two answers are defensible and the skill says what
   tips it. Without the label every rule reads with the same weight, and
-  an agent cannot tell a contract from a preference.
+  an agent cannot tell a contract from a preference. The index defines
+  the three for the reader, under "How strictly a rule is meant", and
+  `validate-rules.mjs` reads the labels from there, so a label that
+  section does not define is one no rule may carry: from 3.0.0 to 3.2.0
+  the definitions were in the README alone, which does not ship. A
+  `Default` may state no condition only where the pack knows no
+  exception to it. Before leaving one bare, search the pack for a page
+  that excuses it; most of the bare ones in 3.2.0 had one.
 - **Every skill says which pack it came from.** `metadata.pack` must be
   `functional-design-skills`. The installer reads it to tell "already
   installed" from "another pack owns this name", which is the difference
@@ -233,10 +240,11 @@ The default rules bite in specific ways. The ones that catch people out:
 
 `scripts/lib/markdown.mjs` is the only place a Markdown file is read, and
 `scripts/lib/pack.mjs` is the only place that says what a skill is, which
-skills are language packs, what a routing case is, and what a scenario
-is. Use them. A script that reads a file itself is how the three CRLF
-bugs got in: eight scripts each split lines their own way, so each was a
-separate chance to be wrong, and there was no single place to fix it.
+skills are language packs, which labels a core rule may carry, what a
+routing case is, and what a scenario is. Use them. A script that reads a
+file itself is how the three CRLF bugs got in: eight scripts each split
+lines their own way, so each was a separate chance to be wrong, and
+there was no single place to fix it.
 
 This is the pack's own advice applied to its own tooling, which is worth
 saying plainly because it had not been:
