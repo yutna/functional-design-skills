@@ -6,6 +6,138 @@ skills or guidance, a patch one corrects what is already there.
 
 [semantic versioning]: https://semver.org
 
+## 3.2.1
+
+The labels on every core rule are now defined where an agent reads them,
+each default says when it gives way, and the two worked examples answer
+a third reading.
+
+### The three labels had no definition in the plugin
+
+- Since 3.0.0 every item under `## Core rules` has opened with `Rule.`,
+  `Default.` or `Judgement.`. What the three mean was written in the
+  README, `CONTRIBUTING.md` and `CLAUDE.md`, and none of those is part
+  of the plugin. An agent had 260 labelled rules and no definition of a
+  label.
+- `functional-design` has a new section, "How strictly a rule is meant".
+  It defines the three, says what to do with a default that states no
+  condition, and says what comes before any label: the row of the table
+  that sizes the task, and a convention of the codebase.
+- `validate-rules.mjs` reads the labels from that section and keeps no
+  list of its own, so a label the index does not define is a label no
+  rule may carry. Three negative cases break the section and confirm the
+  check fires.
+
+### A default that did not say when it gives way
+
+- Of 138 items labelled `Default.`, about 118 stated no condition. Every
+  one was read against the whole pack for the page that limits or
+  excuses it, and each was ruled on. No condition was invented: each
+  comes from a page of the pack, or from a fact checked against the
+  tool.
+- 80 items gain a sentence of their own that says when the default gives
+  way. A wrapper type is not for a value that lives and dies inside one
+  function. "Data last" is reversed in a language whose pipe passes its
+  value first. A pass-through stays when it narrows, translates, guards
+  or isolates. A snapshot is stored, not derived.
+- 22 had a condition that could not be checked, or that another page
+  contradicted, and are rewritten: "a flat module", "few capabilities",
+  "booleans that mean something", and "every step should shrink the
+  impure region", which was false of seven of the ten moves.
+- 7 are `Rule.` now, because another skill states the same thing as a
+  rule: one type per stage, a phase in the type, a workflow that returns
+  events, a recursion that reaches its base case, and one item each in
+  the React, Next.js and Phoenix packs.
+- 1 held two axes under one label and keeps the one that is its own. 28
+  are unchanged: some already said when they give way, and the rest are
+  ones the pack knows no exception to.
+- Where two skills stated one rule, one of them owns the condition and
+  the other points at it: exporting the least, deleting a pass-through,
+  the order of arguments, where the wiring happens.
+
+### Pages that disagreed with the rule beside them
+
+- `naming-rules.md` had two rows that overlapped: a read through a
+  capability that may find nothing was both `findX` and `loadX`, and the
+  pack's pages used four verbs for it. `findX` and `getX` are for a
+  value already held, and `loadX` for whatever reaches the world.
+- `migration-moves.md` said that moves 1 to 4 can be done in any module
+  at any time, against two rules of its own skill.
+- `contexts-and-ecto.md` excused using an Ecto schema as the domain type
+  "for a small project". The exception it gives now is the one the rule
+  gives: a screen that only reads.
+- `liveview.md` broadcasts after the write. Rule 4 of
+  `functional-making-effects-reliable` now says that a notice which
+  carries nothing a consumer keeps is outside it, and the page says its
+  broadcast is one and can be lost.
+- The two retry examples in the Effect pack had no jitter, in a pack
+  that says backoff without jitter synchronises every client. Both use
+  `Schedule.jittered`, on Effect 3 and on Effect 4.
+- The Elixir pack says that its pipe passes the value first, so its
+  functions take data first, and one private function that ran the
+  other way is turned round.
+- Three places broke the sentence beside them: a business threshold as
+  a bare number in a `P.when`, an error value left unfrozen in a module
+  whose first rule is to freeze what it exports, and a table row that
+  asked for a measurement the sentence under it said was not needed.
+
+### A report from a person that the process ignored
+
+- In `worked-long-running.md`, a person who settled the undo in hand
+  while the process was still `Undoing` was ignored, and a replay could
+  then undo it a second time. `Undoing` takes `SettledByHand`.
+- The page relied on one worker for each process and recommended a job
+  queue, which does not give that. The save is conditional on the
+  version that was loaded and answers `Stale`.
+- `wants` has no default clause, a page is wanted only while the process
+  is in the wait it is about, and `waitOf` gives the shell the wait an
+  instruction starts.
+- The page no longer says a unique constraint makes a call to another
+  system idempotent. The hold and the release are the weakest of the
+  three ways, and the page says what the adapter does about a repeat.
+- The clock ends the offers of an instruction, and the queue's count of
+  attempts does not. A replay skips the clock and is safe only inside
+  the key's lifetime.
+- Oban's pruner deletes cancelled and discarded jobs by age, sixty
+  seconds unless it is given a `max_age`. The page had called a
+  discarded job the dead letter that waits for a person.
+
+### A refusal with no home, and two methods of one name
+
+- In `worked-refactor.md`, the conversions that commits 2 and 3 add can
+  refuse a stored row, and after commit 4 nothing said where that
+  refusal went. It has one named home, the function that loads, until
+  commit 10 gives it a type.
+- The inner function is `handleConfirm` from commit 4, where the page
+  had two methods called `confirm` on one class.
+- The page says which tests go through the service and which are a
+  commit's own, and commit 7 no longer claims that the pinned tests pass
+  unchanged.
+- The intro maps the eleven commits to the ten moves, and
+  `decideConfirmation` takes the catalogue first, as `confirmBooking`
+  does on every other page.
+- `notation.md` defines the `module` form that six pages were using.
+
+### How the new sentences and the two pages were read
+
+- The conditions were written by the same hand that ruled on them, so
+  three readers with no context were asked, for each of the 131
+  defaults: when does it give way, could you check that, is it a
+  loophole, does its own page disagree. Their first reports marked about
+  fifty-five as loopholes and fifty as contradicted by their page.
+  Forty-four places were rewritten, the same readers checked them, and
+  thirteen more were rewritten and not read again.
+- Each worked example was read by a fresh reader who type-checked it by
+  hand and walked it. The same reader then checked the answers twice.
+  The long-running process ended "yes". The worked refactor ended
+  "almost", on a sentence that did not parse and three judgement calls.
+- Checked against the tools' own documentation: what Oban does with
+  `{:cancel, reason}` and what its pruner deletes; that Dialyzer warns
+  about behaviour callbacks that drift from the declared interface;
+  that `Schedule.jittered` exists on both majors of Effect.
+
+No skill is added, renamed or removed, and no description changed.
+
 ## 3.2.0
 
 Every core skill was read a second time, line by line, for rules that
