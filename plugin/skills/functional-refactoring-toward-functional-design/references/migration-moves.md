@@ -144,8 +144,12 @@ moves 1 to 3 wherever they were stuck.
 **Mechanics.** Stop exporting the constructor and the fields. Export the
 operations callers actually need, plus the accessors that are genuinely
 part of the interface. Fix the call sites the compiler or tests find.
+Where a stored value has to become an aggregate again, export one
+function for that, named for it, and give it the narrowest visibility
+the language has.
 
-**Verify.** No code outside the module constructs or mutates one.
+**Verify.** No code outside the module mutates one, and none constructs
+one except the storage mapping, through that one function.
 
 **Payoff.** The invariants become enforceable, and the module becomes
 deep.
