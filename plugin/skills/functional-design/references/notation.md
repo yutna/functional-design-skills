@@ -44,12 +44,23 @@ type Secret<T> = Secret of T
 
 -- alias: the same type under another name, no new guarantees
 alias Notes = String
+
+-- module: the indented names are what it exports, and nothing else is
+module TreatmentCode
+  type TreatmentCode
+  parse : String -> Result<TreatmentCode, CodeError>
+  value : TreatmentCode -> String
 ```
 
 `|` reads "or". A comma between record fields reads "and". A choice with
 no payload (`Cash`) carries only the fact that it is that case. `--`
 starts a comment. A type an example uses and does not declare, such as
 `Money` or `Duration`, is a domain type whose name says what it holds.
+
+A type that a module lists by name alone, as `TreatmentCode` is above,
+is opaque: code outside the module can hold a value and pass it on, and
+can neither build one nor read inside it except through the functions
+listed.
 
 ## Function signatures
 

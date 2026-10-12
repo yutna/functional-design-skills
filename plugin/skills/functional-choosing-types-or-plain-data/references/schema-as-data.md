@@ -80,7 +80,7 @@ its uses, and a typo is a silent `None`.
 
 ```text
 -- in one module, the only place these strings appear
-module FieldKeys where
+module FieldKeys
   emailAddress = FieldKey "email_address"
   companyName  = FieldKey "company_name"
 
