@@ -44,8 +44,11 @@ Not for: TypeScript projects, which have
 
 ## Core rules
 
-1. Default. **Freeze what you export.** `Object.freeze` at construction turns
-   accidental mutation into a visible failure in strict mode.
+1. Default. **Freeze what you export.** `Object.freeze` at construction, on the
+   value and on what it holds, turns accidental mutation into a visible failure
+   in strict mode. A local that never leaves its function may stay unfrozen
+   where a measurement shows that freezing it costs time that matters; anything
+   exported, or stored for longer than one call, is frozen.
 2. Rule. **Construct through functions.** Never build a tagged value with a
    literal outside its module. The constructor is where rules live.
 3. Rule. **One tag key across the codebase.** Pick `tag` and never mix in `type`
@@ -57,7 +60,9 @@ Not for: TypeScript projects, which have
 6. Default. **Add JSDoc types and check them.** A type checker over JSDoc costs
    a comment per function and catches most shape mistakes.
 7. Default. **Test exhaustiveness.** Every dispatch gets a test driven by the
-   list of tags.
+   list of tags. Where `checkJs` is on and the `default` branch hands its value
+   to a parameter typed `never`, the checker reports a missing case, and the
+   test is kept only for values that arrive at run time.
 
 ## Pattern
 
@@ -74,7 +79,7 @@ const cash = () => Object.freeze({ tag: TAGS.cash });
 const card = (number, expiry) =>
   isValidCard(number)
     ? ok(Object.freeze({ tag: TAGS.card, number, expiry }))
-    : err({ tag: "InvalidCard", number });
+    : err(Object.freeze({ tag: "InvalidCard", number }));
 
 const transfer = (bank) => Object.freeze({ tag: TAGS.transfer, bank });
 

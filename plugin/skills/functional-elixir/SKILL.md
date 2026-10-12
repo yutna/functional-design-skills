@@ -53,6 +53,11 @@ Not for: Erlang runtime tuning, release configuration, or Phoenix.
 | Boundary parse      | A `new/1` function                    |
 | Mutable cell        | A process, and nothing else           |
 
+The pipe passes its value as the first argument. So functions here take
+the data first and what they depend on last, which is the reverse of
+the order the core skills use, for the reason they give: it is the
+order that composes in this language.
+
 ## Core rules
 
 1. Rule. **`@enforce_keys` on every domain struct.** A struct with optional
@@ -60,8 +65,11 @@ Not for: Erlang runtime tuning, release configuration, or Phoenix.
 2. Rule. **Construct through the module's own functions**, `new/1` for
    outside input, returning `{:ok, struct}` or `{:error, reason}`. Never
    build a domain struct with a literal outside its module.
-3. Default. **Tagged tuples for choices**, matched by function clauses
-   rather than by `case` inside one clause.
+3. Default. **Tagged tuples for choices**, matched by function clauses rather
+   than by `case` inside one clause. A case that carries more than two fields
+   beside its tag is a struct of its own, not a wide tuple. This is about the
+   choice a function receives: the result of a call is matched with `case` where
+   the call is made.
 4. Rule. **No catch-all clause over a domain choice.** When the clauses
    match the cases of a tagged tuple, or one struct per case, a case
    nobody wrote should raise `FunctionClauseError`, which is a loud,
@@ -72,18 +80,21 @@ Not for: Erlang runtime tuning, release configuration, or Phoenix.
    no `else` is needed. Where one step's error has to be translated, wrap
    that step in a private function: an `else` that matches the errors of
    several steps has to guess which step produced which.
-6. Default. **The default is no process.** Reach for one when something
-   must be able to fail without taking the rest down with it, or when
-   work must be serialised per entity. A GenServer around a value with
-   one caller is a mutable variable with a mailbox.
+6. Default. **The default is no process.** Reach for one when state has to be
+   shared across requests and does not fit in the database, when something must
+   be able to fail without taking the rest down with it, when work must be
+   serialised per entity, or when work is periodic. A GenServer around a value
+   with one caller is a mutable variable with a mailbox.
 7. Rule. **Crash on a bug, return a tuple on a business outcome.** A
    slot already taken is `{:error, :slot_unavailable}`. A nil that
    should have been impossible is a crash, and the supervisor's job.
 8. Default. **`@spec` on every public function, with Dialyzer and
-   `mix compile --warnings-as-errors` in CI.** The compiler reports what
-   it can infer from patterns and guards, as warnings, and does not read
-   specs; Dialyzer reads them. Without both, a spec is a comment and a
-   type warning is a line in a log.
+   `mix compile --warnings-as-errors` in CI.** The compiler reports what it can
+   infer from patterns and guards, as warnings, and does not read specs;
+   Dialyzer reads them. Without both, a spec is a comment and a type warning is
+   a line in a log. A function that implements a behaviour's callback needs no
+   `@spec` of its own: the `@callback` gives its type, and Dialyzer warns when
+   the implementation drifts from it.
 
 ## Pattern
 
@@ -145,13 +156,13 @@ columns from the domain type. See
         {:ok, Appointment.t()} | {:error, booking_error()}
 def book(params, deps) do
   with {:ok, command} <- BookCommand.new(params),
-       {:ok, patient} <- find_patient(deps, command.patient),
+       {:ok, patient} <- find_patient(command.patient, deps),
        {:ok, hold} <- deps.hold_slot.(command.slot) do
     Appointment.new(command, patient, hold)
   end
 end
 
-defp find_patient(deps, id) do
+defp find_patient(id, deps) do
   case deps.find_patient.(id) do
     {:ok, _patient} = found -> found
     {:error, :not_found} -> {:error, :patient_not_found}
@@ -210,9 +221,8 @@ and nothing more. See [otp.md](references/otp.md).
 
 ## Common mistakes
 
-- **A GenServer per entity by default.** Use one when the state has a
-  lifecycle, a mailbox, or supervision needs. Otherwise it is a mutable
-  variable with a process around it.
+- **A GenServer per entity by default.** Use one for a reason rule 6
+  gives. Otherwise it is a mutable variable with a process around it.
 - **Catch-all clauses over a domain choice.** They convert a missing case
   into a wrong answer.
 - **`{:error, :error}`.** An error atom with no information forces the

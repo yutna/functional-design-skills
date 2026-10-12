@@ -42,16 +42,27 @@ client boundary.
 1. Rule. **Render is a pure function.** Same props and state, same output. No
    fetching, no writing, no mutation during render.
 2. Default. **Do not store what you can derive.** Duplicated state is duplicated
-   knowledge, and it goes stale.
+   knowledge, and it goes stale. A value that must keep its answer after its
+   inputs change, such as the price a booking was confirmed at, is not derived:
+   store it, under a name that says it is a snapshot.
 3. Default. **`useEffect` is for synchronising with something outside React**,
-   not for reacting to your own state. Most effects in a codebase should not
-   exist.
+   not for reacting to your own state. Before writing one, name the outside
+   system it keeps in step, such as a subscription, a timer, an element to focus
+   or an analytics call. An effect that can name only other React state is
+   deleted, and its value is computed while rendering or set in the event
+   handler.
 4. Default. **Model interface state as a choice type**, not as several booleans.
    `isLoading`, `error`, and `data` together permit states no screen has.
-5. Default. **Keep the decision pure and let the framework act.** A reducer, or
-   a plain function, decides; the component or the action performs.
+   Booleans that vary independently stay booleans: where every combination is a
+   screen that exists, there is no illegal state to remove.
+5. Rule. **Keep the decision pure and let the framework act.** A reducer, or a
+   plain function, decides; the component or the action performs. A handler that
+   hands its values on unread applies no rule, and has no decision to move out.
 6. Default. **Push data fetching to the edge**: a loader, a route, or a query
-   layer, not into the middle of a component tree.
+   layer, not into the middle of a component tree. A query that depends on state
+   only one component holds, such as the text of a type-ahead, is fetched from
+   that component, through the query layer where the project has one: lifting
+   that state to a route would be the mistake of lifting state too high.
 7. Judgement. **A component's props are its interface.** Deep components take
    few props and hide a lot; shallow ones take twenty and hide nothing.
 

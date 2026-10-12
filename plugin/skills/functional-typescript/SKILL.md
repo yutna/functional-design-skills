@@ -70,7 +70,9 @@ so check the installed version before pasting the block.
 
 1. Rule. **`readonly` everywhere in domain types**, including array fields:
    `readonly BookedTreatment[]`.
-2. Default. **Brand every domain primitive**, and export only the parser.
+2. Default. **Brand every domain primitive**, and export only the parser. Leave
+   a value unbranded when it lives and dies inside one function, or when config,
+   a tenant or an admin decides its shape.
 3. Rule. **Discriminate unions on a literal field**, one field name across the
    codebase.
 4. Rule. **Exhaust with `never`**, never with a permissive `default`.

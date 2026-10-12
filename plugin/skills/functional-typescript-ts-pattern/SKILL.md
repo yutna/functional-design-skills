@@ -43,10 +43,14 @@ Not for: designing the union itself, which is
    outcome, and `.otherwise()` is how that outcome is written.
 2. Default. **Match on the discriminant first**, then on nested structure, so
    the patterns read in the order a person would ask the questions.
-3. Default. **Use `P.when` for guards**, not for business rules that deserve a
-   name. A guard should fit on a line.
+3. Default. **Use `P.when` for guards**, not to write a business rule inline. A
+   guard fits on a line. One that applies a rule the business would state, such
+   as a threshold, compares with a named constant or calls a named predicate
+   that is defined beside the domain type.
 4. Default. **Select what you use.** `P.select()` names the parts a handler
-   needs instead of reaching back into the value.
+   needs instead of reaching back into the value. It earns its place when the
+   handler needs one or two fields from deep inside. A field at the top of the
+   matched shape can as well be read by destructuring the handler's argument.
 5. Judgement. **Keep handlers small.** A match arm that is ten lines should call
    a named function.
 6. Rule. **Do not match on primitives that should be types.** Matching on a raw
@@ -82,7 +86,10 @@ const routing = (booking: Booking) =>
   match(booking)
     .with({ lifecycle: { tag: "Cancelled" } }, () => "archive")
     .with(
-      { treatment: { tag: "Procedure" }, minutes: P.when((m) => m > 90) },
+      {
+        treatment: { tag: "Procedure" },
+        minutes: P.when((m) => m > THEATRE_MINUTES),
+      },
       () => "theatre",
     )
     .with({ treatment: { tag: "Procedure" } }, () => "procedure room")
@@ -91,7 +98,8 @@ const routing = (booking: Booking) =>
 ```
 
 Order matters: patterns are tried top to bottom, so the more specific
-case goes first.
+case goes first. `THEATRE_MINUTES` is the clinic's threshold, a constant
+named beside the `Booking` type.
 
 ## State transitions
 
@@ -162,7 +170,7 @@ at the edge, with the compiler proving every case is covered.
 - A match on a raw string status rather than a choice type
 - `P._` used as a catch-all in a domain match
 - A `P.when` guard containing a multi-line business rule
-- Handlers longer than about three lines
+- A handler of ten lines that calls no named function
 
 ## Common mistakes
 

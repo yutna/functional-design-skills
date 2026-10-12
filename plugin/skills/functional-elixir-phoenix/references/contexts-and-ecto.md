@@ -91,10 +91,11 @@ constructor for a stored appointment, so a rule added to the module later
 binds stored rows as well as new input. See
 [functional-crossing-io-boundaries](../../functional-crossing-io-boundaries/SKILL.md).
 
-For a small project where the schema and the domain type genuinely
-coincide, using the schema directly is a reasonable trade. Make it a
-decision, note it, and revisit it the first time a nullable column
-appears for storage reasons alone.
+A screen that only reads, and enforces no rule, may use the schema's
+rows as they are;
+[worked-read-model.md](../../functional-crossing-io-boundaries/references/worked-read-model.md)
+says when. Whatever a rule is enforced on goes through the mapping, even
+while the two types look identical.
 
 ## Changesets as boundary parsers
 

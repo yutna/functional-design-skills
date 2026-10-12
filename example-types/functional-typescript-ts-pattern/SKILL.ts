@@ -32,6 +32,7 @@ type Booking = {
     | { readonly tag: "Procedure" };
   readonly minutes: number;
 };
+declare const THEATRE_MINUTES: number;
 
 type PatientId = Brand<string, "PatientId">;
 type Quote =
