@@ -24,14 +24,19 @@
 // that is nearly all Rule is overclaiming, and one with almost none is not
 // saying anything.
 //
+// The labels themselves are read from the index, where they are defined for
+// the reader. Until 3.2.1 they were listed here and defined only in the
+// README, so a label could be on every rule and explained nowhere an agent
+// looks. Now a label the index does not define is one no rule may carry.
+//
 // Usage:
 //   node scripts/validate-rules.mjs
 //   node scripts/validate-rules.mjs --report   every rule and its label
 
 import { linesOf } from './lib/markdown.mjs'
-import { everySkill } from './lib/pack.mjs'
+import { everySkill, strictnessLabels } from './lib/pack.mjs'
 
-const LABELS = ['Rule', 'Default', 'Judgement']
+const LABELS = strictnessLabels()
 // A numbered list item that opens a core rule. The label is captured
 // separately from the bold statement so a missing one is distinguishable
 // from a misspelled one.

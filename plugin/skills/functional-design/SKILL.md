@@ -70,6 +70,26 @@ skills exist to remove. See
 [calibration.md](references/calibration.md) for the failure modes in
 both directions.
 
+## How strictly a rule is meant
+
+Every numbered item under a skill's `Core rules` opens with one of three
+labels. The label says what it means to do otherwise.
+
+- **Rule.** Doing otherwise is a defect, in any code that is kept.
+- **Default.** Do this unless the condition the item states holds. An
+  item that states none is one this pack knows no exception to: follow
+  it, and where you still do otherwise, give the reason in the reply or
+  the pull request.
+- **Judgement.** Two answers are defensible. The item says what tips the
+  choice, and where nothing tips it either answer is right.
+
+Two things come before any label. The table above decides how much of
+the pack a task takes on at all, so a rule in a skill that the row skips
+binds nothing. And a convention of this codebase, written down or simply
+followed throughout it, comes before all three labels, a `Rule`
+included: keep to it, and where keeping to it costs correctness, say
+so.
+
 ## Is the problem decided?
 
 The last two rows assume the problem is settled and the open question is

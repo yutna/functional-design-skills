@@ -167,8 +167,10 @@ decided on purpose. The cause is the agent applying a heavier rule than
 the task warrants.
 
 Every core rule says how strictly it is meant, as the first word of the
-item. `Rule` means breaking it is a defect. `Default` means do this
-unless the stated condition holds. `Judgement` means two answers are
+item, and the `functional-design` skill defines the three words for the
+agent. `Rule` means breaking it is a defect. `Default` means do this
+unless the condition the item states holds; one that states none has no
+exception the pack knows of. `Judgement` means two answers are
 defensible and the skill says what tips it. An agent that quotes a
 `Default` as though it were a `Rule` is misreading the pack, and saying
 so is usually enough.

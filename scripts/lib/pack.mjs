@@ -112,6 +112,36 @@ export function languagePackIds () {
   return ids
 }
 
+// The words a core rule can open with, read from where the index defines
+// them for the reader. From 3.0.0 to 3.2.0 the list lived in
+// validate-rules.mjs and the definitions in the README, which does not
+// ship, so every skill carried labels that nothing an agent loads
+// explained. Reading the list from the index makes that unrepresentable: a
+// label with no definition there is a label no rule may use.
+export const LABELS_HEADING = 'How strictly a rule is meant'
+
+export function strictnessLabels () {
+  const where = `plugin/skills/${INDEX_SKILL}/SKILL.md`
+  const body = readRepoFile(join('plugin', 'skills', INDEX_SKILL, 'SKILL.md'))
+  const section = new RegExp(`^## ${LABELS_HEADING}\\n([\\s\\S]*?)^## `, 'm')
+    .exec(body)
+  if (section === null) {
+    throw new Error(
+      `${where}: no "## ${LABELS_HEADING}" section, so the labels on every ` +
+        'core rule ship with no definition',
+    )
+  }
+  const labels = [...section[1].matchAll(/^- \*\*([A-Za-z]+)\.\*\*/gm)]
+    .map((m) => m[1])
+  if (labels.length === 0) {
+    throw new Error(
+      `${where}: the "## ${LABELS_HEADING}" section defines no label, so ` +
+        'every core rule would be reported as mislabelled, or none would.',
+    )
+  }
+  return labels
+}
+
 export function referenceFiles (id) {
   const dir = join(SKILLS_DIR, id, 'references')
   if (!existsSync(dir)) return []
