@@ -120,16 +120,23 @@ instruction type and a shell that interprets it.
    sequence of effects is itself something the business cares about:
    it has to be stored so that a long-running process can resume, shown
    to an auditor, or replayed.
-2. Default. **Declare a capability's type in the domain's words**, where
-   the handler that takes it can see it and no adapter is imported.
-   `LoadCatalogueById`, not `ICatalogueRepository`.
+2. Default. **Declare a capability's type in the domain's words**, where the
+   handler that takes it can see it and no adapter is imported.
+   `LoadCatalogueById`, not `ICatalogueRepository`. A handler that reads once
+   and writes once declares none: it takes the connection and calls its adapters
+   by name, because it has no path worth a stub.
 3. Default. **One function type per capability used**, not one record per
-   service. See
+   service. A record is right only for functions that have to vary together as a
+   set, all of which the handler calls. See
    [functional-applying-solid-functionally](../functional-applying-solid-functionally/SKILL.md).
 4. Default. **Dependencies first, data last**, so partial application produces
-   the shape a pipeline wants.
+   the shape a pipeline wants. Rule 3 of
+   [functional-composing-functions](../functional-composing-functions/SKILL.md)
+   owns the order, and names the language in which it is reversed.
 5. Default. **Bind capabilities once, at the edge.** The wiring happens in one
-   composition-root function, not at every call site.
+   composition-root function, not at every call site. Rule 8 of
+   [functional-separating-pure-core-from-shell](../functional-separating-pure-core-from-shell/SKILL.md)
+   names the two things that are bound somewhere else.
 6. Rule. **Never hand a dependency to a function that only passes it
    on.** The function that composes the steps applies the dependency to
    the step that uses it, so no signature in between names it.

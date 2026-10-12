@@ -42,7 +42,12 @@ Not for: failures that can be removed by design, which is
 3. Default. **One error choice type per workflow.** Steps keep narrow error
    types and are lifted at composition, so callers match on one thing.
 4. Default. **Short-circuit sequential steps; accumulate independent ones.**
-   Bind for a pipeline, applicative combination for a form.
+   Bind for a pipeline, applicative combination for a form. Accumulating is for
+   checks that are independent and whose failures the caller can fix in one
+   pass. Independent steps still stop at the first failure when one of them is
+   expensive and a cheap one has already failed, or when nothing can be fixed
+   from a list, as with two reads that failed or a stored row that will not
+   parse.
 5. Rule. **Convert exceptions at the boundary.** Libraries throw; wrap them
    once, at the edge, into your own error type. An exception the adapter
    cannot classify is returned as an opaque case that callers do not

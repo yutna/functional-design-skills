@@ -52,15 +52,25 @@ that skill covers the in-process case in full.
    exist across a network. De-duplicate on receipt instead.
 4. Rule. **Never write and publish in two places.** Either the event is recorded
    in the same transaction as the state change and relayed afterwards, or a
-   consumer will eventually see one without the other.
+   consumer will eventually see one without the other. A notice that carries
+   nothing a consumer keeps, such as a hint to a screen to read again, is
+   outside this rule: losing it loses nothing that is stored.
 5. Default. **Retry at the shell, bounded.** A domain step that retries hides
    latency and cannot be tested in time. Bound attempts, bound total time, and
-   add jitter.
+   add jitter. Retry only a transient fault, and only a read or a write that is
+   idempotent on its key. A call that has to outlive its request is not retried
+   in place: it is an instruction in an outbox, and the queue retries it.
 6. Default. **Compensate; do not lock across systems.** A distributed
    transaction is a lock held over a network. Undo explicitly instead, and
-   accept that the undo is a business operation with a business name.
+   accept that the undo is a business operation with a business name. This is
+   for steps that span systems: steps in one database are one transaction, and
+   [compensating-workflows.md](references/compensating-workflows.md) lists the
+   other answers that cost less than a process manager.
 7. Default. **Model partial success explicitly.** "Three of five sent" is not a
-   `Result`. It is a report type with both lists inside it.
+   `Result`. It is a report type with both lists inside it. This is for
+   independent items, each of which has taken effect by itself. The steps of one
+   process that must all happen or all be undone belong to rule 6, and are
+   compensated.
 8. Rule. **Work that outlives its command has an owner or a cancel.**
    Something started in the background either has a caller that waits
    for it or a handle that stops it. Work with neither cannot be

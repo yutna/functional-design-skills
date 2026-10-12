@@ -47,22 +47,31 @@ Not for: deciding which effects the system performs, which is
    [functional-modeling-state-machines](../functional-modeling-state-machines/SKILL.md)
    says. `State -> Event -> State` is the fold that replays events
    already accepted, and it cannot refuse.
-3. Default. **Keep each piece of mutable state with one owner, at the
-   edge.** One reference cell, one database row, one actor, reached
-   through the pure update function and owned by one module. Not a field
-   on ten objects. Unrelated pieces of state get separate cells.
+3. Default. **Keep each piece of mutable state with one owner, at the edge.**
+   One reference cell, one database row, one actor, reached through the pure
+   update function and owned by one module. Not a field on ten objects.
+   Unrelated pieces of state get separate cells. State that lives for one
+   operation is not this: it stays on the caller's stack, as a value passed
+   along, and needs no cell.
 4. Default. **Swap, do not edit.** Replace the whole value atomically; never
    partially update a shared structure.
 5. Default. **Share structure instead of copying.** Persistent data structures
-   make "a new version" cheap. See
+   make "a new version" cheap. A small value is simply copied: a record of six
+   fields needs no persistent structure. Bring one in when a profile shows that
+   copying a large collection costs. See
    [persistent-structures.md](references/persistent-structures.md).
-6. Default. **Local mutation is acceptable when invisible.** It applies
-   when the value is built inside one function, is not observable by the
-   caller or by any other code, and a measurement justified it. A
-   transient or builder that is frozen before it is returned qualifies.
-   A mutable accumulator that survives between calls does not.
+6. Default. **Local mutation is acceptable when invisible.** It applies when the
+   value is built inside one function, no reference to it escapes, into a
+   closure or a callback included, and a measurement justified it. A transient
+   or builder that is frozen before it is returned qualifies. A mutable
+   accumulator that survives between calls does not. Where the language has no
+   cheap way to add to an immutable collection, as JavaScript has none, building
+   locally is the idiom and needs no measurement; the first two conditions still
+   hold.
 7. Default. **Do not defend with copies.** If values are immutable, defensive
-   copying is dead code.
+   copying is dead code. Where a value is mutable and cannot be frozen, the copy
+   is not dead: hand out a copy or an immutable view, never the internal
+   reference.
 
 ## Pattern
 
@@ -164,7 +173,8 @@ updates to the one mutable cell, and that is a small, isolated problem:
 ## Common mistakes
 
 - **Copying everything.** Immutability without structural sharing is slow
-  for large structures. Use the language's persistent collections.
+  for large structures. Where a profile shows it, use the language's
+  persistent collections.
 - **Freezing shallowly.** A frozen record holding a mutable list is
   mutable.
 - **Storing derived values.** Recompute, unless it must be frozen for a

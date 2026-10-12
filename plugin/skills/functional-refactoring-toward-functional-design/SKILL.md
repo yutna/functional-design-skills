@@ -41,18 +41,35 @@ Not for: designing something new, which starts at
    test, and the outcomes it has, are in
    [essential-and-accidental.md](../functional-diagnosing-complexity/references/essential-and-accidental.md).
 2. Default. **Refactor where you are already working.** Unrelated cleanup is
-   hard to review and hides the real change.
+   hard to review and hides the real change. When the task is itself the
+   refactor, the code it names is where you are working. Otherwise the limit is
+   the module you came for, and a neighbouring function with the same flaw where
+   fixing it is a small step.
 3. Rule. **One move at a time, tests green between each.** A move that cannot be
    verified is a rewrite in disguise.
-4. Default. **Choose the module you are editing**, not the centre of the
-   system. Inside it, start where the move says (move 4 starts at the
-   leaves) and finish at its boundary.
-5. Default. **Make each move pay for itself.** If a step leaves the code no
-   better, it is not one of the moves below.
-6. Default. **Move rules inward, effects outward.** Every step should shrink the
-   impure region.
+4. Default. **Choose the module you are editing**, not the centre of the system.
+   Inside it, start where the move says (move 4 starts at the leaves) and finish
+   at its boundary. A strategic move that changes what the module exports
+   finishes at its direct callers, and no further; rule 9 keeps a tactical move
+   inside the module.
+5. Default. **Make each move pay for itself.** Each move in
+   [migration-moves.md](references/migration-moves.md) and
+   [tactical-moves.md](references/tactical-moves.md) says what it is for and how
+   to verify it. A step is one of them when both can be shown in the code
+   afterwards: the check passes, and what the move is for has happened. Two
+   steps pay nothing by themselves and are still owed: pinning what the code
+   does before the first move, and the half of move 7 that only moves the reads.
+6. Default. **Move rules inward, effects outward.** Moves 5 to 7 are the ones
+   that shrink the impure region, and no move may grow it. Move 7 may move a
+   read, in a commit of its own, as its page says. Moving a write or a send
+   changes what the service does, and waits for a change of its own, as mailing
+   from a saved event does in
+   [worked-refactor.md](references/worked-refactor.md).
 7. Default. **Convert types before functions.** A precise type makes the
-   function changes obvious and often mechanical.
+   function changes obvious and often mechanical. Two cases go another way.
+   Where the shape is already right and the code is only awkward, go straight to
+   the tactical moves. Where the domain type cannot change because the stored or
+   the wire shape is the domain type, move 9 comes first and releases it.
 8. Rule. **Never widen a type to hold a different concept.** A new case of
    the same kind of thing is added as a case; a different concept gets its
    own type.

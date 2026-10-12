@@ -65,7 +65,8 @@ lower module's expertise. It is wrong when callers would choose
 differently.
 
 **3. Aggregate the handling.** Let many failures flow to one place that
-handles them uniformly, instead of handling each where it arises.
+handles them uniformly, instead of handling each where it arises. Rule 4
+names the one kind that is handled where it arises.
 
 ```text
 -- the edge renders every domain error once
@@ -81,13 +82,19 @@ and harder to trace.
 
 1. Default. **Count the failures in an interface, and challenge each one.** For
    each, ask what a caller could sensibly do. If the answer is nothing, or
-   always the same thing, it should not be there.
+   always the same thing, it should not be there. A failure stays, whatever
+   callers do with it, when the specification or the ticket names it, or when
+   the code already reports it to a user by name; rule 6 says why.
 2. Default. **Prefer changing the definition to adding handling.** The best
    error handling is an interface where the error is impossible or harmless.
+   Rule 6 marks the limit: a failure the business names, or one that callers
+   have to tell apart, keeps its case.
 3. Rule. **Mask only where the recovery is universal.** If two callers would
    choose differently, the choice belongs to them.
 4. Default. **Aggregate at the edge.** One place turns errors into responses,
-   messages, or retries.
+   messages, or retries. A failure for which a rule names a fallback, such as
+   offering another slot when one is taken, is the exception: it is handled
+   where that rule lives, by its named case, and is not left for the edge.
 5. Rule. **Crash on impossible states.** Do not model programmer bugs as values.
    The function is still total: it returns for every input its type
    admits, and the crash is for a value that type was meant to exclude.
@@ -124,7 +131,7 @@ internal reasons stay internal, where they are useful for metrics.
 | Every caller does the same thing | Mask it         |
 | No caller can do anything        | Remove or crash |
 | Distinctions callers never use   | Collapse to one |
-| Empty or missing input           | Make it a no-op |
+| An empty collection or range     | Make it a no-op |
 | Callers would genuinely differ   | Keep it         |
 | The business has a word for it   | Keep it, named  |
 

@@ -53,7 +53,11 @@ Not for: deciding what the domain types should be, which is
 6. Rule. **Validate once, at the boundary.** Where a rule is enforced,
    nothing downstream re-checks it.
 7. Default. **Version the transfer type, not the domain type.** Add a new
-   transfer version and a new mapping; leave the domain alone.
+   transfer version and a new mapping; leave the domain alone. A new version is
+   owed while an old client or an old row still has to be read. A shape that is
+   read only by code deployed together with the change, and that no stored row
+   has, is edited in place with its mapping. Where you cannot tell who reads it,
+   add the version.
 8. Rule. **Keep the domain persistence-ignorant.** No annotations, no base
    types, no lazy-loading proxies, no framework attributes.
 

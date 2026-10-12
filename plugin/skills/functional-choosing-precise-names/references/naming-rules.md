@@ -37,18 +37,24 @@ Avoid suffixes that name the mechanism: `...Enum`, `...Union`,
 
 ## Functions
 
-Verb phrases that name the result, from the caller's point of view.
+Names that say what the caller gets: a verb phrase, or, for a pure
+function that only returns a value, the noun for that value.
 
-| Purpose                   | Shape                          |
-| ------------------------- | ------------------------------ |
-| Transform                 | `price`, `normalise`           |
-| Parse untrusted input     | `parseX`, returning Result     |
-| Check a condition         | `isX`, `hasX`, `canX`          |
-| Retrieve, may be absent   | `findX`, returning Option      |
-| Retrieve, must exist      | `getX`                         |
-| Read through a capability | `loadX`, returning AsyncResult |
-| Perform an effect         | `saveX`, `sendX`               |
-| Build a value             | `makeX`, `x` (constructor)     |
+| Purpose                     | Shape                          |
+| --------------------------- | ------------------------------ |
+| Transform                   | `price`, `normalise`           |
+| Parse untrusted input       | `parseX`, returning Result     |
+| Check a condition           | `isX`, `hasX`, `canX`          |
+| Look up in a value held     | `findX`, returning Option      |
+| The same, and it must exist | `getX`                         |
+| Read through a capability   | `loadX`, returning AsyncResult |
+| Perform an effect           | `saveX`, `sendX`               |
+| Build a value               | `makeX`, `x` (constructor)     |
+
+`findX` and `getX` are pure: they look in a value the caller already
+holds. Whatever reaches the world to read is `loadX`, whether or not
+what it reads may be absent, and its `AsyncResult` then holds an
+`Option`.
 
 Keep the convention exact. If `find` returns `Option` in one module and
 throws in another, the convention teaches a false rule, and a bug in a

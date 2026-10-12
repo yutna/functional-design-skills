@@ -36,13 +36,20 @@ Not for: judging whether a module is worth its interface, which is
 
 1. Default. **Name the knowledge each module owns.** Write one line per module:
    "this module is the only place that knows X". If two modules claim the same
-   X, that is leakage, and one of them must stop.
+   X, that is leakage, and one of them must stop. Two modules that hold the same
+   figure are not claiming one X when different people would ask to change them,
+   as an owners file, the issue or the user says: those are two rules that agree
+   today, and each keeps its own.
 2. Default. **Decompose by knowledge, not by time.** Modules named `parse`,
    `enrich`, `send` follow the order things happen. Order changes; knowledge
-   does not. See
+   does not. A sequence of steps is still written as one workflow: its stages
+   are functions, and a stage becomes a module only when it owns knowledge no
+   other stage has. See
    [temporal-decomposition.md](references/temporal-decomposition.md).
 3. Default. **Export the least that still serves callers.** Every exported name
-   is a promise. Removing one later breaks people.
+   is a promise. Removing one later breaks people. Rule 1 of
+   [functional-deciding-what-matters](../functional-deciding-what-matters/SKILL.md)
+   covers the module that already exports every helper it has.
 4. Rule. **Do not leak through types.** An exported type whose fields mirror a
    database row leaks the schema even if no function does.
 5. Rule. **Do not leak through errors.** An error carrying a driver-specific
@@ -105,11 +112,11 @@ selects a mode, so every caller must decide about modes.
 
 ```text
 -- overexposed: every caller learns about caching
-fetchUser : CacheMode -> UserId -> AsyncResult<User, FetchError>
+loadUser : CacheMode -> UserId -> AsyncResult<User, LoadError>
 
 -- exposed only where it matters
-fetchUser : UserId -> AsyncResult<User, FetchError>
-fetchUserUncached : UserId -> AsyncResult<User, FetchError>
+loadUser : UserId -> AsyncResult<User, LoadError>
+loadUserUncached : UserId -> AsyncResult<User, LoadError>
 ```
 
 The rule: the common case should not pay for the rare one.

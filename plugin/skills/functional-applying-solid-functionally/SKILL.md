@@ -42,20 +42,28 @@ Not for: naming, or judging interface size in isolation.
 1. Default. **Split by who asks for the change, not by what the code does.** Two
    calculations that look alike and answer to different stakeholders belong in
    different modules. They are one decision if one person or one event would
-   change them together, and two if different people would.
+   change them together, and two if different people would. Who asks is read
+   from an owners file, the issue or the user's own words. Where none of them
+   says, ask once, and with no answer keep one module and record the assumption.
 2. Default. **Choose the axis of change before choosing the mechanism.** New
    cases and new operations pull in opposite directions. See the expression
-   problem below.
+   problem below. The question is owed only where something varies, and rule 3
+   says how to tell.
 3. Default. **Make the extension point a parameter.** A function passed in is
    the simplest open-closed mechanism there is, and it needs no registry, no
-   class, and no framework.
+   class, and no framework. Where nothing varies there is no extension point:
+   something with one implementation, which no test needs to replace and of
+   which the task names no second, is called directly, and a set of cases the
+   business has fixed is a choice type.
 4. Rule. **Keep passed-in functions total and faithful.** A substitute that
    throws where the type says `Result`, or that demands more of its input than
    the type states, breaks every caller written against the type.
 5. Default. **Pass functions, not modules.**
    `LoadPrice = TreatmentCode -> AsyncResult<Price, StoreError>` is an
-   interface with one member. A repository record with twenty members
-   forces every consumer to depend on all twenty.
+   interface with one member. A repository record with twenty members forces
+   every consumer to depend on all twenty. A small record of functions is right
+   when they have to vary together as a set and the callee calls them all;
+   [lsp-isp-dip.md](references/lsp-isp-dip.md) has the test.
 6. Rule. **Point dependencies at the domain.** The function types a handler
    takes are declared in the domain's words; the shell supplies
    implementations. Nothing in the domain imports the database, the
@@ -162,7 +170,8 @@ Two habits carried over from object-oriented code that add nothing here:
 - **Passing a mock-shaped object.** A dependency that must be mocked with
   a framework is too wide. Narrow it until a plain function suffices.
 - **Inverting a dependency that never varies.** An abstraction with one
-  implementation and no prospect of a second is interface for nothing.
+  implementation, which no test replaces and of which the task names no
+  second, is interface for nothing.
 
 ## Related skills
 

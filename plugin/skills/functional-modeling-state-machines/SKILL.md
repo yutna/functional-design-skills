@@ -36,13 +36,19 @@ are [functional-designing-workflow-pipelines](../functional-designing-workflow-p
 
 ## Core rules
 
-1. Default. **One case per state.** Named as the business names it.
+1. Default. **One case per state.** Named as the business names it. A property
+   the entity keeps through every state, such as an archived flag on an entity
+   that goes on through its lifecycle, is a field and not a state.
 2. Rule. **Each case carries only its own data.** A check-in time belongs to
    the checked-in and completed cases, not to the type.
 3. Default. **One function per transition**, taking the specific source state,
-   not the whole union. A state worth a transition gets its own named
-   record, and the case wraps it (`IsCheckedIn of CheckedIn`), so a function
-   can take `CheckedIn` by itself.
+   not the whole union. A state worth a transition gets its own named record,
+   and the case wraps it (`IsCheckedIn of CheckedIn`), so a function can take
+   `CheckedIn` by itself. Where a command does exactly the same from several
+   states and reads nothing that only one of them has, a single function may
+   take a choice of exactly those states, as rule 5 says; split it the day the
+   two differ. A function written as one clause for each source state, the way
+   Elixir writes it, keeps this rule: each clause is the function for its state.
 4. Rule. **Transitions return the target state**, or a `Result` when the
    transition can be refused.
 5. Rule. **Make illegal transitions unwriteable.** If `complete` takes a
@@ -50,7 +56,11 @@ are [functional-designing-workflow-pipelines](../functional-designing-workflow-p
    from several states takes a choice of exactly those states, never the
    whole union.
 6. Default. **Keep the union for storage and dispatch only.** Business functions
-   take the specific case they operate on.
+   take the specific case they operate on. Storage here is whatever only holds
+   or shows a value in whichever state it is in: a row, a message, a list on a
+   screen. Dispatch is the one function that takes a state and a command and
+   picks the transition: a reducer, a match over the pair, or a function with a
+   clause for each state.
 7. Default. **Draw the table before writing code.** States down, commands
    across, cells are the outcome. Cells marked illegal are the illegal
    transitions.
@@ -114,8 +124,8 @@ the transition that owns them.
 
 ## The transition table
 
-Draw this before writing types. Rows are states, columns are commands,
-cells say what happens.
+Draw this first. Rows are states, columns are commands, cells say what
+happens.
 
 | State \ Command | Send    | Accept    | Cancel    | Expire    |
 | --------------- | ------- | --------- | --------- | --------- |
@@ -125,8 +135,9 @@ cells say what happens.
 | Cancelled       | illegal | illegal   | illegal   | illegal   |
 | Expired         | illegal | illegal   | illegal   | illegal   |
 
-Each non-illegal cell is one function. Each illegal cell is a function
-that does not exist, which is stronger than a function that throws.
+Each non-illegal cell is one function, unless rule 3 lets two cells of
+one column share one. Each illegal cell is a function that does not
+exist, which is stronger than a function that throws.
 
 Cells that say "sometimes" are guards: `Sent -> Accepted` only if not
 expired, and `Sent -> Expired` only if due. Those return `Result`.

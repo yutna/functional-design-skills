@@ -39,19 +39,24 @@ you when it is wrong.
    forbids. If a core test needs more, fix the design first.
 2. Default. **Test the shell with a few integration tests.** Prove the wiring,
    the mapping, and the transactions; do not re-test business rules there.
-3. Default. **Stand in for capabilities with stubs, or with a fake for a
-   shared store.** A stub is a one-line function that stands in for a
-   capability in one test. A fake is a maintained in-memory
-   implementation that many tests share, held to the real adapter by a
-   contract test. Use stubs for a handler with few capabilities. Use a
-   fake for a store that many handler tests share. A dependency that
-   needs a mocking library is too wide; see
+3. Default. **Stand in for capabilities with stubs, or with a fake for a shared
+   store.** A stub is a one-line function that stands in for a capability in one
+   test. A fake is a maintained in-memory implementation that many tests share,
+   held to the real adapter by a contract test. Stub where a test needs one or
+   two capabilities answered. Build a fake once the tests of several handlers
+   need the same store to remember what was written. A handler that reads, calls
+   the core and writes, with no branch of its own, needs neither: the
+   integration tests cover it. A dependency that needs a mocking library is too
+   wide; see
    [functional-applying-solid-functionally](../functional-applying-solid-functionally/SKILL.md).
 4. Rule. **Assert on returned values and stored state, not on
    interactions.** A test that checks which functions were called, or
    how many times, is testing the implementation.
 5. Default. **Use properties where the rule is general.** Round trips,
    invariants, and totality are better stated as properties than as examples.
+   Examples are better where the rule has a named threshold, where the case is a
+   regression or one an expert named, and where the property would only restate
+   the implementation.
 6. Default. **Test the design, not the coverage number.** A suite that covers
    every line and no failure mode is worse than an honest smaller one.
 7. Judgement. **Let a hard test change the design.** Difficulty is
@@ -183,8 +188,8 @@ of the module, not at the level of the next failing test.
   so refactoring breaks tests without breaking behaviour.
 - **Property tests with no shrinking or no seed control.** A failure you
   cannot reproduce is a rumour.
-- **Testing generated code, mappings, or the framework.** Test what you
-  decided, not what a library does.
+- **Testing generated code or the framework.** Test what you decided,
+  not what a library does. A mapping you wrote is something you decided.
 - **Skipping the failure cases.** Error paths are the least exercised
   code in production and the most worth testing.
 

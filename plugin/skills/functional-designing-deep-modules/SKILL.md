@@ -59,18 +59,31 @@ contract as possible, and to reduce the rest to nothing.
 1. Default. **Measure depth as functionality hidden per unit of interface.**
    Count the interface, including the informal parts above. If the count
    approaches the size of the implementation, the module is not earning its
-   existence.
+   existence. What to do about it depends on who calls it: a shallow module that
+   several callers share is not merged into any of them, and
+   [depth-audit.md](references/depth-audit.md) says what happens to it instead.
 2. Default. **Prefer fewer, larger modules over many tiny ones.** Each boundary
-   costs an interface. A boundary must buy more than it costs.
+   costs an interface. A boundary must buy more than it costs. It has bought it
+   in the cases
+   [functional-splitting-and-joining-code](../functional-splitting-and-joining-code/SKILL.md)
+   lists under "Keep apart when", and where a small module owns a type together
+   with its constructor.
 3. Default. **Design the interface for the common case.** Make the frequent use
-   a one-liner; let the rare use be more work, not the other way round.
+   a one-liner; let the rare use be more work, not the other way round. Where
+   the callers that exist want different outcomes, there is no common case:
+   expose two named functions, not one with a flag.
 4. Rule. **Do not export what callers should not use.** Test through the
-   interface. See [functional-hiding-information](../functional-hiding-information/SKILL.md).
+   interface. Rule 1 of
+   [functional-deciding-what-matters](../functional-deciding-what-matters/SKILL.md)
+   covers the module that already exports every helper it has. See
+   [functional-hiding-information](../functional-hiding-information/SKILL.md).
 5. Judgement. **Make it somewhat general purpose.** Not maximally general, and
    not welded to today's single caller. See
    [general-purpose-questions.md](references/general-purpose-questions.md).
 6. Default. **Reject pure pass-throughs.** A function whose body is one call
-   with the same arguments adds interface and hides nothing.
+   with the same arguments adds interface and hides nothing. Rule 1 of
+   [functional-separating-layers](../functional-separating-layers/SKILL.md)
+   names the one-call functions that stay.
 
 ## Pattern
 

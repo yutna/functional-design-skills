@@ -156,9 +156,10 @@ deep.
 
 ## Order and pacing
 
-Moves 1 to 4 are local and can be done in any module at any time. Moves 5
-to 7 need 4 to be useful. Moves 8 to 10 are module-scale and are worth
-scheduling into work you are doing anyway.
+Moves 1 to 4 are local: each can be done by itself, in whichever module
+the work in hand is in. Moves 5 to 7 need 4 to be useful. Moves 8 to 10
+are module-scale and are worth scheduling into work you are doing
+anyway.
 
 Moves 8 to 10 are one commit each, tests green, reviewable alone, with no
 time limit. Do not attempt more than one move per commit. The value of

@@ -42,8 +42,10 @@ Not for: designing the data itself, which is
    before its steps: the command and the values read for it in, `Result`
    of events out. A decision nothing can refuse returns its events with
    no `Result` around them.
-2. Default. **One type per stage.** The output of a step is a type that did not
-   exist before it ran, so later steps cannot receive unvalidated data.
+2. Rule. **One type per stage.** The output of a step is a type that did not
+   exist before it ran, so later steps cannot receive unvalidated data. A step
+   whose output would be the type it took is either a validation that should
+   return a narrower type, or not a step: fold it into its neighbour.
 3. Rule. **Each step is total.** Every failure the business can name is in
    the return type, never thrown and never a null.
 4. Rule. **A workflow performs nothing.** What its steps need from the
@@ -53,9 +55,13 @@ Not for: designing the data itself, which is
    and the handler reads between them. See
    [functional-separating-pure-core-from-shell](../functional-separating-pure-core-from-shell/SKILL.md).
 5. Default. **Steps are named in the domain's words**, and each one is
-   meaningful to a domain expert.
+   meaningful to a domain expert. The sub-steps inside one step are outside
+   this: they are private to it, appear in no workflow's signature, and are
+   named for what they do.
 6. Default. **The pipeline is the documentation.** Reading the composed function
-   should tell a reader what the business process is.
+   should tell a reader what the business process is. Where the pipeline is cut
+   in two around a read, the handler's chain is what reads as the process, and
+   each half reads as its part of it.
 7. Rule. **Return events, not actions.** A workflow returns the events it
    decided, each a fact that is true once the decision is saved. An
    event carries what changed, as `BookingConfirmed` carries the
@@ -196,7 +202,7 @@ handler's chain keeps its types consistent.
 
 ## Red flags
 
-- The workflow function has no signature that states its failures
+- A workflow that can refuse, with no signature that states its failures
 - A step, or the workflow, takes a capability or has an effect type
 - A step takes and returns the same type
 - Validation happens in two steps of the same pipeline

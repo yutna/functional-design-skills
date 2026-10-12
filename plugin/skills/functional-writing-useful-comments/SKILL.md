@@ -107,19 +107,28 @@ See [comment-kinds.md](references/comment-kinds.md).
 
 1. Default. **Write the interface comment before the code.** If it will not fit
    in one short paragraph, the interface is wrong, and you have learned that
-   before implementing it. See [comments-first.md](references/comments-first.md).
+   before implementing it. This is for a new module or an exported function; a
+   change inside an existing function owes no new interface comment. See
+   [comments-first.md](references/comments-first.md).
 2. Rule. **Describe things the reader cannot see.** Never restate the signature.
 3. Default. **Inside a body, say why, not what.** The what is in the code; the
    why is not. At an interface, say what the signature cannot: requirements,
-   failures, what it does not do.
+   failures, what it does not do. An unusual step is the one place a body says
+   what: what the step is for, where the line cannot show it.
 4. Rule. **Keep interface comments free of implementation.** Anything a caller
    should not rely on must not be in the interface comment.
 5. Default. **Put the comment where the reader will be.** Next to the code it
-   explains, not in a document elsewhere.
+   explains, not in a document elsewhere. A convention that holds across the
+   codebase has no one place in the code, and goes in the project's instructions
+   file. A dependency between two places is commented at both, each naming the
+   other.
 6. Rule. **Update comments in the same edit.** A false comment costs more than
    no comment.
 7. Default. **Prefer a type to a comment.** If the comment states a constraint,
-   a type can often state it instead, and then it cannot go stale. See
+   a type can often state it instead, and then it cannot go stale. The comment
+   stays where no type can say it: why a choice was made, and a constraint that
+   depends on the time, on another system or on a record stored somewhere else.
+   See
    [functional-constraining-primitive-values](../functional-constraining-primitive-values/SKILL.md).
 
 ## What belongs in an interface comment

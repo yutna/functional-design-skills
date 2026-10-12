@@ -46,9 +46,10 @@ Skills: `functional-diagnosing-complexity`, `functional-programming-strategicall
    rules no type states.
 3. Each module owns knowledge no other module has. Two owners of one
    fact is leakage.
-4. Decompose by knowledge, never by the order things happen.
-5. Each layer changes the abstraction. A function whose body is one call
-   is not a layer.
+4. Decompose by knowledge, not by the order things happen.
+5. Each layer changes the abstraction. A function whose body is one
+   call, and that translates, narrows and guards nothing, is not a
+   layer.
 6. Given a choice, make the implementation harder and the interface
    easier.
 7. Bring code together when it shares knowledge; keep it apart when one
@@ -185,7 +186,8 @@ reveals.
 
 1. Write the questions the system must answer before choosing fields.
 2. The events a workflow returns are the observability primitive.
-3. Log once, at the edge; correlate with an identifier created there.
+3. Log once, at the edge; correlate with an identifier adopted or
+   created there.
 4. Structured errors are already structured records; do not flatten
    them.
 5. Keep identifiers out of metric labels and secrets out of everything.

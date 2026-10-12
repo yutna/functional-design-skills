@@ -35,13 +35,17 @@ Not for: reducing a collection to a value, which is
 
 ## Core rules
 
-1. Default. **Write the base case first.** Then the recursive case, and check
-   that it always moves towards the base.
+1. Rule. **Every recursion has a base case, and every call moves towards it.**
+   Write the base case first, then the recursive case. Where termination rests
+   on something other than a smaller argument, say so in a comment and add a
+   bound.
 2. Default. **Make the recursive call the last thing.** A tail call can be
-   turned into a loop; a call whose result is then modified cannot as
-   written, so move the work into an accumulator first. This applies
-   unless the depth is bounded and small, or the recursion is not
-   linear; see the table below.
+   turned into a loop; a call whose result is then modified cannot as written,
+   so move the work into an accumulator first. Direct recursion is fine where a
+   rule of the data bounds the depth and keeps it small, such as the height of a
+   balanced tree or a limit the validator enforces; say the bound in a comment.
+   A function that calls itself more than once, as a tree walk does, cannot put
+   every call last: use the type's fold or an explicit stack.
 3. Rule. **Rely on tail-call elimination only where the language
    guarantees it.** Elixir runs a call in tail position in constant
    stack space on the BEAM. In JavaScript and TypeScript, bound the
@@ -49,9 +53,12 @@ Not for: reducing a collection to a value, which is
 4. Default. **Prefer an existing traversal.** Fold, map, and unfold cover most
    cases; hand-written recursion is for shapes they do not fit.
 5. Rule. **Memoise only pure functions**, and own the cache in one place.
-6. Default. **Use laziness for size, or for work that may not be needed,
-   not for style.** An unevaluated computation holding a reference to a
-   large structure is a leak with a nice name.
+6. Default. **Use laziness for size, or for work that may not be needed, not for
+   style.** Size means a sequence with no end, one of which only a prefix is
+   consumed, or data larger than memory. Work that may not be needed means work
+   that is costly and that some path never asks for. Everything else stays
+   strict. An unevaluated computation holding a reference to a large structure
+   is a leak with a nice name.
 7. Default. **Force a lazy value at the boundary.** A lazy value, such as
    a lazy total or a cached entry, crossing into the shell should be
    evaluated where its cost and failures are visible. A stream is

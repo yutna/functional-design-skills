@@ -35,17 +35,25 @@ Not for: throwaway spikes whose output is an answer, not code.
 
 1. Default. **Ask what the change leaves behind.** Before writing, name the
    design the code will have afterwards. If the answer is "the same, plus one
-   more special case", stop and look for a better shape.
+   more special case", stop and look for a better shape. A case is not special
+   when the module's purpose covers it without gaining an "and". The purpose is
+   the sentence in the module's header comment, or, where it has none, the one
+   you wrote down before looking at the change. Such a case goes in, in the
+   module's own idiom.
 2. Default. **Invest continuously, never in a lump.** A small investment on
    every change beats a rewrite later. There is no point at which a team gets
-   time to "clean it up".
-3. Default. **Design it twice.** For anything whose shape other code will
-   depend on, produce two genuinely different designs before choosing. See
+   time to "clean it up". Two changes are outside this: one that stays inside a
+   single function, which owes only what rule 4 says, and a convention that has
+   to change everywhere at once, which is one dedicated change.
+3. Default. **Design it twice.** For anything whose shape other code will depend
+   on, produce two genuinely different designs before choosing. A change that
+   fits the module by the test in rule 1, and follows its idiom, needs no second
+   design, and neither does one that stays inside a single function. See
    [design-it-twice.md](references/design-it-twice.md).
-4. Default. **Leave the campsite cleaner.** Never leave the code worse, and
-   when the change adds to a module, make one small structural improvement
-   to the code the change already edits. A fix inside one function owes no
-   improvement; it owes only that the code is no worse.
+4. Default. **Leave the campsite cleaner.** Never leave the code worse, and when
+   the change adds to a module, make one small structural improvement to the
+   code the change already edits. A change that stays inside one function owes
+   no improvement; it owes only that the code is no worse.
 5. Judgement. **Take the extra step.** When you have found the right design,
    apply it to the neighbouring code that has the same problem, if that is a
    small step and not a project.
@@ -83,7 +91,8 @@ wake that everyone else must clean up. Two consequences for you:
 - Do not measure your own work by features delivered per week if that
   number is bought with structure.
 - When you inherit such code, do not attempt a global cleanup. Improve
-  the module you are already in, each time you are in it.
+  the module you are already in, each time you are in it, by as much as
+  rule 4 asks.
 
 ## Incrementing on abstractions, not only features
 
@@ -109,9 +118,10 @@ and
 
 ## Modifying existing code
 
-Staying strategic is hardest when editing. The rule: after your change,
-the design must be what you would have chosen had you designed the module
-for the new requirement from the start.
+Staying strategic is hardest when editing. The aim: after your change,
+the design is what you would have chosen had you designed the module for
+the new requirement from the start. Where the requirement fits what the
+module already is, that asks for no more than rule 4 does.
 
 1. Read enough of the module to state its current abstraction in one
    sentence.

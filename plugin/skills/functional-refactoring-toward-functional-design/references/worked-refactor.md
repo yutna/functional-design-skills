@@ -279,7 +279,7 @@ The repository had nine methods and the catalogue client eleven. This
 function used two of the first and one of the second.
 
 ```text
-alias FindTreatment =
+alias LoadTreatment =
   TreatmentCode -> AsyncResult<Option<Treatment>, StoreError>
 alias LoadBooking = BookingId -> AsyncResult<Option<Booking>, StoreError>
 alias SaveBooking = Booking -> AsyncResult<Unit, StoreError>
@@ -291,7 +291,7 @@ type ConfirmFailure =
   | NotSent of MailError
 
 handleConfirm :
-  FindTreatment -> LoadBooking -> SaveBooking -> SendMail
+  LoadTreatment -> LoadBooking -> SaveBooking -> SendMail
     -> Instant -> BookingDto -> AsyncResult<Booking, ConfirmFailure>
 ```
 
@@ -330,7 +330,7 @@ can notice, so it is made alone.
 
 The loop looked a treatment up for each line, which put a read inside
 the rule. The function now reads the whole catalogue once, and the
-stored booking, before it checks anything. `FindTreatment` gives way to
+stored booking, before it checks anything. `LoadTreatment` gives way to
 `LoadCatalogue`, which wraps the client's method that lists every
 treatment.
 

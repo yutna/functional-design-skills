@@ -55,7 +55,11 @@ Consequences worth acting on:
 ## Core rules
 
 1. Default. **List the invariants first.** Write each rule as a sentence. "No
-   two bookings for one clinician overlap in time."
+   two bookings for one clinician overlap in time." A shape that enforces no
+   rule, such as a read-only view or a configuration record, has none to list
+   and is not an aggregate;
+   [worked-read-model.md](../functional-crossing-io-boundaries/references/worked-read-model.md)
+   works one through.
 2. Rule. **Group by invariant, not by relationship.** Data that must be
    consistent together lives in the same aggregate. A foreign key is not a
    reason to group.
@@ -66,7 +70,10 @@ Consequences worth acting on:
 5. Rule. **Reference other aggregates by identifier**, never by holding their
    value. Holding it invites updating it.
 6. Default. **Keep aggregates small.** The smallest cluster that keeps its
-   invariants is the right one; large aggregates serialise unrelated work.
+   invariants is the right one; large aggregates serialise unrelated work. Too
+   small shows as two aggregates that are always written in one transaction, or
+   as a rule that a service enforces because no aggregate owns it; then merge
+   them, or move the rule.
 7. Rule. **Say what happens between aggregates.** An event, a retry, a
    reconciliation. "Eventually consistent" without a mechanism is a bug with a
    name.

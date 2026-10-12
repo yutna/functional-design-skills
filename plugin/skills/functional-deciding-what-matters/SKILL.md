@@ -35,11 +35,15 @@ Not for: deciding module boundaries, which is
 
 1. Default. **Decide what matters, explicitly.** For each module, list the facts
    a caller must know. That list is the interface. Everything else is
-   implementation and must not be visible. Where the module already
-   exports its helpers by convention, follow the convention and flag it;
-   do not restructure the exports for one function.
+   implementation and must not be visible. Where the module already exports
+   every helper it has, that is its convention: a new helper follows it, and the
+   change says that it is exported for no caller; do not restructure the exports
+   for one function.
 2. Default. **Make what matters unmissable.** Put it in the type first, the name
-   second, the doc comment third. Never only in prose far from use.
+   second, the doc comment third. Never only in prose far from use. A fact that
+   lives and dies inside one function starts at the second step: it gets a
+   precise name, and a type only once it appears in a signature someone else
+   reads.
 3. Default. **Make what does not matter invisible.** Not merely unimportant-
    looking: absent. An exported helper nobody should call still costs attention
    every time someone reads the module's exports. The condition in rule 1

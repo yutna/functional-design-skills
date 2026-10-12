@@ -35,30 +35,41 @@ Not for: deciding whether two things belong in the same module, which is
 ## Core rules
 
 1. Default. **Each layer changes the abstraction.** If the layer above and the
-   layer below use the same nouns, delete one of them. The exception is a
-   mapping that isolates an external contract, such as a wire format, a storage
-   schema, or a vendor type: keep it even when the types look identical today.
-   See [functional-crossing-io-boundaries](../functional-crossing-io-boundaries/SKILL.md).
+   layer below use the same nouns, delete one of them. A layer that keeps the
+   nouns stays when it does one of the other things
+   [layer-smells.md](references/layer-smells.md) lists: it narrows an interface,
+   changes the failure model, adds a guarantee, or isolates an external contract
+   such as a wire format, a storage schema or a vendor type, even when the types
+   look identical today. See
+   [functional-crossing-io-boundaries](../functional-crossing-io-boundaries/SKILL.md).
 2. Default. **Delete pass-through functions.** A function that takes the same
    arguments and calls one function with them adds interface and hides nothing.
-   Let the caller call directly.
+   Let the caller call directly. A one-call function that does one of the things
+   rule 1 lists is not a pass-through, and stays.
 3. Default. **Pull complexity downward.** Given a choice between a slightly
    harder implementation and a slightly harder interface, make the
    implementation harder. One implementer pays once; every caller pays forever.
+   Leave it with the callers when the ones that exist disagree on the handling,
+   or when it is a choice only a caller can make, such as a currency, a time
+   zone or a rounding rule.
 4. Default. **Absorb the common case.** If every caller does the same thing
-   after calling you, do it for them.
+   after calling you, do it for them. The two limits of rule 3 hold here as
+   well, and so does a third: a step that would make this module learn the
+   caller's domain, as a store that formats for one screen would, stays with the
+   caller.
 5. Default. **Do not add configuration to avoid a decision.** An option exported
    so callers can choose is complexity moved upward. Decide, and expose a choice
-   only where callers genuinely differ.
+   only where two callers that exist need different values. Where they need
+   different outcomes, that is two functions and not an option.
 6. Judgement. **Keep decorators rare.** A wrapper that adds one small behaviour
    is usually better as a parameter or as part of the thing it wraps.
-7. Default. **Order the layers on two axes.** Dependencies point at the domain,
-   which is stable against vendors: code that is vendor-specific imports the
-   domain, and the domain imports none of it. Inside the domain, order the
-   layers by how often each changes, fastest at the top: rules above concepts
-   above utilities, and every function above what it calls. A general utility
-   that knows a business rule has pinned the rule to the slowest-moving thing
-   in the domain. See [layer-smells.md](references/layer-smells.md).
+7. Default. **Inside the domain, order the layers by how often each changes.**
+   Fastest at the top: rules above concepts above utilities, and every function
+   above what it calls. A general utility that knows a business rule has pinned
+   the rule to the slowest-moving thing in the domain. Which way an import
+   points between the domain and vendor code is the other axis, and rule 6 of
+   [functional-applying-solid-functionally](../functional-applying-solid-functionally/SKILL.md)
+   settles it. See [layer-smells.md](references/layer-smells.md).
 
 ## Pattern
 
