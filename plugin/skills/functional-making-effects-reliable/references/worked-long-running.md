@@ -25,9 +25,9 @@ that must reserve a slot, take payment, and issue a ticket.
 > after we charged, we must refund. Nothing may be double-charged, and
 > nothing may sit half-done without somebody finding out.
 
-Three effects, two of them irreversible-by-default, and a network between
-each pair. No transaction spans them, so the answer is an explicit
-process with explicit undo.
+Three effects, of which only the hold goes away by itself, and a network
+between each pair. No transaction spans them, so the answer is an
+explicit process with explicit undo.
 
 ## Step 1: give the intent an identity
 
@@ -152,8 +152,13 @@ advance now (Charged c) (IssueFailed refusal) =
 
 Undoing is a list worked through one step at a time. An event about an
 undo names the undo, so one that arrives twice, or late, is seen for
-what it is. A refused undo stops the process in `Stuck` until a person
-has settled that one undo and said which, and the rest then carry on:
+what it is. Two undos are the same when they are the same case and name
+the same hold or the same receipt, so compare the identifiers and not
+every field. A refused undo stops the process in `Stuck` until a person
+has settled that one undo and said which, and the rest then carry on. A
+person may also settle the undo in hand while the process is still
+`Undoing`, after a wait on it has run out, and that report moves the
+process on in the same way:
 
 ```text
 undoAll :
@@ -175,14 +180,19 @@ advance now (Undoing u) (UndoFailed f) =
                   later: u.later, because: u.because }, [])
     else (Undoing u, [])
 
+advance now (Undoing u) (SettledByHand undo) =
+  if undo == u.current
+    then undoAll u.key u.because u.later
+    else (Undoing u, [])
+
 advance now (Stuck s) (SettledByHand undo) =
   if undo == s.refused
     then undoAll s.key s.because s.later
     else (Stuck s, [])
 ```
 
-A wait that runs out is an ordinary event, and every waiting state has a
-clause for it:
+A wait that runs out is an ordinary event, and every state that waits on
+another system has a clause for it:
 
 ```text
 advance now (Started s) (Timeout ForHold) =
@@ -216,14 +226,19 @@ What to notice:
 - **The clauses shown are not the whole function.** `advance` is total:
   it has a clause for every other pair of state and event too, each
   written out as the state unchanged with no instructions. Those pairs
-  are an answer that arrives twice or late, a `Timeout` for a wait the
-  process has left, an answer for a process that is stuck, and
-  `SettledByHand` for one that is not. Writing them out, with no default
-  clause, keeps a forgotten pair from hiding.
+  are an answer the process is not waiting for, whether it came twice,
+  came late or was never asked for; a `Timeout` for a wait the process
+  is not in; and `SettledByHand` for an undo that is not the one in
+  hand. Dropping such an answer loses nothing while each effect has one
+  key and one outcome, as step 4 arranges: a success the process is not
+  waiting for can only be a second copy of one it has handled, or the
+  hold that the point above leaves to lapse. Writing the pairs out, with
+  no default clause, keeps a forgotten pair from hiding.
 
-The core answers one more question for the shell, so that the shell
-holds no rule about states: whether the process still wants an
-instruction that is waiting to be performed.
+The core answers two more questions for the shell, so that the shell
+holds no rule about states or waits: whether the process still wants an
+instruction that is waiting to be performed, and which wait an
+instruction starts.
 
 ```text
 wants : BookingProcess -> Instruction -> Boolean
@@ -231,13 +246,23 @@ wants (Started s) (HoldSlot h) = true
 wants (Reserved r) (TakePayment p) = true
 wants (Charged c) (IssueTicket i) = true
 wants (Undoing u) (Compensate c) = c.undo == u.current
-wants process (Escalate e) = true
-wants process instruction = false
+wants (Reserved r) (Escalate e) = e.wait == ForCharge
+wants (Charged c) (Escalate e) = e.wait == ForTicket
+wants (Undoing u) (Escalate e) = e.wait == ForUndo u.current
+
+waitOf : Instruction -> Option<Wait>
+waitOf (HoldSlot h) = Some ForHold
+waitOf (TakePayment p) = Some ForCharge
+waitOf (IssueTicket i) = Some ForTicket
+waitOf (Compensate c) = Some (ForUndo c.undo)
+waitOf (Escalate e) = None
 ```
 
-The clauses are read from the top, and here the last one is a default on
-purpose: an instruction that nobody has listed above it is not
-performed.
+The clauses of `wants` shown are the pairs that are true. Every other
+pair is written out as false, with no default clause, so that an
+instruction added later cannot go unperformed because nobody listed it.
+A page is wanted only while the process is still in the wait it is
+about.
 
 ## Step 4: make every effect idempotent
 
@@ -270,24 +295,41 @@ refund  : EffectKey -> Receipt -> AsyncResult<Refunded, RefundError>
 ```
 
 Each `Instruction` becomes one call, under a key that names the
-operation. `TakePayment p` becomes a call of `charge` under
-`effectKey p.key "charge"`. `Compensate c` becomes a call of `release`
+operation. `HoldSlot h` becomes a call of `hold` under
+`effectKey h.key "hold"`, `TakePayment p` a call of `charge` under
+`effectKey p.key "charge"`, and `IssueTicket i` a call of `issue` under
+`effectKey i.key "issue"`. `Compensate c` becomes a call of `release`
 under `effectKey c.key "release"` when `c.undo` is a `ReleaseHold`, and
 of `refund` under `effectKey c.key "refund"` when it is a
 `RefundCharge`. `Escalate` pages a person. It is done once the page is
 sent: nothing answers it, so nothing waits on it and it has no bound.
-Sent twice, it pages twice and harms nothing.
+Sent twice, it pages twice and harms nothing, and one that cannot be
+sent is offered again for as long as the process wants it.
 
 What comes back becomes a `ProcessEvent` only when it is definite:
 `Ok receipt` is delivered as `ChargeSucceeded receipt`, and
-`Error (Refused decline)` as `ChargeFailed decline`. `Unknown` is
-neither, and step 5 says what happens to it.
+`Error (Refused decline)` as `ChargeFailed decline`. The hold and the
+ticket go the same way. For `Compensate c`, `Ok` is delivered as
+`UndoSucceeded c.undo`, and `Error (Refused why)` as
+`UndoFailed { undo: c.undo, why }`. `Unknown` is none of these, and step
+5 says what happens to it. Every call has a timeout of its own, as
+[retries-and-backpressure.md](retries-and-backpressure.md) requires, and
+a call that runs into it is an `Unknown`.
 
-The payment provider supports an idempotency key, so `charge` and
-`refund` pass theirs straight through. The slot service does not, so
-`hold` and `release` record the effect key under a unique constraint and
-return the first result when the insert conflicts. See
-[idempotency-and-delivery.md](idempotency-and-delivery.md).
+The payment provider and the ticket system support an idempotency key,
+so `charge`, `refund` and `issue` pass theirs straight through. The slot
+service does not, so `hold` and `release` keep a record of their own:
+the effect key and the outcome, written once the service has answered
+and read before it is asked. That is the third and weakest of the ways
+in
+[idempotency-and-delivery.md](idempotency-and-delivery.md#idempotent-adapters),
+because a crash between the answer and the record lets a repeat reach
+the service again. The adapter makes what the service says then
+harmless. A release of a hold that is already gone, released or lapsed,
+is `Ok Released`: what the undo was for has happened. A second hold may
+be refused because the first still stands. That booking ends `Abandoned`
+over a slot it was holding, and the hold lapses. Nothing is charged, and
+against a service with no key an adapter cannot do better.
 
 ## Step 5: the shell loop
 
@@ -300,20 +342,23 @@ state.
 
 ```text
 type Inbound = { id: EventId, key: CommandId, event: ProcessEvent }
-type Saved = Recorded | AlreadySeen
+type Saved = Recorded | AlreadySeen | Stale
 type InboundFailure =
   | NoSuchProcess of CommandId
   | Unavailable of StoreError
 
--- inserts under the command's key: a repeat of the command is AlreadySeen
+-- one transaction, under the key the process holds: the process and its
+-- outbox rows. A repeat of the command is AlreadySeen
 alias CreateProcess =
   BookingProcess -> List<Instruction> -> AsyncResult<Saved, StoreError>
 alias LoadProcess =
-  CommandId -> AsyncResult<Option<BookingProcess>, StoreError>
--- one transaction: the state, the outbox rows, and the event id; a
--- unique constraint on the event id yields AlreadySeen on a repeat
+  CommandId
+    -> AsyncResult<Option<Versioned<BookingProcess>>, StoreError>
+-- one transaction: the state, the outbox rows, and the event id. A
+-- unique constraint on the event id yields AlreadySeen on a repeat, and
+-- a version that is no longer the stored one yields Stale
 alias SaveProcess =
-  EventId -> BookingProcess -> List<Instruction>
+  EventId -> Versioned<BookingProcess> -> List<Instruction>
     -> AsyncResult<Saved, StoreError>
 
 handleBookingRequest :
@@ -329,11 +374,16 @@ handleInbound load save now inbound =
   load inbound.key
     |> mapError Unavailable
     |> bind (toResult (NoSuchProcess inbound.key))
-    |> map (\process -> advance now process inbound.event)
-    |> bind (\(advanced, instructions) ->
-         save inbound.id advanced instructions
+    |> bind (\found ->
+         advance now found.value inbound.event
+           |> (\(advanced, instructions) ->
+                save inbound.id { ...found, value: advanced } instructions)
            |> mapError Unavailable)
 ```
+
+`Versioned<T>` pairs a value with the version it was read at, and
+[persistence-patterns.md](../../functional-crossing-io-boundaries/references/persistence-patterns.md)
+declares it.
 
 The order matters and is the whole reliability argument: **persist the
 new state and the instructions together, then dispatch from the
@@ -343,53 +393,95 @@ is sent twice, which step 4 made safe. A duplicate event computes a
 decision that `save` discards when it answers `AlreadySeen`, which
 costs nothing because `advance` performed nothing.
 
-**One worker for each process.** Events for one process are handled one
-at a time, and its instructions are performed by the same worker,
-between events. Partition by the command's key, as
-[Ordering](idempotency-and-delivery.md#ordering) describes. Nothing can
-then change a process between a question about it and the call that
-follows.
+**Two workers on one process.** Events for one process are best handled
+one at a time, partitioned by the command's key as
+[Ordering](idempotency-and-delivery.md#ordering) describes, and a job
+queue does not promise that by itself. So nothing here relies on it. The
+save writes only when the stored version is still the one that was
+loaded. `Stale` means another event got in between: nothing was written,
+and whoever delivered the event, the worker or the tool a person acts
+through, hands it to `handleInbound` again, which loads afresh. It is
+the conflict that a versioned save reports in
+[persistence-patterns.md](../../functional-crossing-io-boundaries/references/persistence-patterns.md),
+kept among the answers here because the reply to it is to try again.
 
-**Dispatching.** The worker takes an instruction from the outbox, loads
-the process, and asks `wants`. What the process no longer wants is
-marked done without a call: a charge still queued when a person has
-entered the provider's answer, or a dead letter replayed too late.
-Otherwise the worker calls the adapter, and a definite answer goes to
-`handleInbound` as an event.
+Instructions need no such guard. Two workers that offer one instruction
+make two calls under one key. For the charge, the refund and the ticket,
+step 4 made that one effect, and their two answers are one event. For
+the hold and the release it is the repeat that step 4 describes, and it
+ends as that one does.
+
+**Dispatching.** An outbox row holds the instruction, the time it was
+saved, how often it has been offered, when it is next due, and whether
+it is waiting, done or a dead letter. The worker takes an instruction
+from the outbox, loads the process, and asks `wants`. What the process
+no longer wants is marked done without a call: a charge still queued
+when a person has entered the provider's answer, or a dead letter
+replayed too late. Otherwise the worker calls the adapter, and a
+definite answer goes to `handleInbound` as an event. The instruction is
+marked done once that answer has come back `Recorded` or `AlreadySeen`.
+If it comes back `Unavailable`, the instruction stays to be offered
+again, and the adapter answers the repeat from its key, so the answer is
+not lost.
 
 After an `Unknown` the worker does not wait. It puts the instruction
 back in the outbox with the time of its next offer, spaced as
 [Backoff and jitter](retries-and-backpressure.md#backoff-and-jitter)
-sets out, and goes on to whatever is next for that process. Every offer
-starts with `wants` again. The offers stop when the bound of that wait
-in step 6 has passed since the instruction was saved; the outbox row
-holds that time, so the bound survives a restart. The instruction is
-then kept as a dead letter, and the worker delivers the `Timeout` of
-that wait. A dead letter stays until a person replays it, and a replay
-is one more offer: it gets its answer, or `wants` marks it done.
+sets out, and goes on to whatever else is due. Every offer starts with
+`wants` again, and then with the clock. `waitOf` names the wait, step 6
+gives its bound, and the bound runs from the time the instruction was
+saved, which the row holds, so it survives a restart. An offer that
+finds the bound passed makes no call: the worker keeps the instruction
+as a dead letter and delivers the `Timeout` of that wait. An `Escalate`
+starts no wait, so it has no bound to check, and is offered until it is
+sent or no longer wanted.
+
+A dead letter stays until a person acts on it. A replay is one more
+offer under the same key, made without the check against the clock: it
+gets its answer, or `wants` marks it done. It is safe only while the
+provider still holds that key, and a key has a lifetime, as
+[Command identity](idempotency-and-delivery.md#command-identity) says.
+Past it, the person reads the outcome off the provider's own records and
+enters that as the event. A person who has entered an outcome replays
+the dead letter afterwards as well: the process no longer wants it, so
+`wants` marks it done and the gauge in step 7 goes back to zero.
 
 `wants` stops a call that has not been made. One that is already on its
 way cannot be recalled, which is why a person enters a refusal only from
-the provider's own record of it, and not from the lack of an answer.
+the provider's own record of it, and not from the lack of an answer. For
+the same reason a person settles an undo by hand only when its
+instruction is a dead letter or the process is `Stuck`: in both, nothing
+is offering it any more.
 
 This worker is the relay of
 [idempotency-and-delivery.md](idempotency-and-delivery.md) with adapter
 calls where that one publishes: the outbox there holds events to
 publish, and here it holds instructions to perform. With a job queue as
-the outbox, the instruction is a job. Set the queue's limit on attempts
-and its backoff so that the last attempt falls at the bound; that
-attempt delivers the `Timeout` and then fails, and the queue keeps the
-job. Oban hands the worker the job's `attempt` and `max_attempts`, and
-keeps a job that has used them all as `discarded`, which serves as the
-dead letter.
+the outbox, the instruction is a job, and the queue's count of attempts
+must not end the offers before the clock does, so set the job's limit on
+attempts high enough that it is never the one to end them. The offer
+that finds the bound passed delivers the `Timeout` and tells the queue
+to stop retrying and keep the job. A replay carries a mark that says it
+is one, so that its offer skips the clock. In Oban, stopping is
+`{:cancel, reason}` returned from `perform/1`, which leaves the job
+`cancelled`. Oban's pruner deletes cancelled and discarded jobs by age,
+after sixty seconds unless it is given a `max_age`, so set that past the
+longest a dead letter may wait for a person.
 
 **Identifiers.** The worker derives an event's identifier from the
-outbox row the event is about and from the kind of event. An answer
-delivered twice is therefore one event, and so is the answer to a dead
-letter replayed after the first answer arrived. An event that a person
-enters, an answer read off the provider's own records or a
-`SettledByHand`, gets its identifier once, from the tool the person acts
-through.
+outbox row the event is about and from which case of `ProcessEvent` it
+is. An answer delivered twice is therefore one event, and so is the
+answer to a dead letter replayed after the first answer arrived. An
+event that a person enters, an answer read off the provider's own
+records or a `SettledByHand`, gets its identifier once, from the tool
+the person acts through. That tool shows the state of the process after
+the entry, so a report that changed nothing, such as one for an undo
+that is not the one in hand, is seen to have changed nothing.
+
+**What the caller sees.** `handleBookingRequest` answers that the
+request was taken, not that the booking exists. The patient's screen
+reads the process by its key: `Issued` shows the ticket, `Abandoned`
+the reason, and any other state that the booking is still in hand.
 
 ## Step 6: bound everything
 
@@ -409,16 +501,19 @@ inside each `SlotHold`, and `advance` reads it there.
 
 Every bound is a business decision, so each is a value in one config
 type and named in the domain's words, not a constant inside a retry
-helper. Without an answer, use the figure already in the code or the
-provider's documentation, and record in the config type that the value
-is an assumption; [working-alone.md][wa] says how to ask and what to
-hand back. See
+helper. The timeout of one call and the two figures of the backoff sit
+in that type as well. Without an answer, use the figure already in the
+code or the provider's documentation, and record in the config type that
+the value is an assumption; [working-alone.md][wa] says how to ask and
+what to hand back. See
 [retries-and-backpressure.md](retries-and-backpressure.md).
 
 ## Step 7: make it visible
 
 The process states, the escalations and the dead letters are already the
-metric. The shell counts from what it has just saved or performed.
+metric. The shell counts a state when a save has moved the process into
+it, and an escalation when its page has been sent. The two gauges are
+read from the store.
 
 ```text
 count "booking.issued"
@@ -426,13 +521,13 @@ count "booking.abandoned" { because: failureLabel because }
 count "booking.escalated" { wait: waitLabel wait }
 gauge "booking.dead_letters"                -- alerts at > 0
 gauge "booking.stuck"                       -- alerts at > 0
-time "booking.total"
+time "booking.total"              -- from the request to its last state
 ```
 
-`because` is the field of the `Abandoned` state just saved, and `wait`
-the field of the `Escalate` just performed. `failureLabel` and
-`waitLabel` each map a case to a fixed string, as `rejectionLabel` does
-in
+`because` is the field of the `Abandoned` state the process has just
+moved into, and `wait` the field of the `Escalate` just performed.
+`failureLabel` and `waitLabel` each map a case to a fixed string, as
+`rejectionLabel` does in
 [signals-and-events.md](../../functional-designing-what-to-observe/references/signals-and-events.md).
 
 A dead letter and a stuck process each mean an effect is standing, or
@@ -451,8 +546,9 @@ See
 | A deadline as an event        | A process waiting unseen for ever |
 | No undo on a guess            | Releasing a slot already paid for |
 | State and instructions, once  | A charge with no follow-up        |
+| A save that checks a version  | Two workers overwriting a state   |
 | A key for each effect         | A refund answered as the charge   |
-| Idempotent adapters           | Duplicate holds and charges       |
+| Idempotent adapters           | Duplicate charges and refunds     |
 | Asking `wants` before a call  | A call that nobody wants any more |
 | Reverse-order compensation    | A released slot still charged     |
 | An explicit `Stuck` state     | Silent give-up after money moved  |
@@ -465,15 +561,16 @@ event, each asserting the resulting state and the emitted instructions.
 Fill the table in before writing the clauses: a pair nobody has decided
 is then an empty cell, and not a default. Every cell is pure and fast,
 and the table doubles as the specification. `wants` is a second, smaller
-table.
+table, filled in the same way.
 
 The shell's tests are few. A repeat of the command starts one process.
 State is persisted before instructions dispatch. A restart resumes from
 stored state. A second delivery of the same event id leaves the stored
-state and the outbox as they were. An instruction the process no longer
-wants is dropped without a call. An instruction whose answer stays
-unknown is offered again under the same key, and ends as a dead letter
-and a `Timeout`.
+state and the outbox as they were. A save against a version that has
+moved writes nothing, and the event is handled again. An instruction the
+process no longer wants is dropped without a call, a replayed dead
+letter among them. An instruction whose answer stays unknown is offered
+again under the same key, and ends as a dead letter and a `Timeout`.
 
 No test in either group needs a real payment provider.
 

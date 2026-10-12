@@ -69,9 +69,9 @@ type Backoff = { base: Seconds, ceiling: Seconds }
 - **Per-attempt timeout** stops one slow attempt consuming the budget.
 - The budget should shrink as it is passed inward. `withRetry` takes
   the deadline of the request, an `Instant`, and stops at whichever
-  comes first: `policy.totalBudget` from the first attempt, or that
-  deadline. A request with three seconds left therefore does not start
-  an operation that takes five.
+  comes first: `policy.maxAttempts`, `policy.totalBudget` from the first
+  attempt, or that deadline. A request with three seconds left therefore
+  does not start an operation that takes five.
 
 ```text
 withRetry :

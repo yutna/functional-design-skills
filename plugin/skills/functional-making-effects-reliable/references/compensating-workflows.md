@@ -103,8 +103,8 @@ record the rate as an assumption; see
 ## Timeouts as events
 
 A step that never answers is the common case, not an edge case. Give
-every waiting state a deadline and treat its passing as an ordinary
-event, named for the wait it ends.
+every state that waits on another system a deadline and treat its
+passing as an ordinary event, named for the wait it ends.
 
 ```text
 advance now (Charged c) (Timeout ForTicket) =
