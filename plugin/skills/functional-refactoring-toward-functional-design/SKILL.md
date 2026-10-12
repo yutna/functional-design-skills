@@ -115,7 +115,8 @@ makes the design worse.
 ## Pattern
 
 A typical starting point, shortened from
-[worked-refactor.md](references/worked-refactor.md):
+[worked-refactor.md](references/worked-refactor.md): the constructor,
+two checks on the list of treatments and one assignment are left out.
 
 ```text
 class BookingService {
@@ -142,18 +143,21 @@ class BookingService {
 }
 ```
 
-After moves 1 to 7 the decision is a pure function and the service is
-the handler around it. Each move was one commit except the seventh,
-which took two: moving the reads in front of the checks is a change a
-caller can see, so it was made alone. The aliases `LoadCatalogue`,
-`LoadBooking`, `SaveBooking` and `SendMail` are the function types of
-commits 6 and 7 there, and `ConfirmFailure` has the cases `Rejected`,
-`Unavailable` and `NotSent`.
+After moves 1 to 7 the decision is a pure function, `handleConfirm` is
+the handler around it, and `BookingService.confirm` is left as the
+boundary old callers come in through. Each move was one commit except
+the seventh, which took two: moving the reads in front of the checks is
+a change a caller can see, so it was made alone. The aliases
+`LoadCatalogue`, `LoadBooking`, `SaveBooking` and `SendMail` are the
+function types of commits 6 and 7 there, and `ConfirmFailure` has the
+cases `Rejected`, `Unavailable` and `NotSent`. `orDraft` supplies the
+draft the old code built when nothing was stored, and `confirmationFor`
+builds the mail.
 
 ```text
 -- pure
 decideConfirmation :
-  Instant -> Catalogue -> Booking -> BookingDto
+  Catalogue -> Instant -> Booking -> BookingDto
     -> Result<Booking, ConfirmError>
 
 -- shell
@@ -166,7 +170,7 @@ handleConfirm loadCatalogue loadBooking saveBooking sendMail now dto =
          loadBooking dto.id |> map (\found -> (catalogue, found)))
     |> mapError Unavailable
     |> bind (\(catalogue, found) ->
-         decideConfirmation now catalogue (orDraft dto.id found) dto
+         decideConfirmation catalogue now (orDraft dto.id found) dto
            |> mapError Rejected)                               -- decide
     |> bind (\booking ->
          saveBooking booking                                   -- write
@@ -218,7 +222,8 @@ See
 
 - A refactoring branch that has outlived the limit in
   [keeping-design-clean.md](references/keeping-design-clean.md)
-- A commit that changes behaviour and structure together
+- A commit that changes what a caller can see and does anything else
+  as well
 - A migration that requires the whole team to stop
 - A new adapter layer added before anything is moved through it
 - Both the old and the new shape in use with no plan to remove one
