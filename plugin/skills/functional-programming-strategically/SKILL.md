@@ -4,7 +4,7 @@ description: Use when a deadline tempts a shortcut, when editing existing code, 
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.2.1
+  version: 3.2.2
 ---
 
 # Programming Strategically

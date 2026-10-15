@@ -6,6 +6,147 @@ skills or guidance, a patch one corrects what is already there.
 
 [semantic versioning]: https://semver.org
 
+## 3.2.2
+
+The nine language packs follow the vocabulary and the model that 3.2.0
+gave the core, which until now they had not been read against, and the
+eval runner grades work as well as questions.
+
+### A pack called a handler a workflow
+
+- In the core a workflow is a pure function that returns events, and
+  the function that reads, calls it and writes is a handler. Five packs
+  still used the older sense.
+- Next.js: the Server Action was "a workflow", was itself named
+  `confirmBooking`, and awaited a function that took a bag of
+  dependencies. It is `confirmBookingAction`, a handler, and calls the
+  pure `confirmBooking` with values. Rule 5 and the section "Server
+  Actions as workflows" say handler.
+- Effect: the generator that holds a slot is `handleBookAppointment`.
+  Its type named a `PatientNotFound` that its body could not produce;
+  it reads the patient through a second service, decides with a plain
+  function, and then holds the slot. Rule 5 gives the error union to
+  the handler, and says a pure workflow returns `Either` or `Result`
+  with a union of its own.
+- JavaScript: `handle` awaited a pricing service between validating and
+  saving. It is `handleConfirmBooking`, and reads first.
+- Elixir and Phoenix: a function called the domain took a map of
+  capabilities and a clock and performed a hold through one of them.
+  The core is `Appointment.book/4`, which takes values and returns
+  events. The handler is the context function. Private functions of
+  the context touch `Repo`, and the one that writes opens the
+  transaction; rule 7 of the Phoenix pack says so.
+
+### A name with one shape in the core and another in a pack
+
+- `confirmBooking` takes the catalogue and the instant and returns a
+  list of events, in every pack that shows it, and lifts each step's
+  error into its case of `ConfirmBookingError`.
+- `ConfirmBookingError` has the core's two cases. The TypeScript pack's
+  had a third, `Storage`; `ConfirmBookingFailure` is declared beside it
+  as the handler's type. Every wrapper case carries its payload as
+  `cause`.
+- The ts-pattern pack's transition table calls `send`, `accept`,
+  `expire` and `cancel` as `functional-modeling-state-machines` signs
+  them, and has the table's fourth command.
+- `SaveError` had two shapes in the core itself. `error-taxonomy.md`
+  classified a thrown error into a duplicate, a transient fault and an
+  opaque case under that name, and `persistence-patterns.md` declares
+  it as `Conflict` or `Failed`. The taxonomy's example is an insert: it
+  is `insertBooking` with an `InsertError` the page declares, and the
+  JavaScript and TypeScript packs follow it.
+- In the Effect pack `Payment` was declared with `kind` and two cases
+  on one page and matched by `_tag` with three on another, and
+  `SlotUnavailable` had two sets of fields. Each has one shape, and the
+  pack's unions are discriminated by `_tag`.
+
+### Pages that said a thing and showed nothing that did it
+
+- The Elixir and Phoenix pages said a context answers `:unavailable`.
+  Ecto raises when the database cannot be reached and answers a stale
+  write with a changeset. The store functions turn both into values,
+  `:unavailable` and `:conflict`; a row the domain forbids is
+  `:corrupt_row`. `find_patient/1` crashed on the fault the page said
+  it passes on.
+- liveview.md called its broadcast a hint to read again and sent the
+  events. It sends a hint, and the last clause of `handle_event/3`
+  names the refusals it shows.
+- The React page said the event handler performs an effect "with the
+  state the reducer returned". `dispatch` returns nothing. The handler
+  acts on a decision a pure function made, and the example shows it.
+- The Next.js form state crossed to the client holding the workflow's
+  error type. The action maps it with `toRefusal` first.
+- otp.md awaited two tasks one after the other inside a `with`, which
+  left the second running when the first failed. They are awaited
+  together.
+
+### Pack rules against the core rules they translate
+
+- A view that only reads needs no second type: TypeScript 7, Next.js 2
+  and Phoenix 2 now say what rule 1 of
+  `functional-crossing-io-boundaries` says.
+- Next.js rule 1 forbade a rule that runs on both sides, and the React
+  pack told the reader to run one on both. What is forbidden is a rule
+  written twice. React rule 1 says an async server component is shell.
+- Effect rule 7 forbade running an effect outside the composition root,
+  and the pack's own tests do; a test runs its own. Rule 2 says what a
+  pure function does instead of the error channel.
+- Elixir rule 5 said each step of a `with` returns the pipeline's
+  error; each step keeps its own and is lifted.
+- Rule 4 of `functional-modeling-with-algebraic-types` allowed no
+  catch-all, and the ts-pattern pack allowed one over a pair of unions.
+  The core rule says what a table over a pair may do with the pairs it
+  does not list: one refusal that the caller sees.
+- The ts-pattern pack says "arm" for the function of an arm. The XState
+  pack says that XState's "event" covers what the core calls a command,
+  that a machine drops an event no state handles, and whose rule the
+  length of a hold is.
+
+### How the nine packs were read
+
+- Four readers with no context read every file of the nine packs
+  against eleven core pages and reported 92 places. Each was ruled on,
+  in 51 rulings.
+- Four fresh readers read the result the same way and reported 68. Two
+  were rulings from the first round that were wrong: `SaveError`, which
+  was changed in the packs when the fault was in the core, and the
+  React sentence about the reducer's state. 63 more rulings went in.
+- The same readers went back over their findings: 65 of 68 answered,
+  16 new. One more reader was given the nineteen passages written last
+  and had something to say about eighteen, most of it small. What an
+  agent would trip over was fixed; those last edits, about thirty, were
+  read by nobody but their author.
+- Every TypeScript and JavaScript example type-checks against the
+  pinned libraries, on both majors of Effect where a page claims both,
+  and every Elixir example parses. Library names were read in the
+  packages' type definitions, or in the documentation of Ecto 3.14.2,
+  db_connection 2.10.2 and Elixir 1.20.4.
+- What these changes to the packs do to an agent's work was not
+  measured.
+
+### Work, as well as questions, in the evals
+
+- `scripts/eval-plugin.mjs` graded only questions, and a question tells
+  the agent that a design problem is in front of it. Nine task cases ask
+  the agent to change a small project, `evals/fixture-tasks`, and grade
+  the files it leaves behind. They come in three families: work the
+  pack should change, work it should leave alone, and work where the
+  project's own written convention wins. Each is one file in
+  `evals/tasks`.
+- A case passes in a run when every grader passes, leaving out the
+  indicators that record which skills were loaded. Each family is summed
+  apart, and the graders that failed are named for each case.
+- `claude plugin eval` keeps Write and Edit behind an operator's grant,
+  which a case's own list of tools does not give. The runner grants the
+  two to the cases that ask for them, and refuses a case that asks for a
+  shell or the network.
+- One run of the smoke set, once for each case and arm: asked a design
+  question, the agent loaded a skill about half the time; given work to
+  do, it loaded none, and the two arms gave the same result. With the
+  README's `CLAUDE.md` snippet as the project's instructions it loaded a
+  skill in all three task cases and none for the throwaway script. One
+  run for each case is a direction and not a number.
+
 ## 3.2.1
 
 The labels on every core rule are now defined where an agent reads them,
