@@ -1,8 +1,9 @@
 # Processes, Supervision and Tasks
 
-A process is the only thing in Elixir that holds state over time, so
-deciding what is a process is the same decision as deciding what is
-mutable. It is a design question, and the answer is usually no.
+A process is Elixir's way of holding changing state in memory over
+time. Whether anything should is a design question, and the answer is
+usually no: state that fits in the database belongs there. Mutability is
+seldom the reason for a process. The usual reason, below, is isolation.
 
 ## Contents
 
@@ -71,9 +72,14 @@ That reframes the question. Instead of "does this need state", ask
 boundary:
 
 - One slow external call should not stall the ten requests that do not
-  need it. That is a `Task` per call, not a GenServer.
+  need it. That is a `Task` per call, not a GenServer, and the caller
+  awaits it.
 - One customer's runaway import should not stop another customer's.
-  That is a process per import, supervised, with its own lifetime.
+  That is a process per import, supervised, with its own lifetime, and
+  its supervisor stops it, at shutdown or on request. Rule 8 of
+  [functional-making-effects-reliable](../../functional-making-effects-reliable/SKILL.md)
+  is the reason: work that outlives its command has an owner or a
+  cancel.
 - A cache that goes wrong should be able to die and come back empty
   without the request path noticing. That is a process whose death is
   survivable by design.
@@ -93,7 +99,9 @@ from a known state is more honest than handling.
 Keep the distinction the core skill draws:
 
 - **Business outcome**: `{:error, :slot_unavailable}`, returned.
-- **Bug or unrecoverable fault**: crash, and let the supervisor restart.
+- **Bug**: crash, and let the supervisor restart. A fault in something
+  the code depends on, such as a database that cannot be reached, is not
+  a bug: the function that called it returns `{:error, reason}`.
 
 A `try/rescue` around domain logic is almost always the wrong shape;
 domain functions should return tagged tuples and not raise.
@@ -136,16 +144,32 @@ notices that it did"**.
 
 ## Tasks and concurrency
 
-```elixir
-[patient_task, catalogue_task] =
-  [fn -> load_patient(id) end, fn -> load_catalogue() end]
-  |> Enum.map(&Task.async/1)
+A handler that needs a patient and a schedule can load both at once.
+This is the middle of `book_appointment/2` in
+[SKILL.md](../SKILL.md#pipelines-with-with), with the patient still
+coming through its private `find_patient/1`, so the handler's error is
+the same on both pages:
 
-with {:ok, patient} <- Task.await(patient_task),
-     {:ok, catalogue} <- Task.await(catalogue_task) do
-  {:ok, decide(patient, catalogue)}
+```elixir
+[patient_result, schedule_result] =
+  [
+    fn -> find_patient(command.patient) end,
+    fn -> load_schedule(command.doctor, command.slot) end
+  ]
+  |> Enum.map(&Task.async/1)
+  |> Task.await_many()
+
+with {:ok, patient} <- patient_result,
+     {:ok, schedule} <- schedule_result do
+  Appointment.book(command, patient, schedule, now)
 end
 ```
+
+`Task.await_many/1` waits for both tasks before the `with` looks at
+either answer, so a patient who is not found leaves no task running. It
+exits the caller when a task takes more than five seconds, so each load
+carries a shorter timeout of its own and answers `{:error, :unavailable}`
+first.
 
 The fetches run concurrently; the decision stays pure and sequential.
 This is dependency rejection: gather first, decide afterwards. See
