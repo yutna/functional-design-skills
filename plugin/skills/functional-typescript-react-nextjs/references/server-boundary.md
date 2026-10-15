@@ -10,7 +10,7 @@ way in.
 
 - [What goes where](#what-goes-where)
 - [Passing data across](#passing-data-across)
-- [Server Actions as workflows](#server-actions-as-workflows)
+- [Server Actions as handlers](#server-actions-as-handlers)
 - [Forms and accumulated errors](#forms-and-accumulated-errors)
 - [Optimistic updates](#optimistic-updates)
 - [Caching and revalidation](#caching-and-revalidation)
@@ -53,12 +53,18 @@ the screen rather than for the rules. Branded types, class instances,
 functions, and dates all lose or change meaning across the boundary, so
 convert deliberately rather than discovering it at runtime.
 
+An async server component is shell code: it reads the session and the
+store, then returns markup from those values, once for each request.
+Rule 1 of the React pack, that render does not fetch, is about a
+component React may render again at any time.
+
 A view type per screen is usually better than sending the aggregate. See
 [persistence-patterns.md](../../functional-crossing-io-boundaries/references/persistence-patterns.md).
 
-## Server Actions as workflows
+## Server Actions as handlers
 
-An action is a workflow with an HTTP shape: a command in, a result out.
+An action is a handler with an HTTP shape: a form in, a result the form
+can render out.
 
 ```tsx
 "use server";
@@ -69,30 +75,55 @@ type FormState =
   | { tag: "Idle" }
   | { tag: "SignedOut" }
   | { tag: "Invalid"; errors: readonly FieldError[] }
-  | { tag: "Rejected"; reason: ConfirmBookingError }
+  | { tag: "Rejected"; refusal: Refusal }
+  | { tag: "Unavailable" }
   | { tag: "Confirmed"; reference: BookingRef };
 
 export async function confirmBookingAction(
   _prev: FormState,
-  form: FormData,
+  formData: FormData,
 ): Promise<FormState> {
   const session = await currentSession(); // shell: who is calling
   if (!session) return { tag: "SignedOut" };
 
-  const parsed = parseBookingForm(form); // boundary
+  const parsed = parseBookingForm(formData); // boundary
   if (!parsed.ok) return { tag: "Invalid", errors: parsed.error };
 
-  const result = await confirmBooking(deps)(session.patient, parsed.value);
-  if (!result.ok) return { tag: "Rejected", reason: result.error };
+  const catalogue = await loadCatalogue(); // shell: read
+  if (!catalogue.ok) return { tag: "Unavailable" };
+
+  const now = new Date();
+  const decided = confirmBooking(catalogue.value, now, {
+    ...parsed.value,
+    patient: session.patient,
+    requestedBy: session.patient,
+  }); // core: pure, not awaited
+  if (!decided.ok) {
+    return { tag: "Rejected", refusal: toRefusal(decided.error) };
+  }
+
+  const saved = await saveEvents(decided.value); // shell: write
+  if (!saved.ok) return { tag: "Unavailable" };
 
   updateTag(`bookings:${session.patient}`); // shell: what went stale
-  return { tag: "Confirmed", reference: result.value.reference };
+  return { tag: "Confirmed", reference: confirmedReference(saved.value) };
 }
 ```
 
+`saveEvents` hands the events back, and `confirmedReference` reads the
+booking's reference out of the `BookingConfirmed` one.
+
+`FormState` is the form's own type, and it crosses to the client, so
+everything in it is a transfer type. The action builds it from what the
+handler met. `toRefusal` is the outward mapping of the workflow's error,
+as `toListItem` is of a booking, and the store's fault stays on the
+server: `Unavailable` carries nothing. A `BookingRef` arrives as the
+string it is: the brand is erased, and the client only shows it.
+
 The `(previousState, formData)` signature is not arbitrary: it is what
-React 19's `useActionState` calls, and it is why the action reads as a
-reducer whose effect happens on the server.
+React 19's `useActionState` calls, and it is why the action is shaped
+like a reducer, though it is a handler: its effects happen on the
+server.
 
 ```tsx
 "use client";
@@ -103,12 +134,12 @@ const [state, formAction, isPending] = useActionState(confirmBookingAction, {
 ```
 
 `state` is the `FormState` the action returned, `formAction` goes
-straight on `<form action={...}>`, and `isPending` is the loading flag
-nobody then has to hold in a `useState` that can disagree with it.
-Three of the four cases the skill warns about — loading beside data,
-error beside success, an empty state that never resolves — stop being
-representable, because the state is one value and the action is the only
-thing that writes it.
+straight on `<form action={...}>`, and `isPending` is the loading flag.
+React keeps it, so nobody holds one in a `useState` that can disagree
+with the action. The outcome is one value and the action is the only
+thing that writes it, so an error beside a success stops being
+representable. While `isPending` is true, `state` still holds the
+previous outcome, and the form reads the flag before it shows that.
 
 Four rules for actions:
 
@@ -119,9 +150,9 @@ Four rules for actions:
    was rendered does not cover the action.
 2. **Return a value, do not throw.** The form renders the result, so the
    failure must be data.
-3. **Keep the rules out.** The action parses, calls the workflow, and
-   maps the result. Any conditional about business meaning belongs in the
-   workflow.
+3. **Keep the rules out.** The action reads, parses, calls the pure
+   workflow with values, writes, and maps the result. Any conditional
+   about business meaning belongs in the workflow.
 4. **Return a state the form can render**, as a choice type, so the
    client cannot show two outcomes at once.
 
@@ -136,7 +167,7 @@ const problemIn = <T,>(field: string, r: Result<T, string>): FieldError[] =>
 
 const parseBookingForm = (
   form: FormData,
-): Result<BookingRequest, readonly FieldError[]> => {
+): Result<BookingForm, readonly FieldError[]> => {
   const slot = parseSlotId(form.get("slot"));
   const treatment = parseTreatmentCode(form.get("treatment"));
   return slot.ok && treatment.ok
@@ -146,6 +177,10 @@ const parseBookingForm = (
 ```
 
 Each error carries its field, so the form can highlight the right input.
+This form books one treatment in one slot, so the command the action
+builds from it is narrower than the `UnvalidatedBooking` of
+[pipeline-anatomy.md](../../functional-designing-workflow-pipelines/references/pipeline-anatomy.md),
+which carries a list of lines.
 The patient is not a field. Who is booking comes from the session, and a
 patient sent with the form would be a claim the action cannot trust.
 See
@@ -159,7 +194,7 @@ decision. Keep the prediction pure and reconcilable.
 ```tsx
 const [optimistic, addOptimistic] = useOptimistic(
   bookings,
-  (current, added: Booking) => [...current, added],
+  (current, added: BookingListItem) => [...current, added],
 );
 ```
 
@@ -215,8 +250,7 @@ which this page may not.
 
 ## Testing across the boundary
 
-- **Workflows**: tested as pure functions with stubbed capabilities, with
-  no framework at all.
+- **Workflows**: tested with plain values, and no framework at all.
 - **Actions**: a thin test that parsing and mapping work; the rules were
   already covered.
 - **Components**: rendered with props, asserting on output for each case

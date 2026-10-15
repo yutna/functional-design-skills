@@ -15,15 +15,16 @@
 ## The shape of a match
 
 ```text
-match(value).with(pattern, handler).with(pattern, handler).exhaustive();
+match(value).with(pattern, arm).with(pattern, arm).exhaustive();
 ```
 
 Patterns are tried in order. `.exhaustive()` fails to compile if any
 possible value of the input type is unmatched, and throws at runtime if
-one arrives anyway, which covers values that came from outside the type
-system.
+one arrives anyway. That throw is the crash for a bug, a value that
+broke its type's promise. A value from outside is parsed before it is
+matched as a domain type.
 
-`.otherwise(handler)` and `.run()` end a match without the check. Reserve
+`.otherwise(arm)` and `.run()` end a match without the check. Reserve
 them for the cases described below.
 
 The sections that follow show patterns one `.with` at a time and leave
@@ -33,14 +34,14 @@ the ending off. A real match always has one.
 
 ```ts
 match(shipment)
-  .with({ tag: "Pending" }, handler)                  // discriminant
-  .with({ tag: "Failed", reason: "Lost" }, handler);  // and a literal
+  .with({ tag: "Pending" }, arm)                  // discriminant
+  .with({ tag: "Failed", reason: "Lost" }, arm);  // and a literal
 
 match(booking)
-  .with({ treatment: { tag: "Procedure" } }, handler); // nested
+  .with({ lifecycle: { tag: "Cancelled" } }, arm); // nested
 
 match([quote, command] as const)
-  .with([{ tag: "Draft" }, { tag: "Send" }], handler); // tuple
+  .with([{ tag: "Draft" }, { tag: "Send" }], arm); // tuple
 ```
 
 An object pattern matches partially: keys not mentioned are unconstrained.
@@ -68,10 +69,10 @@ field can be anything".
 
 ```ts
 // one match each, so no arm hides the next
-match(booking).with({ tag: P.union("Draft", "Sent") }, handler);
-match(booking).with({ tag: P.not("Draft") }, handler);
-match(booking).with({ treatments: P.array({ quantity: P.number }) }, handler);
-match(booking).with({ note: P.optional(P.string) }, handler);
+match(quote).with({ tag: P.union("Draft", "Sent") }, arm);
+match(quote).with({ tag: P.not("Draft") }, arm);
+match(booking).with({ treatments: P.array({ minutes: P.number }) }, arm);
+match(booking).with({ note: P.optional(P.string) }, arm);
 ```
 
 `P.array(p)` matches when every element matches `p`. To match on the
@@ -81,13 +82,14 @@ array's length or on specific positions, use a tuple pattern or a guard.
 
 ```ts
 match(booking)
-  .with({ total: P.when((t) => t > LARGE_BOOKING) }, handler)
-  .when((b) => isAfterCutoff(b.confirmedAt), handler)
+  .with({ total: P.when((t) => t > LARGE_BOOKING) }, arm)
+  .when((b) => isAfterCutoff(b.confirmedAt), arm)
 ```
 
 Two forms: `P.when` inside a pattern, and `.when` as a whole-value guard.
-Keep both to one line. A guard containing a real rule should be a named
-predicate defined beside the domain type, so it can be tested and reused.
+Keep both to one line. A guard that applies a rule the business would
+state compares with a named constant or calls a named predicate, defined
+beside the domain type, so it can be tested and reused.
 
 Guards do not participate in the exhaustiveness check: a match made only
 of guarded patterns cannot be proven exhaustive, and will need
@@ -105,10 +107,10 @@ match(shipment)
   )
 ```
 
-An unnamed `P.select()` passes the matched part as the handler's
-argument; named selects arrive as an object. Selecting is clearer than
-destructuring the whole value when the handler needs one or two fields
-from deep inside.
+An unnamed `P.select()` passes the matched part as the arm's argument;
+named selects arrive as an object. Selecting is clearer than
+destructuring the whole value when the arm needs one or two fields from
+deep inside.
 
 ## Typing the result
 
@@ -119,18 +121,23 @@ match(shipment)
   // ... one arm per tag, then .exhaustive()
 ```
 
-`.returnType<T>()` fixes the result type up front, so a handler returning
-the wrong type is an error at that handler rather than a confusing union
+`.returnType<T>()` fixes the result type up front, so an arm returning
+the wrong type is an error at that arm rather than a confusing union
 at the end. Worth using whenever the arms are non-trivial.
 
 ## Where `.otherwise()` is legitimate
 
 1. **A transition table**, where every unlisted pair is one outcome:
    an illegal transition. Enumerating them would be noise.
-2. **Matching a value from outside the type system**, such as a parsed
-   payload, where the fallback is a named parse error.
+2. **Parsing a value from outside the type system.** The match is the
+   parser, its input is `unknown`, and the fallback is the parser's
+   named error.
 3. **A genuinely open set**, such as a dispatch table loaded from
    configuration, where a coverage test replaces the compiler's check.
+
+Neither of the last two is a match over a choice type, so rule 4 of
+[functional-modeling-with-algebraic-types](../../functional-modeling-with-algebraic-types/SKILL.md)
+does not reach them.
 
 Everywhere else, `.otherwise()` is a silenced compile error. See
 [functional-applying-solid-functionally](../../functional-applying-solid-functionally/SKILL.md)
@@ -145,6 +152,6 @@ for choosing between a closed union and an open dispatch.
   literal from a `status` field, the type is wrong. See
   [functional-modeling-state-machines](../../functional-modeling-state-machines/SKILL.md).
 - **One match per decision.** Two matches over the same value in one
-  function usually means the second belongs in the first's handlers.
-- **Handlers call named functions.** A match is a dispatch table; the
+  function usually means the second belongs in the first's arms.
+- **Arms call named functions.** A match is a dispatch table; the
   work belongs in functions with names a domain expert would recognise.

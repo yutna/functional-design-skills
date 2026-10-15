@@ -63,7 +63,7 @@ type State =
 type Event =
   | { tag: "Started"; draft: Draft }
   | { tag: "Changed"; field: FieldName; value: string }
-  | { tag: "Submitted" }
+  | { tag: "Submitted"; decision: SubmissionDecision }
   | { tag: "Succeeded"; reference: BookingRef }
   | { tag: "Failed"; errors: readonly FieldError[] };
 
@@ -72,13 +72,26 @@ const reduce = (state: State, event: Event): State => {
 };
 ```
 
+The `errors` held by `Editing` are the server's answer to the last
+submission, not validity worked out again. The reducer is the dispatch,
+and each arm calls a function that takes the specific state it is in.
+
 The reducer is a pure function of two values. It can be tested as a
 table, exhaustively, with no rendering and no framework. That is the
 single highest-value move available in a complex React screen.
 
-Keep the reducer free of effects. When a transition should cause one,
-return a state the component reacts to, or return instructions alongside
-the state and let the shell run them.
+Keep the reducer free of effects. When what the user did should cause
+one, the event handler performs it. A pure function works out the
+decision from the state the component rendered with; the handler
+dispatches the event that carries the decision, performs the effect the
+decision calls for, and dispatches what came of it. The reducer performs
+nothing: it works out the next state from each event.
+[Keeping rules out of components](#keeping-rules-out-of-components)
+shows the decision. Returning instructions beside the state is for a
+sequence of effects that has to be stored or replayed, which is the case
+rule 1 of
+[functional-parameterizing-dependencies](../../functional-parameterizing-dependencies/SKILL.md)
+names; an ordinary form does not need it.
 
 `useReducer` takes this as it stands, and that is the default: the
 reducer is a plain function and needs nothing else. Reach for `xstate`
@@ -150,12 +163,27 @@ const onSubmit = () => {
 ```tsx
 // rules in a pure module, tested without React
 const decision = decideSubmission(patient, booking);
-const onSubmit = () => dispatch({ tag: "Submitted", decision });
+const onSubmit = async () => {
+  dispatch({ tag: "Submitted", decision });
+  if (decision.tag !== "Allowed") return;
+
+  const outcome = await submitBooking(booking);
+  dispatch(
+    outcome.ok
+      ? { tag: "Succeeded", reference: outcome.value }
+      : { tag: "Failed", errors: outcome.error },
+  );
+};
 ```
 
 The pure function is testable with two plain values, reusable on the
-server, and reviewable by someone who does not know React. See
-[functional-separating-pure-core-from-shell](../../functional-separating-pure-core-from-shell/SKILL.md).
+server, and reviewable by someone who does not know React. Where there
+is a server, it makes this decision again, and its answer is the one
+that counts: the call in the component is a prediction for the screen.
+[functional-typescript-react-nextjs](../../functional-typescript-react-nextjs/SKILL.md)
+says where that line runs. See
+[functional-separating-pure-core-from-shell](../../functional-separating-pure-core-from-shell/SKILL.md)
+for the split.
 
 ## Components as deep modules
 

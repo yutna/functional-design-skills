@@ -1,5 +1,5 @@
 // Wildcards table: `P.any` is "Anything, same as `P._`". They are one pattern
-// type, and a handler behind either receives the input type.
+// type, and the arm behind either receives the input type.
 const sameWildcard: typeof P.any = P._;
 const behindAny = (s: Shipment) =>
   match(s).with(P.any, (v) => {
@@ -16,8 +16,8 @@ const guardedOnly = (flag: boolean): string =>
     // @ts-expect-error guards do not narrow, so nothing is proven covered
     .exhaustive();
 
-// Typing the result: "a handler returning the wrong type is an error at that
-// handler."
+// Typing the result: "an arm returning the wrong type is an error at that
+// arm."
 const typed = (s: Shipment) =>
   match(s)
     .returnType<string>()

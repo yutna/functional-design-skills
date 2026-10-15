@@ -32,9 +32,9 @@ class Slots extends Context.Tag("Slots")<
 
 Two rules from the core skills apply unchanged:
 
-1. **Declare it in the domain, in the domain's words.** `Slots`, not
-   `SlotRepository`. The domain says what it needs; the shell satisfies
-   it.
+1. **Declare it beside the handler that uses it, in the domain's
+   words.** `Slots`, not `SlotRepository`. The handler says what it
+   needs; the composition root satisfies it.
 2. **Keep it narrow.** Two or three related operations. A service with
    twenty members forces every consumer to depend on all twenty. See
    [lsp-isp-dip.md](../../functional-applying-solid-functionally/references/lsp-isp-dip.md).
@@ -44,14 +44,26 @@ still the simplest thing and needs no service at all.
 
 ## Using a service
 
+The handler below also uses `Patients`, a second service declared the
+same way, whose one operation, `find`, fails with `PatientNotFound`.
+
 ```ts
-const bookAppointment = (cmd: BookAppointment) =>
+// the handler: success, failure, and requirements are all in the type
+const handleBookAppointment = (
+  cmd: BookAppointment,
+): Effect.Effect<
+  Appointment,
+  PatientNotFound | SlotUnavailable,
+  Patients | Slots
+> =>
   Effect.gen(function* () {
+    const patients = yield* Patients;
     const slots = yield* Slots;
-    const hold = yield* slots.hold(cmd.slot);
-    return confirm(hold);
+    const patient = yield* patients.find(cmd.patient); // read
+    const fee = feeFor(patient.category); // decide: plain, stays plain
+    const hold = yield* slots.hold(cmd.slot); // write
+    return confirm(hold, fee);
   });
-// Effect<Appointment, SlotUnavailable, Slots>
 ```
 
 The requirements channel accumulates automatically as more services are
@@ -84,6 +96,9 @@ const DatabaseLive = Layer.scoped(
   Effect.acquireRelease(openPool, closePool),
 );
 ```
+
+A handler yields `Clock` once for the command it carries out and passes
+the instant on. No function that decides asks for the time.
 
 ## Composing layers
 
@@ -129,9 +144,13 @@ const SlotsTest = Layer.succeed(Slots, {
   release: () => Effect.void,
 });
 
-it("suggests alternatives when the slot is taken", () =>
-  bookAppointment(cmdForTakenSlot).pipe(
-    Effect.provide(SlotsTest),
+const PatientsTest = Layer.succeed(Patients, {
+  find: () => Effect.succeed(testPatient),
+});
+
+it("fails with SlotUnavailable when the slot is taken", () =>
+  handleBookAppointment(cmdForTakenSlot).pipe(
+    Effect.provide(Layer.mergeAll(PatientsTest, SlotsTest)),
     Effect.flip,
     Effect.map((e) => expect(e._tag).toBe("SlotUnavailable")),
     Effect.runPromise,
@@ -163,18 +182,32 @@ an invisible input.
 
 ## When a service is too much
 
-A single capability used by one workflow is often better as a plain
-function parameter:
+What a decision needs is usually a value, and then nothing is injected at
+all: the handler reads the catalogue and passes it.
 
 ```ts
 const priceBooking =
-  (getPrice: (c: TreatmentCode) => Money) =>
-  (booking: ValidatedBooking): PricedBooking => ({
-    ...booking,
-    fee: getPrice(booking.treatmentCode),
-  });
+  (catalogue: Catalogue) =>
+  (booking: ValidatedBooking): Either.Either<PricedBooking, PricingError> => {
+    const fee = catalogue.prices.get(booking.treatmentCode);
+    return fee === undefined
+      ? Either.left({
+          _tag: "TreatmentNotFound",
+          code: booking.treatmentCode,
+        })
+      : Either.right({ ...booking, fee });
+  };
 ```
 
 No `Effect`, no service, no layer, and the function stays pure. Reach for
-a service when the capability is effectful, used in several places, or
-needs to be resourceful.
+a service when several handlers share the capability, when a path needs
+a stub, or when what it holds has to be released.
+
+A handler that reads once and writes once has no path worth a stub, and
+rule 2 of
+[functional-parameterizing-dependencies](../../functional-parameterizing-dependencies/SKILL.md)
+gives it no capability of its own: it yields `Database` and calls its
+adapters by name. `handleBookAppointment` on this page is that small. It
+declares `Patients` and `Slots` to show the form a service takes, and a
+handler earns that form when another handler shares the service or a
+path of its own needs a stub.

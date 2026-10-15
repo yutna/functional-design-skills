@@ -51,7 +51,10 @@ Not for: enforcing value ranges on a single primitive, which is
 4. Rule. **Match exhaustively.** Name every case, and let no arm return a
    value for a case it does not name, so adding a case produces a list of
    places to think about. A last arm that crashes on an unknown tag
-   returns nothing, so it is outside this rule.
+   returns nothing, so it is outside this rule. A table over a pair of
+   choices, such as a state and a command, may give every pair it does not
+   list one refusal that the caller sees; what it may not do is treat an
+   unlisted pair as some other case, or pass over it in silence.
 5. Default. **Compose, do not flatten.** Build big types from small named ones.
    `Booking` holding `PatientInfo` and `ClinicLocation` reads better and changes
    better than twenty fields in a row. A transfer type is outside this: it stays

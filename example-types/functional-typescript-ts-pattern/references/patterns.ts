@@ -19,21 +19,21 @@ type Shipment =
     }
   | { readonly tag: "Failed"; readonly reason: FailureReason };
 
-// The fences are a catalogue: each uses `booking` for whatever value suits
-// the pattern it shows. One type that has every field any of them reads is
-// the value they all match over.
+// The fences are a catalogue. `quote` is matched on its states, and
+// `booking` has every field the other patterns read.
 type PatientId = Brand<string, "PatientId">;
-type Booking = {
-  readonly tag: "Draft" | "Sent" | "Confirmed";
-  readonly lifecycle:
-    | { readonly tag: "Held" }
-    | { readonly tag: "Confirmed" }
-    | { readonly tag: "Cancelled" };
+type BookedTreatment = {
   readonly treatment:
     | { readonly tag: "Consultation" }
     | { readonly tag: "Procedure" };
   readonly minutes: number;
-  readonly treatments: readonly { readonly quantity: number }[];
+};
+type Booking = {
+  readonly lifecycle:
+    | { readonly tag: "Held" }
+    | { readonly tag: "Confirmed" }
+    | { readonly tag: "Cancelled" };
+  readonly treatments: readonly BookedTreatment[];
   readonly note?: string;
   readonly total: number;
   readonly confirmedAt: Date;
@@ -55,6 +55,6 @@ declare const command: QuoteCommand;
 declare const format: (d: Date) => string;
 declare const LARGE_BOOKING: number;
 declare const isAfterCutoff: (at: Date) => boolean;
-// A handler that takes nothing and returns nothing, which every handler
-// position accepts.
-declare const handler: () => void;
+// An arm's function that takes nothing and returns nothing, which every
+// arm position accepts.
+declare const arm: () => void;

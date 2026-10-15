@@ -70,6 +70,17 @@ system can trust. Everything past it is written against types that cannot
 be wrong. See
 [functional-making-illegal-states-unrepresentable](../../functional-making-illegal-states-unrepresentable/SKILL.md).
 
+The same parse, returning the pure result type:
+
+```ts
+const parseBookingPure = Schema.decodeUnknownEither(Booking);
+// (u: unknown) => Either<Booking, ParseError>
+```
+
+The pure form is for edge code that has no effect type; the `Effect`
+form is for a handler that already has one. Either way the parse is done
+at the edge, before a workflow sees the value.
+
 To report every problem at once rather than the first:
 
 ```ts
@@ -92,17 +103,15 @@ describing two different things and should be split.
 
 ```ts
 const Payment = Schema.Union(
-  Schema.Struct({ kind: Schema.Literal("cash") }),
-  Schema.Struct({
-    kind: Schema.Literal("card"),
-    number: CardNumber,
-  }),
+  Schema.TaggedStruct("Cash", {}),
+  Schema.TaggedStruct("Card", { number: CardNumber }),
+  Schema.TaggedStruct("Transfer", { bank: BankCode }),
 );
 ```
 
-`Schema.TaggedStruct` gives the same shape with the `_tag` convention
-that `Match.tag` and `catchTag` use. Pick one discriminator convention
-per codebase.
+`Schema.TaggedStruct` writes the `_tag` field that `Match.tag` and
+`catchTag` read. Pick one discriminator convention per codebase: on
+Effect that is `_tag`, where the TypeScript pack says `tag`.
 
 An unknown tag from outside produces a parse error, never a default,
 which is what the boundary rule requires.

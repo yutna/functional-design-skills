@@ -31,7 +31,7 @@ references are written for Effect 3. On Effect 4, read
 ## When to use
 
 - A TypeScript project that already depends on Effect
-- Deciding how to express a workflow, a service, or an error in Effect
+- Deciding how to express a handler, a service, or an error in Effect
 - Reviewing Effect code against the core design rules
 
 Not for: TypeScript without Effect, which has
@@ -42,7 +42,7 @@ Not for: TypeScript without Effect, which has
 | Neutral notation      | Effect                                           |
 | --------------------- | ------------------------------------------------ |
 | `A -> B`              | A plain function; keep it plain                  |
-| `Result<T, E>`        | `Either` on 3, `Result` on 4, or `Effect<T, E>`  |
+| `Result<T, E>`        | `Either` on 3, `Result` on 4                     |
 | `Option<T>`           | `Option<T>`                                      |
 | `AsyncResult<T, E>`   | `Effect<T, E>`                                   |
 | A declared dependency | A service class, provided by a `Layer`           |
@@ -57,20 +57,28 @@ Not for: TypeScript without Effect, which has
 1. Rule. **Keep pure functions pure.** A calculation that needs nothing from the
    world is a plain function, not an `Effect`. Wrapping it hides that it is free
    of effects.
-2. Rule. **Put every failure in the error channel**, as a tagged error, never as
-   a thrown exception.
+2. Rule. **Put every expected failure in the error channel**, as a tagged error,
+   never as a thrown exception. A pure function that can refuse has no error
+   channel: it returns `Either` on 3 or `Result` on 4, and rule 1 keeps it
+   plain.
 3. Default. **Declare dependencies as services**; let the requirements channel
-   accumulate them, and provide layers only at the edge. A service is narrow,
-   two or three related operations, which is this library's form of one function
-   type for each capability. A single capability that one workflow uses is
-   simpler still as a plain function parameter, with no service and no layer.
+   accumulate them, and provide layers only at the edge. Services are for
+   handlers: a handler yields one to read or to write, and hands what it read to
+   plain functions as values. A service is narrow, two or three related
+   operations, which is this library's form of one function type for each
+   capability. A single capability that one handler uses is simpler still as a
+   plain function parameter, with no service and no layer.
 4. Rule. **Parse at the boundary with a schema**, producing branded domain
    types, and never let the encoded shape inward.
-5. Default. **One error union per workflow**, built from tagged errors, handled
-   with `catchTag` or `catchTags`.
+5. Default. **One error union per handler**, built from tagged errors, handled
+   with `catchTag` or `catchTags`. It is the handler's failure type. A pure
+   workflow that the handler calls has one choice type of its own for its
+   errors, returned in the `Either` or `Result` of rule 2 and discriminated by
+   `_tag`, as every union in an Effect codebase is.
 6. Rule. **Acquire resources with a scope**, so release happens on every path.
 7. Rule. **Run the effect once, at the edge.** `runPromise` belongs in the
-   composition root, not in domain code.
+   composition root, not in domain code. A test is a program of its own and
+   runs its own.
 
 ## Pattern
 
@@ -86,29 +94,44 @@ class PatientNotFound extends Data.TaggedError("PatientNotFound")<{
   readonly patient: PatientId;
 }> {}
 
-// a dependency the domain declares in its own words: `Slots`, a service
-// that holds and releases slots; `hold` fails with `SlotUnavailable`
+// dependencies the handler declares in the domain's words: `Patients`,
+// a service that finds a patient, and `Slots`, a service that holds and
+// releases slots; `find` fails with `PatientNotFound` and `hold` with
+// `SlotUnavailable`
 
-// the workflow: success, failure, and requirements are all in the type
-const bookAppointment = (
+// the handler: success, failure, and requirements are all in the type
+const handleBookAppointment = (
   cmd: BookAppointment,
-): Effect.Effect<Appointment, SlotUnavailable | PatientNotFound, Slots> =>
+): Effect.Effect<
+  Appointment,
+  PatientNotFound | SlotUnavailable,
+  Patients | Slots
+> =>
   Effect.gen(function* () {
+    const patients = yield* Patients;
     const slots = yield* Slots;
-    const hold = yield* slots.hold(cmd.slot);
-    const fee = feeFor(cmd.category); // plain function, stays plain
+    const patient = yield* patients.find(cmd.patient); // read
+    const fee = feeFor(patient.category); // decide: plain, stays plain
+    const hold = yield* slots.hold(cmd.slot); // write
     return confirm(hold, fee);
   });
 ```
 
 The signature states the whole contract: what it produces, how it fails,
-and what it needs. That is
-[functional-designing-workflow-pipelines](../functional-designing-workflow-pipelines/SKILL.md)
-with the compiler checking it.
+and what it needs. It reads the patient, works out the fee with a plain
+function, and writes by holding the slot; the appointment it returns is
+built from that hold. That is the handler of
+[functional-separating-pure-core-from-shell](../functional-separating-pure-core-from-shell/SKILL.md)
+with the compiler checking what it needs. The decisions it calls are
+plain functions, and stay plain. Two services are declared here to show
+the form a service takes;
+[layers-and-services.md](references/layers-and-services.md) says when a
+handler this small does without them.
 
-Declaring `Slots` is the one part of this example that differs by major.
-[layers-and-services.md](references/layers-and-services.md) shows it on
-Effect 3, and [effect-4.md](references/effect-4.md) shows it on Effect 4.
+Declaring a service is the one part of this example that differs by
+major. [layers-and-services.md](references/layers-and-services.md) shows
+`Slots` on Effect 3, and [effect-4.md](references/effect-4.md) shows it
+on Effect 4; `Patients` is declared the same way.
 
 ## Providing dependencies
 
@@ -117,13 +140,20 @@ const SlotsLive = Layer.effect(
   Slots,
   Effect.gen(function* () {
     const pool = yield* Database;
-    return { hold: (slot) => holdInDb(pool, slot) };
+    return {
+      hold: (slot) => holdInDb(pool, slot),
+      release: (hold) => releaseInDb(pool, hold),
+    };
   }),
 );
 
 // the composition root, at the edge
-const main = bookAppointment(cmd).pipe(
-  Effect.provide(SlotsLive.pipe(Layer.provide(DatabaseLive))),
+const main = handleBookAppointment(cmd).pipe(
+  Effect.provide(
+    Layer.mergeAll(PatientsLive, SlotsLive).pipe(
+      Layer.provide(DatabaseLive),
+    ),
+  ),
   Effect.runPromise,
 );
 ```
@@ -135,7 +165,7 @@ mocking framework. See
 ## Handling errors
 
 ```ts
-booking.pipe(
+handleBookAppointment(cmd).pipe(
   Effect.catchTags({
     SlotUnavailable: (e) => Effect.succeed(suggestAlternatives(e.slot)),
     PatientNotFound: () => Effect.fail(new BadRequest()),
@@ -164,7 +194,8 @@ stays fully modelled either way. See
 
 ## Red flags
 
-- `Effect.runSync` or `runPromise` outside the composition root
+- `Effect.runSync` or `runPromise` outside the composition root or a
+  test
 - A pure calculation wrapped in `Effect.succeed` for uniformity
 - `Effect.die`, or a thrown exception, for an expected failure
 - `any` in an effect's error channel, or errors typed as `Error`

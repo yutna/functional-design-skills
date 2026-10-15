@@ -40,18 +40,20 @@ Not for: designing the union itself, which is
 1. Rule. **End a match over a union with `.exhaustive()`.** That is the whole
    point; `.otherwise()` there throws the guarantee away. A match over a pair,
    such as a state and a command, is a table whose empty cells are one
-   outcome, and `.otherwise()` is how that outcome is written.
+   outcome, and `.otherwise()` is how that outcome is written. The other two
+   places for `.otherwise()`, a value from outside the type system and a set
+   that is open, are in [patterns.md](references/patterns.md).
 2. Default. **Match on the discriminant first**, then on nested structure, so
    the patterns read in the order a person would ask the questions.
 3. Default. **Use `P.when` for guards**, not to write a business rule inline. A
    guard fits on a line. One that applies a rule the business would state, such
    as a threshold, compares with a named constant or calls a named predicate
    that is defined beside the domain type.
-4. Default. **Select what you use.** `P.select()` names the parts a handler
+4. Default. **Select what you use.** `P.select()` names the parts an arm
    needs instead of reaching back into the value. It earns its place when the
-   handler needs one or two fields from deep inside. A field at the top of the
-   matched shape can as well be read by destructuring the handler's argument.
-5. Judgement. **Keep handlers small.** A match arm that is ten lines should call
+   arm needs one or two fields from deep inside. A field at the top of the
+   matched shape can as well be read by destructuring the arm's argument.
+5. Judgement. **Keep arms small.** A match arm that is ten lines should call
    a named function.
 6. Rule. **Do not match on primitives that should be types.** Matching on a raw
    status string is the smell the type was supposed to remove.
@@ -76,15 +78,18 @@ const describe = (s: Shipment): string =>
 Adding a fifth case to `Shipment` makes `.exhaustive()` a compile error
 here and at every other match over the type. That list is the value.
 
+ts-pattern's own documentation calls the function of an arm its handler.
+This pack keeps that word for the function that carries out a command,
+and says arm.
+
 ## Matching on structure
 
 Where plain narrowing needs several nested conditions, one pattern says
 it directly:
 
 ```ts
-const routing = (booking: Booking) =>
-  match(booking)
-    .with({ lifecycle: { tag: "Cancelled" } }, () => "archive")
+const routing = (item: ScheduledTreatment) =>
+  match(item)
     .with(
       {
         treatment: { tag: "Procedure" },
@@ -99,20 +104,25 @@ const routing = (booking: Booking) =>
 
 Order matters: patterns are tried top to bottom, so the more specific
 case goes first. `THEATRE_MINUTES` is the clinic's threshold, a constant
-named beside the `Booking` type.
+named beside the `ScheduledTreatment` type, which holds one treatment
+and the minutes it is booked for.
 
 ## State transitions
 
 ```ts
 const apply = (
+  now: Instant,
   quote: Quote,
   command: QuoteCommand,
 ): Result<Quote, TransitionError> =>
   match([quote, command] as const)
-    .with([{ tag: "Draft" }, { tag: "Send" }], ([q, c]) => send(q, c.at))
-    .with([{ tag: "Sent" }, { tag: "Accept" }], ([q, c]) => accept(q, c.by))
+    .with([{ tag: "Draft" }, { tag: "Send" }], ([q]) => send(now, q))
+    .with([{ tag: "Sent" }, { tag: "Accept" }], ([q, c]) =>
+      accept(now, c.by, c.booking, q),
+    )
+    .with([{ tag: "Sent" }, { tag: "Expire" }], ([q]) => expire(now, q))
     .with([{ tag: P.union("Draft", "Sent") }, { tag: "Cancel" }], ([q, c]) =>
-      cancel(q, c.reason),
+      cancel(now, c.by, c.reason, q),
     )
     .otherwise(() => err({ tag: "IllegalTransition" }));
 ```
@@ -122,7 +132,10 @@ This is the transition table from
 written directly, and the pair it matches over is why rule 1 lets it end in
 `.otherwise()`: enumerating every illegal pair would be noise. The table form
 gives up the list `.exhaustive()` produces. A state or a command added later is
-not reported here, because `.otherwise()` answers for it.
+not reported here, because `.otherwise()` answers for it. The instant is an
+argument, read once by the handler that calls `apply`, and the booking's
+identifier arrives in the command, minted there too. `TransitionError` is the
+union of the four transitions' own errors and `IllegalTransition`.
 
 Where transitions carry different failures, prefer separate functions per
 source state and keep the match only for dispatching commands.
@@ -147,30 +160,45 @@ source state and keep the match only for dispatching commands.
 ## Handling Result
 
 ```ts
-const render = (r: Result<PricedBooking, ConfirmBookingError>) =>
+const render = (
+  r: Result<readonly ConfirmBookingEvent[], ConfirmBookingFailure>,
+) =>
   match(r)
-    .with({ ok: true }, ({ value }) => renderBooking(value))
-    .with({ ok: false, error: { tag: "Validation" } }, ({ error }) =>
-      renderFieldErrors(error.cause),
+    .with({ ok: true }, ({ value }) => renderEvents(value))
+    .with(
+      {
+        ok: false,
+        error: {
+          tag: "Rejected",
+          cause: { tag: "Validation", cause: P.select() },
+        },
+      },
+      (errors) => renderFieldErrors(errors),
     )
-    .with({ ok: false, error: { tag: "Pricing" } }, () => unprocessable())
-    .with({ ok: false, error: { tag: "Storage" } }, () => serverError())
+    .with(
+      { ok: false, error: { tag: "Rejected", cause: { tag: "Pricing" } } },
+      () => unprocessable(),
+    )
+    .with({ ok: false, error: { tag: "Unavailable" } }, () => serverError())
     .exhaustive();
 ```
 
-This is the aggregated error handling from
+`ConfirmBookingFailure` wraps the workflow's `ConfirmBookingError` in
+`Rejected` and adds `Unavailable` for a store that cannot be reached, so
+the three failures are three arms. This is the aggregated error handling
+from
 [functional-defining-errors-out-of-existence](../functional-defining-errors-out-of-existence/SKILL.md),
 at the edge, with the compiler proving every case is covered.
 
 ## Red flags
 
-- `.otherwise()` on a match over a domain union
+- `.otherwise()` on a match over one domain union
 - `.run()`, `.exhaustive()` or `.otherwise()` missing, leaving the match
   unevaluated
 - A match on a raw string status rather than a choice type
 - `P._` used as a catch-all in a domain match
 - A `P.when` guard containing a multi-line business rule
-- A handler of ten lines that calls no named function
+- An arm of ten lines that calls no named function
 
 ## Common mistakes
 

@@ -13,9 +13,10 @@ metadata:
 
 Next.js adds one thing to React that changes the design: a boundary
 between server and client, with a network in the middle. That boundary
-is the pure core and shell split, made physical. Where React lets you
-put a rule in the wrong place, this makes the wrong place cost a round
-trip, a serialisation, or a leaked secret.
+decides where the rules run and where the data is read, and each side of
+it has a core and a shell of its own. Where React lets you put a rule in
+the wrong place, this makes the wrong place cost a round trip, a
+serialisation, or a leaked secret.
 
 Everything about components, state and derivation is unchanged and
 lives in
@@ -38,13 +39,20 @@ Not for: React itself, deployment, or routing configuration.
 
 ## Core rules
 
-1. Rule. **The boundary is the core and shell split.** Decisions and data
-   access on the server; interaction on the client. A rule that runs in
-   both places is a rule that will disagree with itself.
+1. Rule. **The server and client boundary decides where rules and data
+   run.** Decisions about the business and data access on the server;
+   interaction on the client. A rule written twice, once for each side, is a
+   rule that will disagree with itself. One pure function may run on both: on
+   the client it predicts the answer for the screen, and the server runs it
+   again and has the last word. Each side still has a core and a shell
+   of its own: a reducer on the client is pure, and an action on the
+   server is a handler.
 2. Rule. **Anything crossing is a transfer type.** It is serialised, so it
    is a plain record with no methods, no class instances, and no
    invariants the other side is trusting. Parse it back into a domain
-   type on arrival. See
+   type on arrival. A value the other side only shows is outside that last
+   sentence: nothing is enforced on it, so there is nothing to parse it into.
+   See
    [functional-crossing-io-boundaries](../functional-crossing-io-boundaries/SKILL.md).
 3. Rule. **The server never trusts the client.** A secret stays on the
    server. An authorisation decision is made on the server each time it
@@ -55,11 +63,14 @@ Not for: React itself, deployment, or routing configuration.
    It works out who is calling, parses every field, and leaves the
    workflow to decide whether this caller may do this, whatever the page
    that rendered the form already checked.
-5. Rule. **A Server Action is a workflow**: a command arrives, the pure core
-   decides, the shell performs, and the result is returned as data the form can
-   render. Its failures are values in that result, not thrown. An action that
-   applies no rule has no core to call, and returns its failures as values all
-   the same.
+5. Rule. **A Server Action is a handler**: it reads, parses the form, calls
+   the pure workflow with values, performs what was decided, and returns the
+   result as data the form can render. Its failures are values in that result,
+   not thrown. An action that applies no rule has no workflow to call, and
+   returns its failures as values all the same. The order of reading and
+   deciding is the handler's default, and gives way where rule 2 of
+   [functional-separating-pure-core-from-shell](../functional-separating-pure-core-from-shell/SKILL.md)
+   says a handler's does.
 6. Default. **Server by default; client where there is interaction.** A
    component is marked as client-side only when it needs state, an event
    handler, or a browser API. The mark pulls its whole subtree across, so it
@@ -81,14 +92,14 @@ What belongs where:
 - **Client.** Interaction state, optimistic updates, animation and
   focus, local and ephemeral form state.
 
-A Server Action written as a workflow:
+A Server Action written as a handler:
 
 ```tsx
 "use server";
 
 import { updateTag } from "next/cache";
 
-export async function confirmBooking(
+export async function confirmBookingAction(
   _prev: FormState,
   formData: FormData,
 ): Promise<FormState> {
@@ -98,18 +109,41 @@ export async function confirmBooking(
   const parsed = parseBookingForm(formData);
   if (!parsed.ok) return { tag: "Invalid", errors: parsed.error };
 
-  const result = await runConfirmBooking(deps)(session.patient, parsed.value);
-  if (!result.ok) return { tag: "Rejected", reason: result.error };
+  const catalogue = await loadCatalogue();
+  if (!catalogue.ok) return { tag: "Unavailable" };
+
+  const now = new Date();
+  const decided = confirmBooking(catalogue.value, now, {
+    ...parsed.value,
+    patient: session.patient,
+    requestedBy: session.patient,
+  });
+  if (!decided.ok) {
+    return { tag: "Rejected", refusal: toRefusal(decided.error) };
+  }
+
+  const saved = await saveEvents(decided.value);
+  if (!saved.ok) return { tag: "Unavailable" };
 
   updateTag(`bookings:${session.patient}`);
-  return { tag: "Confirmed", reference: result.value.reference };
+  return { tag: "Confirmed", reference: confirmedReference(saved.value) };
 }
 ```
 
-Work out who is calling, parse at the boundary, decide purely, return a
-value the form can render. The caller's identity comes from the session
-and never from the form. Whether this patient may confirm this booking
-is a rule, so the workflow decides it, and `Rejected` carries the answer.
+Work out who is calling, parse at the boundary, read the catalogue,
+decide with plain values, save what was decided, and return a value the
+form can render. The caller's identity comes from the session and never
+from the form: the action sets the patient and `requestedBy` from it,
+so a caller books for themselves and nobody else. Whether this patient
+may have this treatment in this slot is the workflow's to decide. What
+it refuses comes back as `Rejected`, mapped by `toRefusal` into a shape
+the form can show: the workflow's error type does not cross. The command
+is the one this form produces, one treatment in one slot, which is
+narrower than the core's `UnvalidatedBooking`;
+[server-boundary.md](references/server-boundary.md) has the form.
+
+`saveEvents` hands the events back, and `confirmedReference` reads the
+booking's reference out of the `BookingConfirmed` one.
 
 Once the write has happened, the action says what went stale.
 `updateTag` expires the patient's bookings at once, so the next render
@@ -119,7 +153,7 @@ waiting to see. Both are in
 
 The `(prevState, formData)` signature is what `useActionState`
 calls, so the client reads
-`useActionState(confirmBooking, { tag: "Idle" })` and gets the state,
+`useActionState(confirmBookingAction, { tag: "Idle" })` and gets the state,
 the form action, and a pending flag together — no second piece of state
 that can disagree with the first.
 
@@ -127,7 +161,8 @@ that can disagree with the first.
 
 - A client component high in the tree with a server-only child below it
 - A domain object passed across the boundary rather than a parsed record
-- A rule implemented on both sides so the screen and the server agree
+- A rule written twice, once for each side, so that the screen and the
+  server agree
 - A Server Action that takes who is calling, or what they may do, from
   its arguments
 - A permission enforced only by leaving the button out

@@ -34,6 +34,7 @@ declare const sql: string;
 // Schemas the fences compose without defining.
 declare const BookingId: Schema.brand<Schema.String, "BookingId">;
 declare const CardNumber: Schema.brand<Schema.String, "CardNumber">;
+declare const BankCode: Schema.brand<Schema.String, "BankCode">;
 declare const input: unknown;
 
 // The test fence's runner. Its `toBe` takes the type of what is checked.

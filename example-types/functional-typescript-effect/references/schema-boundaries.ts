@@ -3,6 +3,7 @@ import { Schema } from "effect";
 // Names the fences use without defining.
 declare const BookingId: Schema.brand<typeof Schema.String, "BookingId">;
 declare const CardNumber: Schema.brand<typeof Schema.String, "CardNumber">;
+declare const BankCode: Schema.brand<typeof Schema.String, "BankCode">;
 declare const input: unknown;
 
 // The test fence's runner. Its `toEqual` takes the type of what is checked.

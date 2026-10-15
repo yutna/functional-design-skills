@@ -4,8 +4,9 @@
 const unchecked = setup({
   types: { context: {} as BookingContext },
   actors: {
-    confirmBooking: fromPromise(
-      async ({ input }: { input: { slot: SlotId } }) => confirm(input.slot),
+    requestConfirmation: fromPromise(
+      async ({ input }: { input: { slot: SlotId } }) =>
+        confirmHold(input.slot),
     ),
   },
 }).createMachine({
@@ -16,7 +17,7 @@ const unchecked = setup({
     confirming: {
       // @ts-expect-error SlotId | null is not SlotId
       invoke: {
-        src: "confirmBooking",
+        src: "requestConfirmation",
         input: ({ context }) => ({ slot: context.slot }),
       },
     },

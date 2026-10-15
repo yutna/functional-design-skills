@@ -40,7 +40,12 @@ client boundary.
 ## Core rules
 
 1. Rule. **Render is a pure function.** Same props and state, same output. No
-   fetching, no writing, no mutation during render.
+   fetching, no writing, no mutation, no clock and no random number during
+   render. This is about a component React may render again at any time. An async
+   server component runs once for a request and is shell: it reads, then returns
+   markup from the values it read, as
+   [functional-typescript-react-nextjs](../functional-typescript-react-nextjs/SKILL.md)
+   has it.
 2. Default. **Do not store what you can derive.** Duplicated state is duplicated
    knowledge, and it goes stale. A value that must keep its answer after its
    inputs change, such as the price a booking was confirmed at, is not derived:
@@ -82,7 +87,7 @@ A choice type with one state at a time:
 ```tsx
 type ScreenState =
   | { tag: "Loading" }
-  | { tag: "Failed"; error: LoadError }
+  | { tag: "Failed"; error: FetchError }
   | { tag: "Loaded"; bookings: NonEmptyArray<Booking> }
   | { tag: "Empty" };
 
@@ -109,9 +114,10 @@ and `Empty` is not a second way to say it: an empty list can only be
 [functional-making-illegal-states-unrepresentable](../functional-making-illegal-states-unrepresentable/SKILL.md)
 applied to a screen.
 
-The choice between `Loaded` and `Empty` is made once, where the list
-arrives, with `nonEmpty` from
-[functional-typescript](../functional-typescript/references/unions-and-exhaustiveness.md#non-empty-lists):
+The choice between `Loaded` and `Empty` is made in one function, called
+while rendering with the list as it was fetched, with `nonEmpty` from
+[functional-typescript](../functional-typescript/references/unions-and-exhaustiveness.md#non-empty-lists).
+Emptiness is derived there and never stored:
 
 ```tsx
 const screenOf = (bookings: readonly Booking[]): ScreenState => {
