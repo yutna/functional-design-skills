@@ -52,7 +52,8 @@ Not for: TypeScript projects, which have
 2. Rule. **Construct through functions.** Never build a tagged value with a
    literal outside its module. The constructor is where rules live.
 3. Rule. **One tag key across the codebase.** Pick `tag` and never mix in `type`
-   or `kind`.
+   or `kind`. That is for the domain's own values: a wire shape keeps the key
+   its contract gives it, and the mapping is where the two meet.
 4. Rule. **Never mutate an argument.** Return a new object; the spread operator
    makes it cheap to read.
 5. Rule. **Return values for expected failures.** Reserve `throw` for programmer
@@ -116,10 +117,10 @@ const mapError = (f) => (r) => (r.ok ? r : err(f(r.error)));
 const pipe = (x, ...fns) => fns.reduce((acc, f) => f(acc), x);
 ```
 
-These few lines cover the whole of
+These few lines cover the short-circuiting half of
 [functional-handling-errors-with-results](../functional-handling-errors-with-results/SKILL.md).
-More, including async, in
-[result-and-async.md](references/result-and-async.md).
+[result-and-async.md](references/result-and-async.md) has `traverse`, the
+form that accumulates, and async.
 
 ## How much of this to type-shape
 

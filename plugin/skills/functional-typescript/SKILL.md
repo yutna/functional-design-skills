@@ -77,10 +77,15 @@ so check the installed version before pasting the block.
    codebase.
 4. Rule. **Exhaust with `never`**, never with a permissive `default`.
 5. Rule. **No `any`, no non-null `!`, no unchecked `as`.** Each is a hole in
-   every guarantee above it.
+   every guarantee above it. An `as` is checked when the test that makes it
+   true stands directly before it, which is what a parser or a smart
+   constructor is: the one place the cast is written.
 6. Rule. **Return `Result`, do not throw**, for expected failures.
 7. Rule. **Type the boundary separately.** DTO types are their own types, with a
-   parse step between them and the domain.
+   parse step between them and the domain. A view that only reads and enforces
+   no rule has one type and no parse, as rule 1 of
+   [functional-crossing-io-boundaries](../functional-crossing-io-boundaries/SKILL.md)
+   has it.
 
 ## Pattern
 
@@ -149,8 +154,10 @@ export const bind =
 ```
 
 `bind` widening the error to `E | E2` is what lets a pipeline accumulate
-its failure type honestly. More in
-[result-type.md](references/result-type.md).
+its failure type honestly. That union is the chain's type before it is
+lifted. A workflow's signature carries one choice type, built with
+`mapError`, and [result-type.md](references/result-type.md) shows the
+lifting.
 
 ## Parsing at the boundary
 

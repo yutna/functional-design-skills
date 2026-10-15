@@ -14,8 +14,8 @@
 ## The shape
 
 A union of object types sharing a literal-typed field. Use one field name
-across the codebase; `tag`, `kind`, and `type` all work, but mixing them
-costs more than choosing badly.
+across the codebase. `tag`, `kind` and `type` all work, and mixing them
+costs more than choosing badly; this pack's examples use `tag`.
 
 ```ts
 export type Shipment =

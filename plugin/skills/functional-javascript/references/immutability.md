@@ -135,6 +135,13 @@ The signature is unchanged, the function is still pure, and the result is
 frozen before it leaves. Prefer `reduce` when it reads as well; use the
 loop when it reads better.
 
+Rule 6 of
+[functional-managing-state-immutably](../../functional-managing-state-immutably/SKILL.md)
+asks for a measurement before mutating locally, except in a language
+with no cheap way to add to an immutable collection, and it names
+JavaScript as one. Its other two conditions hold here unchanged: the
+value is built inside one function, and no reference to it escapes.
+
 ## Equality
 
 `===` compares references. For value types, either:

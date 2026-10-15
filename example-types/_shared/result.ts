@@ -38,6 +38,13 @@ export declare function pipe<A, B, C, D>(
   bc: (b: B) => C,
   cd: (c: C) => D,
 ): D;
+export declare function pipe<A, B, C, D, E>(
+  a: A,
+  ab: (a: A) => B,
+  bc: (b: B) => C,
+  cd: (c: C) => D,
+  de: (d: D) => E,
+): E;
 
 export type AsyncResult<T, E> = Promise<Result<T, E>>;
 

@@ -154,13 +154,12 @@ const toBooking = (dto: BookingDto): Result<Booking, MapError> => {
 };
 ```
 
-A schema rich enough to brand and constrain closes much of the gap, and
-for simple types the inferred type is a perfectly good domain type. It
-stops being one as soon as the wire shape and the domain shape diverge:
-a nullable column, a legacy field, a string enum the domain models as a
-choice type with payloads. Keep the mapping function from the start, even
-when it is the identity, so that divergence is a change to one function
-rather than a refactor. See
+A schema rich enough to brand and constrain closes much of the gap. The
+inferred type stops being enough as soon as the wire shape and the domain
+shape diverge: a nullable column, a legacy field, a string enum the domain
+models as a choice type with payloads. Keep the mapping function from the
+start, even when it is the identity, so that divergence is a change to one
+function rather than a refactor. See
 [functional-crossing-io-boundaries](../../functional-crossing-io-boundaries/SKILL.md).
 
 ## Depending on the interface, not the library
