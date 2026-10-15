@@ -114,8 +114,13 @@ Every library and every remote call is a source of foreign failures.
 Convert once, where the call happens.
 
 ```text
-saveBooking : Pool -> Booking -> AsyncResult<Unit, SaveError>
-saveBooking pool booking =
+type InsertError =
+  | DuplicateBooking
+  | Transient of { retryAfter: Option<Seconds> }
+  | Unexpected of Opaque    -- kept for the log; no caller looks inside
+
+insertBooking : Pool -> Booking -> AsyncResult<Unit, InsertError>
+insertBooking pool booking =
   tryCatch (\_ -> insert pool (toRow booking)) classify
 
 classify e =
@@ -131,8 +136,8 @@ whole point of the conversion.
 An adapter cannot tell a bug in a driver from an outage, so an exception
 it does not recognise is returned as the opaque `Unexpected`, for the
 edge to report and the log to keep. Callers do not match on `Unexpected`,
-and no recovery depends on it. The crash in step 4 is for conditions the
-program itself caused.
+and no recovery depends on it. The crash in step 4 of the list above is
+for conditions the program itself caused.
 
 ## Logging
 

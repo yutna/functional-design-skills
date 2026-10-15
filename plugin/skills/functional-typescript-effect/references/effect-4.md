@@ -37,6 +37,7 @@ s.pipe(Schedule.compose(t))    Schedule.max([s, t])
 Config.integer("N")            Config.Int("N")
 Config.duration("N")           Config.Duration("N")
 Schema.decodeUnknown(S)        Schema.decodeUnknownEffect(S)
+Schema.decodeUnknownEither(S)  Schema.decodeUnknownResult(S)
 Schema.encode(S)               Schema.encodeEffect(S)
 ParseError                     Schema.SchemaError
 Schema.Schema.Encoded<S>       typeof S["Encoded"]
@@ -172,6 +173,17 @@ const toWire = Schema.encodeEffect(Booking);
 Schema.decodeUnknownEffect(Booking)(input, { errors: "all" });
 ```
 
+The same parse, returning the pure result type:
+
+```ts
+const parseBookingPure = Schema.decodeUnknownResult(Booking);
+// (input: unknown) => Result<Booking, Schema.SchemaError>
+```
+
+The pure form is for edge code that has no effect type; the `Effect`
+form is for a handler that already has one. Either way the parse is done
+at the edge, before a workflow sees the value.
+
 ## Unions
 
 `Schema.Union` takes an array of members. `Schema.TaggedStruct` is
@@ -180,11 +192,9 @@ never a default.
 
 ```ts
 const Payment = Schema.Union([
-  Schema.Struct({ kind: Schema.Literal("cash") }),
-  Schema.Struct({
-    kind: Schema.Literal("card"),
-    number: CardNumber,
-  }),
+  Schema.TaggedStruct("Cash", {}),
+  Schema.TaggedStruct("Card", { number: CardNumber }),
+  Schema.TaggedStruct("Transfer", { bank: BankCode }),
 ]);
 ```
 
@@ -297,6 +307,10 @@ const resilient = query(pool, sql).pipe(
   Effect.timeout("5 seconds"),
 );
 ```
+
+Retry only a transient fault, and only a read or a write that is
+idempotent on its key: rule 5 of
+[functional-making-effects-reliable](../../functional-making-effects-reliable/SKILL.md).
 
 ## Configuration
 

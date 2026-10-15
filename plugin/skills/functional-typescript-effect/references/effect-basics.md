@@ -38,7 +38,7 @@ fail and needs nothing.
 ```ts
 // good: no effect, because there is none
 const feeFor = (standard: Money, category: PatientCategory): Money =>
-  category.tag === "Insured" ? category.copay : standard;
+  category._tag === "Insured" ? category.copay : standard;
 ```
 
 ```ts
@@ -47,7 +47,7 @@ const feeFor = (
   standard: Money,
   category: PatientCategory,
 ): Effect.Effect<Money> =>
-  Effect.succeed(category.tag === "Insured" ? category.copay : standard);
+  Effect.succeed(category._tag === "Insured" ? category.copay : standard);
 ```
 
 The core skills' split between pure core and shell shows up here as which
@@ -77,7 +77,7 @@ const book = (cmd: BookAppointment) =>
   );
 ```
 
-Generator style suits workflows with several dependent steps; pipe style
+Generator style suits handlers with several dependent steps; pipe style
 suits short transformations. Mixing them arbitrarily within one file
 costs readability. See
 [consistency.md](../../functional-programming-strategically/references/consistency.md).
@@ -87,7 +87,6 @@ costs readability. See
 ```ts
 class SlotUnavailable extends Data.TaggedError("SlotUnavailable")<{
   readonly slot: SlotId;
-  readonly nextFree: Option.Option<Instant>;
 }> {}
 ```
 
@@ -102,7 +101,7 @@ Handling narrows the channel:
 ```ts
 const handled = book(cmd).pipe(
   Effect.catchTag("SlotUnavailable", (e) =>
-    Effect.succeed(alternatives(e.nextFree)),
+    Effect.succeed(alternatives(e.slot)),
   ),
 );
 // error channel no longer contains SlotUnavailable
@@ -149,7 +148,9 @@ const resilient = query(pool, sql).pipe(
 
 These belong at the shell, wrapping the adapter, not inside a domain
 step. A domain step that retries hides latency and becomes untestable in
-time.
+time. Retry only a transient fault, and only a read or a write that is
+idempotent on its key: rule 5 of
+[functional-making-effects-reliable](../../functional-making-effects-reliable/SKILL.md).
 
 Parallelism is explicit and bounded:
 

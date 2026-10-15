@@ -32,14 +32,13 @@ declare const decideSubmission: (
   patient: Patient,
   booking: Booking,
 ) => SubmissionDecision;
-// The rules fence dispatches `Submitted` with a `decision`; the reducers
-// fence's `Event` has `Submitted` without one. They compile only as two
-// different reducers, so `dispatch` here is typed for the one it names.
-type CheckoutEvent = {
-  readonly tag: "Submitted";
-  readonly decision: SubmissionDecision;
-};
-declare const dispatch: (event: CheckoutEvent) => void;
+declare const dispatch: (event: Event) => void;
+declare const submitBooking: (
+  booking: Booking,
+) => Promise<
+  | { readonly ok: true; readonly value: BookingRef }
+  | { readonly ok: false; readonly error: readonly FieldError[] }
+>;
 
 type Draft = { readonly treatment: string; readonly slot: string };
 type FieldError = { readonly field: string; readonly problem: string };

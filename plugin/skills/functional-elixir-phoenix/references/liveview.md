@@ -7,12 +7,13 @@
 
 ## LiveView
 
-A LiveView is the same split again: `assigns` are the state, `handle_event`
-is the transition, `render` is a pure function of assigns.
+A LiveView is the same split again: `assigns` are the state,
+`handle_event` is the shell that calls the context, tells other
+screens, and stores the outcome, `render` is a pure function of assigns.
 
 ```elixir
 def handle_event("submit", params, socket) do
-  case Scheduling.book_appointment(params, socket.assigns.deps) do
+  case Scheduling.book_appointment(params, DateTime.utc_now()) do
     {:ok, appt, events} ->
       broadcast(events)
       {:noreply, assign(socket, state: {:booked, appt})}
@@ -20,7 +21,10 @@ def handle_event("submit", params, socket) do
     {:error, {:invalid, changeset}} ->
       {:noreply, assign(socket, state: {:editing, changeset})}
 
-    {:error, reason} ->
+    {:error, :unavailable} ->
+      {:noreply, assign(socket, state: :unavailable)}
+
+    {:error, reason} when reason in [:patient_not_found, :slot_unavailable] ->
       {:noreply, assign(socket, state: {:rejected, reason})}
   end
 end
@@ -32,7 +36,8 @@ Rules that keep it clean:
    several booleans. `:loading`, `{:editing, changeset}`,
    `{:booked, appt}` cannot occur at once, which several booleans can.
 2. **No business rules in the LiveView.** It hands the event's params to
-   the context and stores the outcome.
+   the context and stores the outcome; the one other thing it does is
+   send the hint below.
 3. **Derive in `render`, do not store.** A total, a count, or a
    formatted string is computed, not assigned.
 4. **Keep assigns small.** Everything in assigns stays in the memory of a
@@ -46,12 +51,15 @@ Rules that keep it clean:
 A context that returns events, as
 [functional-designing-workflow-pipelines](../../functional-designing-workflow-pipelines/SKILL.md)
 describes, lets the shell decide who hears about them. The
-`handle_event/3` above hands the events it was given to this:
+`handle_event/3` above hands the events it was given to this, which sends
+other screens a hint and not the event:
 
 ```elixir
-# the shell delivers what the context said happened
+# the shell tells other screens that something changed
 defp broadcast(events) do
-  Enum.each(events, &Phoenix.PubSub.broadcast(Clinic.PubSub, topic(&1), &1))
+  Enum.each(events, fn {_what, appt} ->
+    Phoenix.PubSub.broadcast(Clinic.PubSub, topic(appt), {:changed, appt.id})
+  end)
 end
 ```
 

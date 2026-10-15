@@ -8,8 +8,9 @@ const formMachine = createMachine({
   states: { browsing: {}, editing, saving: {} },
 });
 
-// "expired" and "confirming" are siblings of held.
-const holdMachine = createMachine({
+// "browsing" and "confirming" are siblings of held, and `holdWindow` is a
+// delay declared in `setup`, as SKILL.md declares it.
+const holdMachine = setup({ delays: { holdWindow: 120_000 } }).createMachine({
   initial: "held",
-  states: { held, expired: {}, confirming: {} },
+  states: { held, browsing: {}, confirming: {} },
 });

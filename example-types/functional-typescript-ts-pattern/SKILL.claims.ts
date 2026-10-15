@@ -9,16 +9,20 @@ const partial = (s: Shipment): number =>
 // State transitions: "A state or a command added later is not reported here,
 // because `.otherwise()` answers for it." The same table over a Quote with one
 // more state compiles unchanged.
-type LaterQuote = Quote | { readonly tag: "Expired" };
+type LaterQuote = Quote | { readonly tag: "Archived" };
 const applyLater = (
+  now: Instant,
   quote: LaterQuote,
   command: QuoteCommand,
 ): Result<Quote, TransitionError> =>
   match([quote, command] as const)
-    .with([{ tag: "Draft" }, { tag: "Send" }], ([q, c]) => send(q, c.at))
-    .with([{ tag: "Sent" }, { tag: "Accept" }], ([q, c]) => accept(q, c.by))
+    .with([{ tag: "Draft" }, { tag: "Send" }], ([q]) => send(now, q))
+    .with([{ tag: "Sent" }, { tag: "Accept" }], ([q, c]) =>
+      accept(now, c.by, c.booking, q),
+    )
+    .with([{ tag: "Sent" }, { tag: "Expire" }], ([q]) => expire(now, q))
     .with([{ tag: P.union("Draft", "Sent") }, { tag: "Cancel" }], ([q, c]) =>
-      cancel(q, c.reason),
+      cancel(now, c.by, c.reason, q),
     )
     .otherwise(() => err({ tag: "IllegalTransition" }));
 
@@ -26,9 +30,8 @@ const applyLater = (
 // procedure arm first, the guarded arm below it can never match, and nothing
 // in the compiler or in ts-pattern says so. That is why the sentence after the
 // fence is needed.
-const wrongOrder = (booking: Booking) =>
-  match(booking)
-    .with({ lifecycle: { tag: "Cancelled" } }, () => "archive")
+const wrongOrder = (item: ScheduledTreatment) =>
+  match(item)
     .with({ treatment: { tag: "Procedure" } }, () => "procedure room")
     .with(
       {

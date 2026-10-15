@@ -114,7 +114,7 @@ visible in the head rather than buried in a conditional.
 
 ```elixir
 @spec confirm(t(), DateTime.t()) ::
-        {:ok, t()} | {:error, :not_held | :hold_expired}
+        {:ok, t(), [event()]} | {:error, confirm_error()}
 ```
 
 The spec is the contract from

@@ -45,6 +45,11 @@ export const unwrapOr =
     r.ok ? r.value : fallback;
 ```
 
+`unwrapOr` takes a default that is an ordinary answer for the operation.
+A default that hides a failure is the defect rule 6 of
+[functional-defining-errors-out-of-existence](../../functional-defining-errors-out-of-existence/SKILL.md)
+names.
+
 `Result<T, never>` from `ok` and `Result<never, E>` from `err` let the
 compiler infer the union precisely at each call site.
 
@@ -59,23 +64,53 @@ export function pipe<A, B, C, D>(
   bc: (b: B) => C,
   cd: (c: C) => D,
 ): D;
+export function pipe<A, B, C, D, E>(
+  a: A,
+  ab: (a: A) => B,
+  bc: (b: B) => C,
+  cd: (c: C) => D,
+  de: (d: D) => E,
+): E;
 export function pipe(a: unknown, ...fns: Array<(x: unknown) => unknown>) {
   return fns.reduce((acc, f) => f(acc), a);
 }
 ```
 
 ```ts
-const confirmBooking = (raw: UnvalidatedBooking) =>
-  pipe(validate(raw), bind(price(catalogue)), map(acknowledge), map(toEvents));
+const validation = (
+  cause: NonEmptyArray<ValidationError>,
+): ConfirmBookingError => ({ tag: "Validation", cause });
+const pricing = (cause: PricingError): ConfirmBookingError => ({
+  tag: "Pricing",
+  cause,
+});
+
+const confirmBooking = (
+  catalogue: Catalogue,
+  now: Instant,
+  raw: UnvalidatedBooking,
+): Result<readonly ConfirmBookingEvent[], ConfirmBookingError> =>
+  pipe(
+    validateBooking(catalogue)(raw),
+    mapError(validation),
+    bind((booking) =>
+      pipe(priceBooking(catalogue)(booking), mapError(pricing)),
+    ),
+    map(issueConfirmation(now)),
+    map((booking): readonly ConfirmBookingEvent[] => [
+      { tag: "BookingConfirmed", booking },
+    ]),
+  );
 ```
 
-Its error type is inferred as `ValidationError | PricingError`, because
-`bind` widens as it goes. Where callers need the workflow's own union,
-wrap each step's error with `mapError`, which the next section does by
-hand.
+Each step keeps its own narrow error, and `mapError` lifts it into its
+case of `ConfirmBookingError`, so the signature carries one error type.
+Without the two `mapError` calls the error would be inferred as
+`NonEmptyArray<ValidationError> | PricingError`, because `bind` widens
+as it goes: a union that a caller can tell apart only by shape.
 
-Overloads up to about six arguments cover every real pipeline. Beyond
-that, name intermediate values instead.
+The overloads shown stop at four functions. Add one for each further
+step; beyond about six, name intermediate values instead.
 
 ## Early return, the TypeScript idiom
 
@@ -83,15 +118,18 @@ Narrowing makes early return read well, and many teams prefer it.
 
 ```ts
 const confirmBooking = (
+  catalogue: Catalogue,
+  now: Instant,
   raw: UnvalidatedBooking,
-): Result<readonly BookingEvent[], ConfirmBookingError> => {
-  const validated = validate(raw);
+): Result<readonly ConfirmBookingEvent[], ConfirmBookingError> => {
+  const validated = validateBooking(catalogue)(raw);
   if (!validated.ok) return err({ tag: "Validation", cause: validated.error });
 
-  const priced = price(catalogue)(validated.value);
+  const priced = priceBooking(catalogue)(validated.value);
   if (!priced.ok) return err({ tag: "Pricing", cause: priced.error });
 
-  return ok(toEvents(acknowledge(priced.value)));
+  const booking = issueConfirmation(now)(priced.value);
+  return ok([{ tag: "BookingConfirmed", booking }]);
 };
 ```
 
@@ -147,10 +185,15 @@ problem `Result` exists to solve.
 ## Converting at the boundary
 
 ```ts
-export const saveBooking = async (
+export type InsertError =
+  | { readonly tag: "DuplicateBooking" }
+  | { readonly tag: "Transient"; readonly retryAfter: Seconds | undefined }
+  | { readonly tag: "Unexpected"; readonly cause: unknown };
+
+export const insertBooking = async (
   pool: Pool,
   booking: Booking,
-): AsyncResult<void, SaveError> => {
+): AsyncResult<void, InsertError> => {
   try {
     await pool.query(INSERT, toRow(booking));
     return ok(undefined);
@@ -159,31 +202,47 @@ export const saveBooking = async (
   }
 };
 
-const classify = (e: unknown): SaveError => {
-  if (isPgError(e) && e.code === "23505") return { tag: "Duplicate" };
+const classify = (e: unknown): InsertError => {
+  if (isPgError(e) && e.code === "23505") return { tag: "DuplicateBooking" };
   if (isPgError(e) && e.code === "57014") {
-    return { tag: "Transient", retryAfterMs: 1000 };
+    return { tag: "Transient", retryAfter: seconds(1) };
   }
   return { tag: "Unexpected", cause: e };
 };
 ```
 
 `catch (e: unknown)` is the honest type; narrow it with a type guard
-rather than casting. Keep `cause` as `unknown` so callers cannot branch
-on a driver detail. See
+rather than casting. An exception `classify` does not recognise is the
+opaque `Unexpected`: its `cause` stays `unknown`, so no caller can
+branch on a driver detail. A save that checks a version has two cases
+of its own, `Conflict` and `Failed`, in
+[persistence-patterns.md](../../functional-crossing-io-boundaries/references/persistence-patterns.md).
+See
 [error-taxonomy.md](../../functional-handling-errors-with-results/references/error-taxonomy.md).
 
 ## Error types
 
 ```ts
 export type ConfirmBookingError =
-  | { readonly tag: "Validation"; readonly cause: ValidationError }
-  | { readonly tag: "Pricing"; readonly cause: PricingError }
-  | { readonly tag: "Storage"; readonly cause: SaveError };
+  | {
+      readonly tag: "Validation";
+      readonly cause: NonEmptyArray<ValidationError>;
+    }
+  | { readonly tag: "Pricing"; readonly cause: PricingError };
 ```
 
 One union per workflow, each case wrapping a step's narrow error. Callers
 match once, and the compiler lists every case.
+
+```ts
+export type ConfirmBookingFailure =
+  | { readonly tag: "Rejected"; readonly cause: ConfirmBookingError }
+  | { readonly tag: "Unavailable"; readonly cause: StoreError };
+```
+
+`ConfirmBookingFailure` is the handler's type and not the workflow's: the
+workflow knows only that the rules refused, and the handler adds that
+storage could not be reached.
 
 ## Should a library be used instead?
 

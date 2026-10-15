@@ -19,10 +19,10 @@ never succeed, but a warning does not stop the build and it does not
 read `@spec`. So the enforcement lives in structs with enforced keys,
 constructor functions, a build that fails on warnings, and Dialyzer.
 
-It also gives processes, which are the only thing in the language that
-holds state over time. Deciding what is a process is therefore the same
-decision as deciding what is mutable, and it is a design question rather
-than a performance one.
+It also gives processes, the language's way of holding changing state in
+memory over time. Whether to hold state in memory at all is a design
+question rather than a performance one, and the usual answer is the
+database; [otp.md](references/otp.md) gives the test.
 
 This pack covers the language and OTP. Phoenix, Ecto and LiveView are in
 [functional-elixir-phoenix](../functional-elixir-phoenix/SKILL.md).
@@ -39,19 +39,19 @@ Not for: Erlang runtime tuning, release configuration, or Phoenix.
 
 ## Notation mapping
 
-| Neutral notation    | Elixir                                |
-| ------------------- | ------------------------------------- |
-| Record type         | `defstruct` with `@enforce_keys`      |
-| Choice type         | Tagged tuple, or a struct per case    |
-| Single-case wrapper | A struct with one field, plus `new/1` |
-| `Result<T, E>`      | `{:ok, term}` or `{:error, term}`     |
-| `Option<T>`         | `{:ok, term}` or `:error`, or `nil`   |
-| `>=>` composition   | `with` expression                     |
-| `\|>` pipe          | The pipe operator                     |
-| `>>` composition    | A function that pipes its argument    |
-| Exhaustive match    | Function clauses with no catch-all    |
-| Boundary parse      | A `new/1` function                    |
-| Mutable cell        | A process, and nothing else           |
+| Neutral notation    | Elixir                                         |
+| ------------------- | ---------------------------------------------- |
+| Record type         | `defstruct` with `@enforce_keys`               |
+| Choice type         | Tagged tuple, or a struct per case             |
+| Single-case wrapper | A struct with one field, plus `new/1`          |
+| `Result<T, E>`      | `{:ok, term}` or `{:error, term}`              |
+| `Option<T>`         | `{:ok, term}` or `:error`; never a bare `nil`  |
+| `>=>` composition   | `with` expression                              |
+| `\|>` pipe          | The pipe operator                              |
+| `>>` composition    | A function that pipes its argument             |
+| Exhaustive match    | Function clauses with no catch-all             |
+| Boundary parse      | A `new/1` function                             |
+| Mutable cell        | A database row, or a process where otp.md says |
 
 The pipe passes its value as the first argument. So functions here take
 the data first and what they depend on last, which is the reverse of
@@ -75,11 +75,12 @@ order that composes in this language.
    nobody wrote should raise `FunctionClauseError`, which is a loud,
    findable bug. A parser of outside input is the opposite case: its
    last clause takes everything else and returns the error.
-5. Default. **`with` for pipelines that can fail, each step returning the
-   error the pipeline returns**, so a failure passes straight through and
-   no `else` is needed. Where one step's error has to be translated, wrap
-   that step in a private function: an `else` that matches the errors of
-   several steps has to guess which step produced which.
+5. Default. **`with` for pipelines that can fail.** A failing step ends the
+   `with` and its error is what the pipeline returns, so no `else` is needed.
+   Each step keeps its own narrow error; where that is not one of the
+   pipeline's, a private function around the step lifts it. An `else` that
+   matches the errors of several steps has to guess which step produced
+   which.
 6. Default. **The default is no process.** Reach for one when state has to be
    shared across requests and does not fit in the database, when something must
    be able to fail without taking the rest down with it, when work must be
@@ -120,11 +121,17 @@ defmodule Clinic.Scheduling.Appointment do
           status: status()
         }
 
+  @type event ::
+          {:appointment_booked, t()} | {:appointment_confirmed, t()}
+
+  @type confirm_error :: :not_held | :hold_expired
+
   @spec confirm(t(), DateTime.t()) ::
-          {:ok, t()} | {:error, :not_held | :hold_expired}
+          {:ok, t(), [event()]} | {:error, confirm_error()}
   def confirm(%__MODULE__{status: {:held, held_at}} = appt, now) do
     if DateTime.diff(now, held_at) <= @hold_seconds do
-      {:ok, %{appt | status: {:confirmed, now}}}
+      confirmed = %{appt | status: {:confirmed, now}}
+      {:ok, confirmed, [{:appointment_confirmed, confirmed}]}
     else
       {:error, :hold_expired}
     end
@@ -138,48 +145,102 @@ defmodule Clinic.Scheduling.Appointment do
 end
 ```
 
-The first clause matches only a held appointment, so an illegal
-transition cannot reach the body. The other two statuses are written out
-so that a status added later raises here until someone decides what
-confirming it means. The status tuple carries the timestamp that belongs
-to each state, which removes the nullable `confirmed_at`, `cancelled_at`
-columns from the domain type. See
+Each clause is the function for one source state, which is how this
+language writes one function per transition. The clauses for a confirmed
+and a cancelled appointment answer a named refusal, so the caller sees
+why. Those two are written out so that a status added later raises here
+until someone decides what confirming it means. The status tuple carries
+the timestamp that belongs to each state, which removes the nullable
+`confirmed_at`, `cancelled_at` columns from the domain type. See
 [functional-modeling-state-machines](../functional-modeling-state-machines/SKILL.md).
 
 ## Pipelines with `with`
 
+The pure pipeline is the core. It takes the command, the values the
+handler read, and the instant, and refuses only what a rule refuses:
+
 ```elixir
-@type booking_error ::
-        {:invalid, term()} | :patient_not_found | :slot_unavailable
+# core, in the Appointment module: pure, no Repo and no clock
+@type booking_error :: :slot_unavailable
 
-@spec book(map(), deps()) ::
-        {:ok, Appointment.t()} | {:error, booking_error()}
-def book(params, deps) do
-  with {:ok, command} <- BookCommand.new(params),
-       {:ok, patient} <- find_patient(command.patient, deps),
-       {:ok, hold} <- deps.hold_slot.(command.slot) do
-    Appointment.new(command, patient, hold)
-  end
-end
+@spec book(BookCommand.t(), Patient.t(), Schedule.t(), DateTime.t()) ::
+        {:ok, t(), [event()]} | {:error, booking_error()}
+def book(%BookCommand{} = command, %Patient{} = patient, schedule, now) do
+  with :ok <- Schedule.check_free(schedule, command.slot) do
+    appointment = %__MODULE__{
+      id: command.appointment_id,
+      patient: patient.id,
+      doctor: command.doctor,
+      slot: command.slot,
+      status: {:held, now}
+    }
 
-defp find_patient(id, deps) do
-  case deps.find_patient.(id) do
-    {:ok, _patient} = found -> found
-    {:error, :not_found} -> {:error, :patient_not_found}
+    {:ok, appointment, [{:appointment_booked, appointment}]}
   end
 end
 ```
+
+The handler is the context function. It parses, reads, calls the core,
+and writes; its failure type adds what only the shell can meet:
+
+```elixir
+# handler, in Clinic.Scheduling
+@type booking_failure ::
+        {:invalid, term()}
+        | :patient_not_found
+        | :unavailable
+        | Appointment.booking_error()
+
+@spec book_appointment(map(), DateTime.t()) ::
+        {:ok, Appointment.t(), [Appointment.event()]}
+        | {:error, booking_failure()}
+def book_appointment(params, now) do
+  with {:ok, command} <- parse_command(params),
+       {:ok, patient} <- find_patient(command.patient),
+       {:ok, schedule} <- load_schedule(command.doctor, command.slot),
+       {:ok, appointment, events} <-
+         Appointment.book(command, patient, schedule, now),
+       :ok <- save_booking(appointment, events) do
+    {:ok, appointment, events}
+  end
+end
+
+defp parse_command(params) do
+  case BookCommand.new(params) do
+    {:ok, _command} = parsed -> parsed
+    {:error, reason} -> {:error, {:invalid, reason}}
+  end
+end
+
+defp find_patient(id) do
+  case load_patient(id) do
+    {:ok, _patient} = found -> found
+    {:error, :not_found} -> {:error, :patient_not_found}
+    {:error, :unavailable} = fault -> fault
+  end
+end
+```
+
+`Appointment.book/4` is the core and `book_appointment/2` is the
+handler, in the sense of
+[functional-separating-pure-core-from-shell](../functional-separating-pure-core-from-shell/SKILL.md).
+The load and save helpers are private functions of the context that
+touch the database, and each answers `{:error, :unavailable}` when it
+cannot reach it.
 
 `with` is the railway composition of
 [functional-handling-errors-with-results](../functional-handling-errors-with-results/SKILL.md).
 A step that does not match ends the `with`, and its value is the result,
 so a step that already returns the pipeline's error needs no `else`. The
 patient lookup answers `{:error, :not_found}`, which does not say what
-was missing, so `find_patient/2` turns it into
-`{:error, :patient_not_found}` beside the call that knows. An `else` over
-the whole pipeline would have to guess which step an error came from, and
-a single `_ -> {:error, :failed}` throws away everything the error
-channel was carrying.
+was missing, so `find_patient/1` turns it into
+`{:error, :patient_not_found}` beside the call that knows, and passes a
+store fault on unchanged. `parse_command/1` does the same in one clause:
+it lifts `BookCommand.new/1`'s error into the `{:invalid, reason}` the
+failure type names. An `else` over the whole pipeline would have to
+guess which step an error came from, and a single
+`_ -> {:error, :failed}` throws away everything the error channel was
+carrying.
 
 ## Structs or plain maps
 

@@ -15,16 +15,32 @@ import type {
 // first line, is for Effect 4. `Effect`, `Layer` and `Data` below come from
 // the first fence's import, and `SlotUnavailable` and `PatientNotFound` from
 // the classes it defines; the check puts the fences and this file in one
-// module. `Slots` is the one name the two preludes declare differently, since
-// declaring a service is the line that differs by major.
+// module. `Slots` and `Patients` are the names the two preludes declare
+// differently, since declaring a service is the line that differs by major.
 
 // The service the workflow requires, declared the way Effect 3 declares one:
 // a class whose base is a tag class carrying its identifier and its shape.
 type SlotsShape = {
   readonly hold: (slot: SlotId) => Effect.Effect<SlotHold, SlotUnavailable>;
+  readonly release: (hold: SlotHold) => Effect.Effect<void>;
 };
 declare const SlotsTag: Context.TagClass<Slots, "Slots", SlotsShape>;
 declare class Slots extends SlotsTag {}
+
+// The second service, with one operation: `find` fails with `PatientNotFound`.
+type Patient = {
+  readonly id: PatientId;
+  readonly category: PatientCategory;
+};
+type PatientsShape = {
+  readonly find: (id: PatientId) => Effect.Effect<Patient, PatientNotFound>;
+};
+declare const PatientsTag: Context.TagClass<
+  Patients,
+  "Patients",
+  PatientsShape
+>;
+declare class Patients extends PatientsTag {}
 
 // Names the fences use without defining.
 declare const feeFor: (category: PatientCategory) => Money;
@@ -36,10 +52,12 @@ declare const cmd: BookAppointment;
 // A pool, a service tag for it, and what builds the layers around it.
 declare const Database: Context.Tag<"Database", Pool>;
 declare const DatabaseLive: Layer.Layer<"Database">;
+declare const PatientsLive: Layer.Layer<Patients, never, "Database">;
 declare const holdInDb: (
   pool: Pool,
   slot: SlotId,
 ) => Effect.Effect<SlotHold, SlotUnavailable>;
+declare const releaseInDb: (pool: Pool, hold: SlotHold) => Effect.Effect<void>;
 
 // What Data.TaggedError makes: a yieldable error with a tag and its fields.
 type TaggedError<Tag extends string, Fields> = Cause.YieldableError & {
@@ -47,7 +65,3 @@ type TaggedError<Tag extends string, Fields> = Cause.YieldableError & {
 } & Readonly<Fields>;
 declare const BadRequest: new () => TaggedError<"BadRequest", {}>;
 declare const suggestAlternatives: (slot: SlotId) => Appointment;
-declare const booking: Effect.Effect<
-  Appointment,
-  SlotUnavailable | PatientNotFound
->;

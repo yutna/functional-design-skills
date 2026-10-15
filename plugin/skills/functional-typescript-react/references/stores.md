@@ -87,8 +87,12 @@ const bookingSlice = createSlice({
 ```
 
 That is still a pure transition: what leaves the reducer is a new
-frozen value sharing everything untouched. What it is not is
-permission to mutate anything reachable from outside the draft. See
+frozen value sharing everything untouched. The draft is a stand-in that
+`immer` hands the function, and the state itself is never written to, so
+this is not the local mutation that rule 6 of
+[functional-managing-state-immutably](../../functional-managing-state-immutably/SKILL.md)
+asks a measurement for. What it is not is permission to mutate anything
+reachable from outside the draft. See
 [persistent-structures.md](../../functional-managing-state-immutably/references/persistent-structures.md).
 
 `use-immer` is the same thing for `useState` and `useReducer` outside

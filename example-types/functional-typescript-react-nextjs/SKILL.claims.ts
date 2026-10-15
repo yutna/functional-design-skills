@@ -1,9 +1,9 @@
 import { useActionState } from "react";
 
 // "The `(prevState, formData)` signature is what `useActionState` calls, so
-// the client reads `useActionState(confirmBooking, { tag: "Idle" })` and gets
+// the client reads `useActionState(confirmBookingAction, { tag: "Idle" })` and gets
 // the state, the form action, and a pending flag together."
-const [state, formAction, isPending] = useActionState(confirmBooking, {
+const [state, formAction, isPending] = useActionState(confirmBookingAction, {
   tag: "Idle",
 });
 const shownState: FormState = state;

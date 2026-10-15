@@ -17,9 +17,11 @@ const sharedMapError: Equal<typeof Shared.mapError, typeof mapError> = true;
 const sharedPipe: Equal<typeof Shared.pipe, typeof pipe> = true;
 const sharedAsync: Equal<Shared.AsyncResult<string, number>, AsyncResult<string, number>> = true;
 
-// "Its error type is inferred as `ValidationError | PricingError`, because
-// `bind` widens as it goes."
+// "Without the two `mapError` calls the error would be inferred as
+// `NonEmptyArray<ValidationError> | PricingError`, because `bind` widens."
+const withoutLifting = (c: Catalogue, raw: UnvalidatedBooking) =>
+  pipe(validateBooking(c)(raw), bind(priceBooking(c)));
 const inferredError: Equal<
-  ReturnType<typeof confirmBooking>,
-  Result<readonly BookingEvent[], ValidationError | PricingError>
+  ReturnType<typeof withoutLifting>,
+  Result<PricedBooking, NonEmptyArray<ValidationError> | PricingError>
 > = true;

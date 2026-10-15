@@ -55,6 +55,9 @@ Schema.encode(Booking);
 const decodes: (
   input: unknown,
 ) => Effect.Effect<Booking, Schema.SchemaError> = parseBooking;
+const decodesPure: (
+  input: unknown,
+) => Result.Result<Booking, Schema.SchemaError> = parseBookingPure;
 const encodes: (
   booking: Booking,
 ) => Effect.Effect<BookingEncoded, Schema.SchemaError> = toWire;

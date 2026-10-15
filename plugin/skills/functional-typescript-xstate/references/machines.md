@@ -16,7 +16,7 @@ config file around it.
 ## Hierarchy
 
 Hierarchy earns its place when several states share a transition. A
-parent state holds the shared handler and the children stay small.
+parent state holds the shared transition and the children stay small.
 
 ```ts
 const editing = {
@@ -68,19 +68,24 @@ is cancelled when the state is left. That is the part hand-written
 timers get wrong.
 
 ```ts
+// in setup({ ... }): delays: { holdWindow: 120_000 }
 const held = {
-  after: { 120000: { target: "expired" } },
+  after: { holdWindow: { target: "browsing" } },
   on: { CONFIRM: { target: "confirming" } },
 };
 ```
 
+This is the `held` state of the machine in [SKILL.md](../SKILL.md),
+without the action that clears the slot when the hold expires.
 Confirming leaves `held`, so the expiry cannot fire afterwards. A
 `setTimeout` in a component has to be cleared by somebody, and the bug
 is always the path where nobody did.
 
-Name the delay in `setup` when the number means something: a delay
-called `holdWindow` is a business rule, and `120000` is a magic
-number.
+The delay is named in `setup` because the number means something:
+`holdWindow` says what it is for, and `120000` would be a magic number.
+How long a hold lasts is the server's rule. The machine's copy only
+times the screen, and where the two have to agree the server sends how
+long is left and the machine uses that as its delay.
 
 ## Actors and their lifetimes
 
@@ -103,8 +108,13 @@ A machine's state is a value, so it can be stored and resumed. Two
 things do not survive the round trip:
 
 - **A running actor.** It was not part of the state; it was work in
-  flight. On restore the machine re-enters the state and invokes
-  again, so that invocation must be safe to repeat.
+  flight. On restore the invocation is started again with the input
+  it had, so it must be safe to repeat. A machine that is persisted
+  therefore takes the hold's own identifier from the `HOLD` event,
+  beside the slot, keeps it in context, and passes it as the actor's
+  input, for the service to answer a second confirmation as it
+  answered the first. The slot alone, which the pack's example passes,
+  is not a key: a slot can be held again by somebody else.
 - **A pending delay.** The timer is not restored, so the delayed
   transition does not fire. If the deadline is a business fact rather
   than a debounce, put the timestamp in context and compute from it,

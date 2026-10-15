@@ -48,7 +48,14 @@ no library, and can be called from a test with two arguments.
 The cost of reaching too early is specific: the states become strings
 inside a config object rather than cases of a type, so the compiler
 stops telling you about a state you forgot to handle. You have traded
-an exhaustiveness check for features you are not using.
+an exhaustiveness check for features you are not using. A machine also
+drops an event that the current state has no transition for, and tells
+the sender nothing. Where the sender has to learn of the refusal, as
+rule 4 of
+[functional-modeling-with-algebraic-types](../functional-modeling-with-algebraic-types/SKILL.md)
+asks of a table over a state and a command, it asks
+`snapshot.can(event)` before it sends, and a test covers the pairs that
+are refused.
 
 ## Notation mapping
 
@@ -57,17 +64,21 @@ an exhaustiveness check for features you are not using.
 | Choice of states   | `states` in the machine config           |
 | Transition         | `on: { EVENT: { target } }`              |
 | Guard              | `guard` naming a predicate in `setup`    |
-| Emitted event      | An action, performed by the interpreter  |
+| Instruction        | A named action or an invoked actor       |
 | Substates          | Nested `states` under a parent state     |
 | Concurrent regions | `type: 'parallel'`                       |
-| Time as a trigger  | `after: { 5000: { target } }`            |
-| Child workflow     | `invoke` with `src`, `onDone`, `onError` |
+| Time as a trigger  | `after: { holdWindow: { target } }`      |
+| Child actor        | `invoke` with `src`, `onDone`, `onError` |
+
+XState calls everything a machine receives an event. `HOLD` and
+`CONFIRM` are what the core calls commands, and an actor's answer,
+arriving through `onDone` or `onError`, is what it calls an event.
 
 ## Core rules
 
 1. Rule. **The machine owns the lifecycle.** Nothing outside it decides
-   what state something is in, and no component keeps a second copy of
-   the state value to make rendering easier.
+   what state the thing it models is in, and no component keeps a second
+   copy of the state value to make rendering easier.
 2. Default. **Reach for a statechart only when a union falls short.** It falls
    short when the lifecycle has states inside states, regions that are active at
    once, a transition that time fires, or an actor whose lifetime the machine
@@ -115,8 +126,9 @@ const bookingMachine = setup({
   },
   delays: { holdWindow: 120_000 },
   actors: {
-    confirmBooking: fromPromise(
-      async ({ input }: { input: { slot: SlotId } }) => confirm(input.slot),
+    requestConfirmation: fromPromise(
+      async ({ input }: { input: { slot: SlotId } }) =>
+        confirmHold(input.slot),
     ),
   },
 }).createMachine({
@@ -140,7 +152,7 @@ const bookingMachine = setup({
     },
     confirming: {
       invoke: {
-        src: "confirmBooking",
+        src: "requestConfirmation",
         input: ({ context }) => ({ slot: heldSlot(context) }),
         onDone: { target: "confirmed" },
         onError: { target: "held" },
@@ -156,8 +168,10 @@ remember to clear. The confirmation is `invoke`, so leaving
 `confirming` cancels it. Both are the features that justified the
 library; without them this is a union with extra ceremony.
 
-The timer moves the screen on. Whether the hold has really expired is
-decided where the clock can be trusted, from the time it was taken.
+The timer moves the screen on, and the screen's lifecycle is what this
+machine owns. The hold itself is the server's: whether it has really
+expired is decided there, where the clock can be trusted, from the time
+it was taken.
 
 The chart guarantees a slot is in context whenever the machine is in
 `held`, but XState 5 types one context for every state, so the type says
@@ -191,7 +205,8 @@ asserting the machine scheduled it, not by waiting for it.
   invoked actor
 - A component holding a boolean that mirrors the machine's state
 - A guard that reads anything but its own arguments
-- An action that performs an effect rather than describing one
+- An `assign` or a guard that performs an effect, where a named action
+  or an invoked actor would describe it
 - `setTimeout` beside a machine that has `after`
 - A test that sleeps
 

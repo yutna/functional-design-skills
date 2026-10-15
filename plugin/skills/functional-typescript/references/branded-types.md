@@ -11,7 +11,6 @@ compile time, making the type nominal.
 - [Normalise before validating](#normalise-before-validating)
 - [Branding numbers and dates](#branding-numbers-and-dates)
 - [Identifiers](#identifiers)
-- [Rehydrating from a trusted store](#rehydrating-from-a-trusted-store)
 - [Where brands do not help](#where-brands-do-not-help)
 - [Testing a branded type](#testing-a-branded-type)
 
@@ -53,9 +52,9 @@ export const parseTreatmentCode = (
 export const treatmentCodeValue = (c: TreatmentCode): string => c;
 ```
 
-Three exports: the type, the parser, and the unwrapper. The `as` cast
-appears exactly once, inside the module, after the rules have been
-checked. That is the whole discipline.
+Four exports: the type, its error type, the parser, and the unwrapper.
+The `as` cast appears exactly once, inside the module, after the rules
+have been checked. That is the whole discipline.
 
 ## Normalise before validating
 
@@ -95,6 +94,12 @@ export const addMoney = (
     : err({ tag: "CurrencyMismatch", a: a.currency, b: b.currency });
 ```
 
+`Money` is the form for a system with more than one currency. The pack's
+other examples are single-currency and use `Satang`. `minorUnits` is a
+whole number of the currency's smallest unit, and the type above does
+not check that: a constructor for `Money` has to, the way `satang` does
+in [SKILL.md](../SKILL.md).
+
 ## Identifiers
 
 One brand per entity, so identifiers cannot be transposed.
@@ -111,27 +116,6 @@ export const transfer = (
   /* ... */
 };
 ```
-
-## Rehydrating from a trusted store
-
-Values read back from a database were validated when written. Re-parsing
-is the safe default. Where that is measured to be too expensive, add an
-unsafe constructor, and name it so nobody reaches for it by accident.
-
-TypeScript cannot say "only the storage mapping may import this", so the
-file exports it and two habits keep it contained: the module's `index.ts`
-does not re-export it, and a lint rule such as ESLint's
-`no-restricted-imports`, naming the function, stops every other file
-importing it.
-
-```ts
-// treatment-code.ts; index.ts re-exports the type and the parser only
-/** Only for rows this service wrote. Prefer parseTreatmentCode. */
-export const unsafeTreatmentCodeFromStorage = (s: string) => s as TreatmentCode;
-```
-
-Storage does drift, so treat this as a measured optimisation, not a
-default.
 
 ## Where brands do not help
 

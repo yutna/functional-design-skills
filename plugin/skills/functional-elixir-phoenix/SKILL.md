@@ -12,9 +12,10 @@ metadata:
 ## Overview
 
 Phoenix contributes a boundary that maps cleanly onto the core and shell
-split: contexts hold the domain, controllers and LiveViews hold the
-shell. Ecto contributes a parser at the edge that most projects mistake
-for a domain model.
+split: the domain structs and their pure functions are the core; a
+context is where the handlers live, and controllers and LiveViews are
+the shell around it. Ecto contributes a parser at the edge that most
+projects mistake for a domain model.
 
 The language itself, and OTP, are unchanged and live in
 [functional-elixir](../functional-elixir/SKILL.md). This pack is only
@@ -39,42 +40,66 @@ Not for: the Elixir language, OTP, routing, or deployment.
    structs and exposes functions; none reaches into another's schemas.
 2. Rule. **An Ecto schema is a boundary artefact, not the domain type.**
    It carries nullable columns, associations and `__meta__`. Map it into
-   a domain struct and work with that.
+   a domain struct and work with that. A screen that only reads and
+   enforces no rule may use the rows as they are, as
+   [contexts-and-ecto.md](references/contexts-and-ecto.md) has it.
 3. Rule. **A changeset parses; it does not decide.** Format, presence and
    length belong there. "A discount over twenty per cent needs approval"
    belongs in the domain, where it can be tested without Ecto.
-4. Default. **One assign for the screen state**, as a tagged tuple. Several
-   booleans permit screens that cannot exist. Flags that vary independently,
+4. Default. **One assign for the screen state**, as a tagged tuple, or an atom
+   for a state that carries nothing. Several booleans permit screens that
+   cannot exist. Flags that vary independently,
    where every combination is a screen that exists, stay assigns of their own.
 5. Rule. **No business rules in a controller or a LiveView.** They hand
    the request's or the event's params to the context and store the
-   outcome.
-6. Rule. **Return events; let the shell broadcast them.** Broadcasting from
-   inside a context couples the decision to every subscriber and makes it
-   untestable.
-7. Default. **`Repo.transact/2` around a `with` for a transaction's steps.** A
-   failing step ends the `with`, rolls the transaction back and reaches the
-   caller. Reach for `Ecto.Multi` when the set of steps is built at run time, or
-   when the caller has to learn which step failed. Before Ecto 3.13 there is no
+   outcome. A LiveView may also send other screens a hint that something
+   changed.
+6. Rule. **Return events; let the shell deliver them.** The pure function
+   returns the events it decided, and the context writes them with the state.
+   Broadcasting from inside the decision couples it to every subscriber and
+   makes it untestable.
+7. Default. **The transaction belongs to the function that writes.** A context
+   function reads, calls the pure function, and then calls one private function
+   that writes what was decided; `Repo.transact/2` around a `with` goes inside
+   that one, so that a failing step rolls back and reaches the caller. Reach
+   for `Ecto.Multi` when the set of steps is built at run time, or when the
+   caller has to learn which step failed. Before Ecto 3.13 there is no
    `Repo.transact/2`, and the same shape is written with `Repo.transaction/2`
    and `Repo.rollback/1`.
 
 ## Pattern
 
-The changeset parses untrusted input; the domain receives values whose
-invariants already hold.
+The changeset parses untrusted input; the core receives a command whose
+shape is already parsed and applies the rules.
 
 ```elixir
-# boundary: parses and validates untrusted input
-def changeset(params) do
+# parse: the boundary turns untrusted input into a checked shape
+@spec booking_changeset(map()) :: Ecto.Changeset.t()
+def booking_changeset(params) do
   %BookingParams{}
   |> cast(params, [:patient_id, :doctor_id, :slot_id, :reason])
   |> validate_required([:patient_id, :doctor_id, :slot_id])
   |> validate_length(:reason, max: 200)
+  |> validate_format(:patient_id, @uuid)
 end
 
-# domain: receives a command whose values are already valid
-@spec book(BookCommand.t(), deps()) ::
+# handler, in Clinic.Scheduling: parses, reads, calls the core, writes
+@spec book_appointment(map(), DateTime.t()) ::
+        {:ok, Appointment.t(), [Appointment.event()]}
+        | {:error, booking_failure()}
+def book_appointment(params, now) do
+  with {:ok, command} <- parse_command(params),
+       {:ok, patient} <- find_patient(command.patient),
+       {:ok, schedule} <- load_schedule(command.doctor, command.slot),
+       {:ok, appointment, events} <-
+         Appointment.book(command, patient, schedule, now),
+       :ok <- save_booking(appointment, events) do
+    {:ok, appointment, events}
+  end
+end
+
+# core: receives a command whose shape is already parsed
+@spec book(BookCommand.t(), Patient.t(), Schedule.t(), DateTime.t()) ::
         {:ok, Appointment.t(), [event()]} | {:error, booking_error()}
 ```
 
@@ -82,26 +107,36 @@ A changeset accumulates every error at once, which is what a form needs.
 That is applicative validation with an Ecto name; see
 [functional-handling-errors-with-results](../functional-handling-errors-with-results/SKILL.md).
 
-The context function the web layer calls,
-`Scheduling.book_appointment/2`, sits between the two: it runs the
-changeset, builds the command from the valid params, and calls `book/2`.
+The context function the web layer calls, `Scheduling.book_appointment/2`,
+sits between the two. `parse_command/1` runs `booking_changeset/1` and
+answers `{:error, {:invalid, changeset}}` when it is not valid.
+Otherwise it builds the command from the changeset's data: in this pack
+the changeset is the parser, it has checked what `BookCommand.new/1`
+would, and it is the only source of `{:invalid, _}`. The function then
+calls `Appointment.book/4`. The failure the handler returns holds that
+`{:invalid, changeset}`, the rules' refusal, `:patient_not_found` when a
+read finds nothing, and `:unavailable` when the database cannot be
+reached.
 
 ## Where each layer stops
 
 - **Controller or LiveView.** Receives the request or the event, calls
-  one context function with its params, renders the outcome. No rules,
-  no queries.
-- **Context.** The public surface of a bounded context. Parses the
-  params into a command, calls the domain, and returns
+  one context function with its params, renders the outcome. A LiveView
+  may also tell other screens that something changed. No rules, no
+  queries.
+- **Context.** The public surface of a bounded context, and where its
+  handlers live. Parses the params into a command, reads what the core
+  needs, calls the core, writes what it decided, and returns
   `{:ok, value, events}` or `{:error, reason}`.
 - **Schema and changeset.** The parser between the database or the form
   and the domain. Nothing depends on it inward.
 - **Domain struct.** Invariants, transitions, decisions. Knows nothing
   about Ecto, Plug, or the socket.
 
-The test that this holds: a context function should be callable from
-`iex` with plain values and no connection, and a domain function should
-be testable with Ecto uninstalled.
+The test that this holds: the pure function is callable from `iex` with
+plain values and no connection, and testable with Ecto uninstalled. The
+context function needs the database, and its tests are the few that
+touch it.
 
 ## Red flags
 

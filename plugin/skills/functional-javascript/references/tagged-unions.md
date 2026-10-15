@@ -50,7 +50,7 @@ export const delivered = (shipped, deliveredAt) =>
           deliveredAt,
         }),
       )
-    : err({ tag: "DeliveredBeforeShipped" });
+    : err(Object.freeze({ tag: "DeliveredBeforeShipped" }));
 
 export const failed = (reason) =>
   Object.freeze({ tag: SHIPMENT.failed, reason });
@@ -86,7 +86,7 @@ A dispatch table is an alternative when the cases have no shared
 structure:
 
 ```js
-const HANDLERS = Object.freeze({
+const DESCRIBERS = Object.freeze({
   [SHIPMENT.pending]: () => "awaiting dispatch",
   [SHIPMENT.shipped]: (s) => `in transit: ${s.tracking}`,
   [SHIPMENT.delivered]: (s) => `delivered ${formatDate(s.deliveredAt)}`,
@@ -94,9 +94,9 @@ const HANDLERS = Object.freeze({
 });
 
 const describe = (s) => {
-  const handler = HANDLERS[s.tag];
-  if (!handler) throw new Error(`unhandled: ${s.tag}`);
-  return handler(s);
+  const describer = DESCRIBERS[s.tag];
+  if (!describer) throw new Error(`unhandled: ${s.tag}`);
+  return describer(s);
 };
 ```
 
@@ -128,7 +128,14 @@ comment.
 /**
  * @typedef {{ tag: "Pending", requestedAt: Date }} Pending
  * @typedef {{ tag: "Shipped", tracking: string, shippedAt: Date }} Shipped
- * @typedef {Pending | Shipped} Shipment
+ * @typedef {{
+ *   tag: "Delivered",
+ *   tracking: string,
+ *   shippedAt: Date,
+ *   deliveredAt: Date,
+ * }} Delivered
+ * @typedef {{ tag: "Failed", reason: string }} Failed
+ * @typedef {Pending | Shipped | Delivered | Failed} Shipment
  */
 
 /**
@@ -149,6 +156,10 @@ export const describe = (s) => {
       return "awaiting dispatch";
     case SHIPMENT.shipped:
       return `in transit: ${s.tracking}`;
+    case SHIPMENT.delivered:
+      return `delivered ${formatDate(s.deliveredAt)}`;
+    case SHIPMENT.failed:
+      return `failed: ${s.reason}`;
     default:
       return unhandled(s);
   }
@@ -202,10 +213,13 @@ export const fromDto = (d) => {
     }
     // delivered and failed follow the same shape
     default:
-      return err({ tag: "UnknownKind", kind: d.kind });
+      return err(Object.freeze({ tag: "UnknownKind", kind: d.kind }));
   }
 };
 ```
+
+The wire's key is `kind` because that contract says so, and `toDto` and
+`fromDto` are the only code that knows it.
 
 Each direction names its fields. `toDto` never spreads the value, so a
 field added to the domain does not leak onto the wire. `fromDto` never

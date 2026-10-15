@@ -8,8 +8,8 @@ type SlotId = Brand<string, "SlotId">;
 type Instant = { readonly epochMillis: number };
 type Money = { readonly satang: number };
 type PatientCategory =
-  | { readonly tag: "Insured"; readonly copay: Money }
-  | { readonly tag: "Private" };
+  | { readonly _tag: "Insured"; readonly copay: Money }
+  | { readonly _tag: "Private" };
 type Quantity = Brand<number, "Quantity">;
 type CardNumber = Brand<string, "CardNumber">;
 
@@ -31,7 +31,7 @@ declare const holdSlot: (
   patient: Patient,
 ) => Effect.Effect<Hold, SlotUnavailable>;
 declare const confirm: (hold: Hold) => Appointment;
-declare const alternatives: (nextFree: Option.Option<Instant>) => Appointment;
+declare const alternatives: (slot: SlotId) => Appointment;
 
 // What Data.TaggedError makes: a yieldable error with a tag and its fields.
 type TaggedError<Tag extends string, Fields> = Cause.YieldableError & {

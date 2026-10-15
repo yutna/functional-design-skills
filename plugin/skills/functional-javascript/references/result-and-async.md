@@ -27,12 +27,37 @@ export const unwrapOr = (fallback) => (r) => (r.ok ? r.value : fallback);
 export const pipe = (x, ...fns) => fns.reduce((acc, f) => f(acc), x);
 ```
 
+`unwrapOr` is for a default that the operation's own definition makes an
+ordinary answer. It is never the way to drop a failure the caller has to
+notice.
+
 Usage:
 
 ```js
-const confirmBooking = (raw) =>
-  pipe(raw, validate, bind(price(catalogue)), map(acknowledge), map(toEvents));
+const validation = (cause) => Object.freeze({ tag: "Validation", cause });
+const pricing = (cause) => Object.freeze({ tag: "Pricing", cause });
+const bookingConfirmed = (booking) =>
+  Object.freeze({ tag: "BookingConfirmed", booking });
+
+const confirmBooking = (catalogue, now, raw) =>
+  pipe(
+    raw,
+    validateBooking(catalogue),
+    mapError(validation),
+    bind((booking) =>
+      pipe(booking, priceBooking(catalogue), mapError(pricing)),
+    ),
+    map(issueConfirmation(now)),
+    map((booking) => Object.freeze([bookingConfirmed(booking)])),
+  );
 ```
+
+Everything the steps need is an argument, and each step's error is lifted
+with `mapError` into the `Validation` or the `Pricing` case, so the
+workflow's signature carries one error type and a list of events.
+
+The three tagged values are built by constructors that freeze, which is
+what rules 1 and 2 of the pack ask.
 
 ## Collections
 
@@ -115,26 +140,33 @@ export const bindAsync = (f) => async (pr) => {
 ```
 
 ```js
-const handle = async (raw) => {
-  const validated = validate(raw);
-  if (!validated.ok) return validated;
+const rejected = (cause) => Object.freeze({ tag: "Rejected", cause });
+const unavailable = (cause) => Object.freeze({ tag: "Unavailable", cause });
 
-  const priced = await priceWithService(validated.value);
-  if (!priced.ok) return priced;
+const handleConfirmBooking = async (pool, now, raw) => {
+  const catalogue = await loadCatalogue(pool);
+  if (!catalogue.ok) return err(unavailable(catalogue.error));
 
-  return save(priced.value);
+  const decided = confirmBooking(catalogue.value, now, raw);
+  if (!decided.ok) return err(rejected(decided.error));
+
+  const saved = await saveEvents(pool, decided.value);
+  return saved.ok ? saved : err(unavailable(saved.error));
 };
 ```
 
-Early return on failure reads better than deep chaining in JavaScript,
-and it is the same two-track model. Use whichever the file already uses.
+This is a handler: it reads, decides, and writes. Only the read and the
+write are awaited; `confirmBooking` is the pure workflow above and takes
+plain values. Early return on failure reads better than deep chaining in
+JavaScript, and it is the same two-track model. Use whichever the file
+already uses.
 
 ## Converting at the boundary
 
 Everything outside throws. Convert once, where the call is made.
 
 ```js
-export const saveBooking = async (pool, booking) => {
+export const insertBooking = async (pool, booking) => {
   try {
     await pool.query(INSERT, toRow(booking));
     return ok(undefined);
@@ -144,25 +176,32 @@ export const saveBooking = async (pool, booking) => {
 };
 
 const classify = (e) => {
-  if (e?.code === "23505") return { tag: "DuplicateBooking" };
-  if (e?.code === "57014") return { tag: "Transient", retryAfterMs: 1000 };
-  return { tag: "Unexpected", cause: e };
+  if (e?.code === "23505") return Object.freeze({ tag: "DuplicateBooking" });
+  if (e?.code === "57014") {
+    return Object.freeze({ tag: "Transient", retryAfter: seconds(1) });
+  }
+  return Object.freeze({ tag: "Unexpected", cause: e });
 };
 ```
 
 `catch` can be handed anything, `undefined` included, which is why
-`classify` reads the code with `?.`. Past this function, no caller knows
-which driver is in use, and the `cause` is kept for logs without being
-something callers match on. See
+`classify` reads the code with `?.`. Past this function, no caller needs
+to know which driver is in use. An exception it does not recognise is
+the opaque `Unexpected`: the `cause` is kept for logs, and no caller
+matches on it.
+A save that checks a version has two cases of its own, `Conflict` and
+`Failed`, in
+[persistence-patterns.md](../../functional-crossing-io-boundaries/references/persistence-patterns.md).
+See
 [error-taxonomy.md](../../functional-handling-errors-with-results/references/error-taxonomy.md).
 
 ## Parallel work
 
 ```js
-const loadForBooking = async (id) => {
+const loadForBooking = async (pool, id) => {
   const [patient, catalogue] = await Promise.all([
-    loadPatient(id),
-    loadCatalogue(),
+    loadPatient(pool, id),
+    loadCatalogue(pool),
   ]);
   if (!patient.ok) return patient;
   if (!catalogue.ok) return catalogue;
