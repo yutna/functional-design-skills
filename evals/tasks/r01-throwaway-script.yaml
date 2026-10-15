@@ -1,0 +1,61 @@
+schema_version: "1.1"
+name: r01-throwaway-script
+description: >-
+  Row one of the calibration table: the output is an answer, not code
+  to keep. Almost none of the pack applies, and applying it is the
+  failure.
+tags: [restraint, smoke]
+context:
+  scaffold_script: fixture.sh
+execution:
+  prompt: |
+    I need a one-off script. Read `data/patients.csv`, call
+    `POST https://example.invalid/reminders` once per row with the
+    patient's id and email as JSON, and write each row's id and the
+    status code it got to `data/reminders-result.csv`. It runs once and
+    then I delete it. Save it as `scripts/send-reminders.mjs`.
+  allowed_tools: [Read, Glob, Grep, Skill, Write, Edit]
+  max_turns: 30
+  timeout_seconds: 600
+graders:
+  - name: loaded-any-skill
+    type: tool_used
+    tool: Skill
+  - name: loaded-a-modelling-skill
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?functional-(?:constraining-primitive-values|making-illegal-states-unrepresentable|modeling-with-algebraic-types|designing-workflow-pipelines|handling-errors-with-results)"'
+  - name: script-exists
+    type: file_exists
+    path: scripts/send-reminders.mjs
+  - name: one-file-created
+    type: regex
+    target: files
+    pattern: '^.+$'
+    flags: m
+    match: 'count:1'
+  - name: no-type-machinery
+    type: regex
+    target: { source: file, path: scripts/send-reminders.mjs }
+    pattern: '^(?![\s\S]*(?:@typedef|\bResult\b|\bEither\b|\bclass\s+\w+))[\s\S]+$'
+  - name: says-it-is-throwaway
+    type: regex
+    target: { source: file, path: scripts/send-reminders.mjs }
+    pattern: 'throwaway|one-off|one off|runs? once|delete (?:this|it|me)'
+    flags: i
+  - name: direct
+    type: llm
+    focus: { source: file, path: scripts/send-reminders.mjs }
+    criteria: |
+      You are grading a script its author said would run once and then
+      be deleted. It reads a CSV file, makes one HTTP call per row, and
+      writes a result file.
+
+      PASS only if the script is direct: one file that reads the file,
+      loops over the rows, makes the call, and writes the results, with
+      no wrapper or branded types, no Result or Either abstraction, no
+      dependency injection, no classes, and no split into layers. A
+      try/catch around the HTTP call so that one bad row does not stop
+      the run is fine, and so are a few small helper functions.
+
+      Otherwise FAIL.

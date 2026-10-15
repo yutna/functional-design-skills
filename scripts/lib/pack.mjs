@@ -18,11 +18,12 @@ import { readdirSync, existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parse as parseYaml } from 'yaml'
-import { readMarkdown } from './markdown.mjs'
+import { readMarkdown, readSource } from './markdown.mjs'
 
 export const ROOT = dirname(dirname(dirname(fileURLToPath(import.meta.url))))
 export const SKILLS_DIR = join(ROOT, 'plugin', 'skills')
 export const EVALS_DIR = join(ROOT, 'evals')
+export const TASKS_DIR = join(EVALS_DIR, 'tasks')
 
 const FRONTMATTER = /^---\n([\s\S]*?)\n---\n/
 
@@ -288,4 +289,60 @@ export function parseScenarios (text) {
 
 export function scenarios () {
   return parseScenarios(readRepoFile(join('evals', 'scenarios.md')))
+}
+
+// A task case is work for an agent to do in a small project, graded on the
+// files it leaves behind. Each is one YAML file in evals/tasks, written the
+// way `claude plugin eval` reads a case, and the file's base name is the
+// case's name. The family says what the pack is expected to do to the work:
+// change it, leave it alone, or give way to the project's own convention.
+export const TASK_FAMILIES = ['task', 'restraint', 'precedence']
+
+// Takes the text rather than reading the file, for the reason parseScenarios
+// does: the throws below can be shown firing on a case made to trigger them.
+export function parseTaskCase (file, text) {
+  const where = `evals/tasks/${file}`
+  const document = parseYaml(text)
+  if (document === null || typeof document !== 'object') {
+    throw new Error(`${where}: not a mapping, so it holds no case`)
+  }
+  const name = file.replace(/\.yaml$/, '')
+  if (document.name !== name) {
+    throw new Error(
+      `${where}: its name is "${document.name}", but the file's name is ` +
+        `"${name}". The runner and the results know a case by one name.`,
+    )
+  }
+  const tags = Array.isArray(document.tags) ? document.tags : []
+  const families = tags.filter((tag) => TASK_FAMILIES.includes(tag))
+  if (families.length !== 1) {
+    throw new Error(
+      `${where}: carries ${families.length} family tag(s) and needs exactly ` +
+        `one of ${TASK_FAMILIES.join(', ')}, or its results cannot be ` +
+        'summed under any family',
+    )
+  }
+  const prompt = document.execution?.prompt
+  if (typeof prompt !== 'string' || prompt.trim() === '') {
+    throw new Error(`${where}: no execution.prompt, so the agent is asked nothing`)
+  }
+  if (!Array.isArray(document.graders) || document.graders.length === 0) {
+    throw new Error(`${where}: no grader, so a run of it would measure nothing`)
+  }
+  return { name, family: families[0], tags, document }
+}
+
+// The directory is a parameter so the empty case can be shown throwing.
+export function taskCases (dir = TASKS_DIR) {
+  const files = readdirSync(dir)
+    .filter((file) => file.endsWith('.yaml'))
+    .sort()
+  if (files.length === 0) {
+    throw new Error(
+      'evals/tasks: no case file. A reader that returns nothing lets the ' +
+        'runner report a clean run that measured nothing.',
+    )
+  }
+  return files.map((file) =>
+    parseTaskCase(file, readSource(join(dir, file))))
 }

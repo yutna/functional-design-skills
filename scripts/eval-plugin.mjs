@@ -34,13 +34,30 @@
 // first paid run hit the account's session limit and the tool exited 0
 // with every answer marked wrong.
 //
+// The task cases are the other half. A scenario is a question; most real work
+// is not, and an agent that is only ever asked about design problems is never
+// shown one it has to notice. Each file in evals/tasks asks the agent to
+// change a small project, evals/fixture-tasks, and grades the files it leaves
+// behind. Their families are task (the pack should change what is built),
+// restraint (it should change nothing) and precedence (the project's own
+// written convention disagrees with the pack, and the convention wins). They
+// are written the way `claude plugin eval` reads a case and are copied as they
+// are; the runner adds only the system file's text, if there is one.
+//
+// A task case passes in a run when every grader passes, leaving out the
+// indicators: a `tool_used` grader whose name begins `loaded-` says what the
+// agent did on the way, and does not decide whether the work was right. Each
+// family is summed apart, and the graders that failed are named per case, so
+// that a failure can be traced to the one point it tests.
+//
 // A variant degrades the copied plugin before the cases are written, to
 // measure how the pack behaves when the skill listing is poorer. A system
 // file adds its text to the system prompt of every case.
 //
 // Usage:
 //   node scripts/eval-plugin.mjs --dry-run            build the cases, call nothing
-//   node scripts/eval-plugin.mjs --tag smoke          a few scenarios, both arms
+//   node scripts/eval-plugin.mjs --tag smoke          a few cases, both arms
+//   node scripts/eval-plugin.mjs --tag restraint      one family of task cases
 //   node scripts/eval-plugin.mjs                      every scenario, both arms
 //   node scripts/eval-plugin.mjs --only 1,34 --runs 1 two scenarios, once each
 //   node scripts/eval-plugin.mjs --ablation none      with the pack only
@@ -49,8 +66,9 @@
 //                                                     (npm run test:guards runs it)
 //
 // Flags, each with a value unless noted:
-//   --only 1,4,30      scenario numbers to generate (default: all)
-//   --tag NAME         run only the cases carrying this tag
+//   --only 1,t04-...   scenario numbers and task case names (default: all)
+//   --tag NAME         only the cases carrying this tag: question, task,
+//                      restraint, precedence or smoke
 //   --runs N           runs per case and arm (default: the tool's, which is 3)
 //   --ablation MODE    none | with-without (default: the tool's)
 //   --model ID         the agent under test
@@ -73,12 +91,13 @@ import { spawn } from 'node:child_process'
 import { parse as parseYaml, stringify } from 'yaml'
 import { readMarkdown, slugOf } from './lib/markdown.mjs'
 import {
-  EVALS_DIR, INDEX_SKILL, ROOT, languagePackIds, parseScenarios, readSkill,
-  scenarios, skillIds,
+  EVALS_DIR, INDEX_SKILL, ROOT, TASK_FAMILIES, languagePackIds,
+  parseScenarios, parseTaskCase, readSkill, scenarios, skillIds, taskCases,
 } from './lib/pack.mjs'
 
 const PLUGIN = join(ROOT, 'plugin')
 const FIXTURE = join(EVALS_DIR, 'fixture')
+const FIXTURE_TASKS = join(EVALS_DIR, 'fixture-tasks')
 const RESULTS = join(EVALS_DIR, 'results')
 
 // Both models are pinned by id, never by alias. An alias moves when a model
@@ -96,11 +115,13 @@ const SMOKE = new Set([
 const DEFAULT_MAX_COST_USD = 30
 const DEFAULT_JOBS = 4
 
-const FIXTURE_SCRIPT = [
+// The fixture is copied into the case's directory under its own name, and the
+// script copies it from there into the working directory of the run.
+const fixtureScript = (fixtureName) => [
   '#!/usr/bin/env bash',
   'set -euo pipefail',
   'here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"',
-  'cp -R "$here/fixture/." .',
+  `cp -R "$here/${fixtureName}/." .`,
   '',
 ].join('\n')
 
@@ -116,6 +137,7 @@ const EXIT_MEANING = {
 const SUBSTANCE = 'substance'
 const REACHED = 'reached-expected-skill'
 const LOADED = 'loaded-any-skill'
+const QUESTION = 'question'
 
 // ---------------------------------------------------------------- the cases
 
@@ -168,25 +190,79 @@ function caseOf (scenario, systemPrompt) {
   }
 }
 
-function buildCases (list, { tag, systemPrompt }) {
-  if (list.length === 0) {
-    throw new Error('no scenario to build a case from, so nothing would be measured')
+// What a task case is, as the runner holds it: the file's document, with the
+// system file's text added to its own, if it has one. Nothing else is changed.
+function taskCaseOf (task, systemPrompt) {
+  const { document } = task
+  const own = document.execution.append_system_prompt
+  const appended = [own, systemPrompt].filter((text) =>
+    typeof text === 'string' && text !== '')
+  return {
+    ...document,
+    context: { ...document.context, scaffold_script: 'fixture.sh' },
+    execution: {
+      ...document.execution,
+      ...(appended.length === 0
+        ? {}
+        : { append_system_prompt: appended.join('\n\n') }),
+    },
   }
-  const cases = list.map((scenario) => caseOf(scenario, systemPrompt))
-  if (tag !== null && !cases.some((item) => item.tags.includes(tag))) {
-    throw new Error(`no case carries the tag "${tag}", so nothing would be measured`)
-  }
-  return cases
 }
 
-function chooseScenarios (list, only) {
-  if (only === null) return list
-  const known = new Set(list.map((scenario) => scenario.id))
+// An indicator says what the agent did on the way. It is reported beside the
+// grades and decides none of them.
+const isIndicator = (grader) =>
+  grader.type === 'tool_used' && String(grader.name).startsWith('loaded-')
+
+// Each entry is a case and the fixture its scaffold script copies.
+function buildCases (scenarioList, taskList, { tag, systemPrompt }) {
+  const entries = [
+    ...scenarioList.map((scenario) => ({
+      item: caseOf(scenario, systemPrompt),
+      family: QUESTION,
+      fixture: FIXTURE,
+    })),
+    ...taskList.map((task) => ({
+      item: taskCaseOf(task, systemPrompt),
+      family: task.family,
+      fixture: FIXTURE_TASKS,
+    })),
+  ]
+  if (entries.length === 0) {
+    throw new Error('no case to build, so nothing would be measured')
+  }
+  for (const { item } of entries.slice(scenarioList.length)) {
+    if (item.graders.every(isIndicator)) {
+      throw new Error(`${item.name}: every grader is an indicator, so no run could fail`)
+    }
+  }
+  if (tag === null) return entries
+  const chosen = entries.filter(({ item }) => item.tags.includes(tag))
+  if (chosen.length === 0) {
+    throw new Error(`no case carries the tag "${tag}", so nothing would be measured`)
+  }
+  return chosen
+}
+
+// Scenario numbers and task case names share one list. A name in it that
+// neither one answers to is an error: a run that dropped it would measure
+// something other than what was asked.
+function choose (scenarioList, taskList, only) {
+  if (only === null) return { scenarioList, taskList }
+  const known = new Set([
+    ...scenarioList.map((scenario) => scenario.id),
+    ...taskList.map((task) => task.name),
+  ])
   const missing = [...only].filter((id) => !known.has(id))
   if (missing.length > 0) {
-    throw new Error(`--only names no scenario numbered ${missing.join(', ')}`)
+    throw new Error(
+      `--only names no scenario numbered or task case named ${missing.join(', ')}`,
+    )
   }
-  return list.filter((scenario) => only.has(scenario.id))
+  return {
+    scenarioList: scenarioList.filter((scenario) => only.has(scenario.id)),
+    taskList: taskList.filter((task) => only.has(task.name)),
+  }
 }
 
 // -------------------------------------------------------------- the variants
@@ -300,7 +376,35 @@ function parseArgs (argv) {
   }
 }
 
-function childArgs (options, { root, resultFile, outDir }) {
+// `claude plugin eval` keeps the tools that reach outside a run behind an
+// operator's grant: a case may list Write in its allowed_tools and still be
+// refused it. The first run of the task cases showed it, when no agent in
+// either arm could change a file and every case graded the fixture as it was
+// copied. The runner grants the two tools that write files, and only to a run
+// whose cases ask for them. A case that asks for anything wider is refused
+// here: a shell or the network is a grant this runner does not make.
+const GATED = /^(?:Bash|Write|Edit|WebFetch|mcp__)/
+const GRANTED = ['Write', 'Edit']
+
+function grantsFor (entries) {
+  const asked = new Map()
+  for (const { item } of entries) {
+    for (const tool of item.execution.allowed_tools ?? []) {
+      if (GATED.test(tool)) asked.set(tool, item.name)
+    }
+  }
+  for (const [tool, name] of asked) {
+    if (!GRANTED.includes(tool)) {
+      throw new Error(
+        `${name}: asks for ${tool}, which needs a grant this runner does not ` +
+          `make; it grants ${GRANTED.join(' and ')} only`,
+      )
+    }
+  }
+  return GRANTED.filter((tool) => asked.has(tool))
+}
+
+function childArgs (options, { root, resultFile, outDir, grants = [] }) {
   const args = [
     'plugin', 'eval', root,
     '--trust-plugin', '--no-publish', '--scaffold',
@@ -315,6 +419,7 @@ function childArgs (options, { root, resultFile, outDir }) {
   if (options.runs !== null) args.push('--runs', String(options.runs))
   if (options.ablation !== null) args.push('--ablation', options.ablation)
   if (options.keep) args.push('--keep-temp')
+  if (grants.length > 0) args.push('--allow-tools', ...grants)
   // Last, because the tool takes several values for it and would read
   // anything after it as another tag.
   if (options.tag !== null) args.push('--tag', options.tag)
@@ -323,16 +428,17 @@ function childArgs (options, { root, resultFile, outDir }) {
 
 // ------------------------------------------------------------ the directory
 
-function writeRoot (root, cases, variant) {
+function writeRoot (root, entries, variant) {
   cpSync(PLUGIN, root, { recursive: true })
   if (variant !== null) applyVariant(variant, root)
-  for (const item of cases) {
+  for (const { item, fixture } of entries) {
     const dir = join(root, 'evals', item.name)
+    const fixtureName = fixture === FIXTURE_TASKS ? 'fixture-tasks' : 'fixture'
     mkdirSync(dir, { recursive: true })
     writeFileSync(join(dir, 'case.yaml'), stringify(item, { lineWidth: 0 }))
-    writeFileSync(join(dir, 'fixture.sh'), FIXTURE_SCRIPT)
+    writeFileSync(join(dir, 'fixture.sh'), fixtureScript(fixtureName))
     chmodSync(join(dir, 'fixture.sh'), 0o755)
-    cpSync(FIXTURE, join(dir, 'fixture'), { recursive: true })
+    cpSync(fixture, join(dir, fixtureName), { recursive: true })
   }
 }
 
@@ -476,7 +582,7 @@ function gaps (counts, messages, what) {
   ]
 }
 
-function describe (summary) {
+function describeBody (summary) {
   const { substance } = summary
   const lines = [
     `cases ${summary.cases}, runs per case ${summary.runsPerCase.join(', ')}, ` +
@@ -487,8 +593,7 @@ function describe (summary) {
     'difference                    ' +
       (substance.difference === null
         ? 'n/a'
-        : `${substance.difference > 0 ? '+' : ''}` +
-          `${Math.round(substance.difference * 100)} points`),
+        : points(substance.difference)),
     `reached expected skill        ${show(summary.reachedExpectedSkill)}` +
       '  (with the plugin, cases that name one)',
     `loaded any skill              ${show(summary.loadedAnySkill)}` +
@@ -513,6 +618,242 @@ function describe (summary) {
     for (const item of summary.expectedSkillNeverReached) {
       lines.push(`  ${item.case}  ${show(item)}`)
     }
+  }
+  return lines
+}
+
+// A scenario summary read on its own, with the line that closes a run.
+function describe (summary) {
+  return describeRun({ scenarios: summary, families: {}, ...summary })
+}
+
+// ---------------------------------------------- the summary of the task cases
+
+// What the summary needs to know of a case it did not write: its family, and
+// its graders by name and type, because a result row says which graders ran
+// but not what kind they were, and a judge is told apart from the rest by it.
+function planOf (entries) {
+  return new Map(entries.map(({ item, family }) => [
+    item.name,
+    { family, graders: item.graders.map(({ name, type }) => ({ name, type })) },
+  ]))
+}
+
+function familyOf (plan, name) {
+  const planned = plan.get(name)
+  if (planned !== undefined) return planned.family
+  if (/^q\d+-/.test(name)) return QUESTION
+  throw new Error(
+    `the result holds a case called ${name}, which this runner did not generate`,
+  )
+}
+
+// One run of a task case, by what it measured. A run that ended in an error is
+// not a sample of the agent's work. Nor is one in which a grader that should
+// have given a verdict gave none: a judge that threw is recorded as a failed
+// grader, and counting it as a failed answer would score a harness fault
+// against the arm it landed in. Only a run in which every grader gave one is
+// graded, and it passes when every grader other than the indicators passed.
+function gradeRun (run, planned) {
+  if (run.error) return { state: 'errored', reason: firstLine(run.error) }
+  const failed = []
+  for (const wanted of planned.graders) {
+    if (isIndicator(wanted)) continue
+    const got = run.graders.find((candidate) => candidate.name === wanted.name)
+    if (got === undefined) {
+      return { state: 'ungraded', reason: `${wanted.name}: no verdict in the run` }
+    }
+    if (wanted.type === 'llm' && !judged(got)) {
+      return {
+        state: 'ungraded',
+        reason: `${wanted.name}: ${firstLine(got.explanation ?? 'not judged')}`,
+      }
+    }
+    if (got.passed !== true) failed.push(wanted.name)
+  }
+  return { state: 'graded', pass: failed.length === 0, failed }
+}
+
+const ARMS = ['with', 'without']
+
+function summariseFamily (rows, plan) {
+  const armOf = (row, arm) => (arm === 'with' ? row.arms.with : row.arms.without ?? [])
+  const outcomes = rows.map((row) => {
+    const planned = plan.get(row.name)
+    return {
+      row,
+      planned,
+      by: Object.fromEntries(ARMS.map((arm) => [
+        arm,
+        armOf(row, arm).map((run) => ({ run, ...gradeRun(run, planned) })),
+      ])),
+    }
+  })
+  const every = (arm) => outcomes.flatMap((entry) => entry.by[arm])
+  const gradedIn = (list) => list.filter((outcome) => outcome.state === 'graded')
+  const pass = (arm) => tally(gradedIn(every(arm)).map((outcome) => outcome.pass))
+  const count = (arm, state) => every(arm).filter((o) => o.state === state).length
+  const messages = (state) => reasons(
+    ARMS.flatMap((arm) => every(arm).filter((o) => o.state === state))
+      .map((outcome) => outcome.reason),
+  )
+
+  const indicators = {}
+  const failedGraders = []
+  const worseWithPlugin = []
+  for (const { row, planned, by } of outcomes) {
+    for (const wanted of planned.graders.filter(isIndicator)) {
+      indicators[wanted.name] ??= { with: [], without: [] }
+      for (const arm of ARMS) {
+        for (const outcome of by[arm].filter((o) => o.state !== 'errored')) {
+          const got = outcome.run.graders.find((c) => c.name === wanted.name)
+          if (got !== undefined) indicators[wanted.name][arm].push(got.passed === true)
+        }
+      }
+    }
+    for (const wanted of planned.graders.filter((g) => !isIndicator(g))) {
+      const failures = Object.fromEntries(ARMS.map((arm) => {
+        const graded = gradedIn(by[arm])
+        return [arm, {
+          failed: graded.filter((o) => o.failed.includes(wanted.name)).length,
+          total: graded.length,
+        }]
+      }))
+      if (failures.with.failed + failures.without.failed > 0) {
+        failedGraders.push({ case: row.name, grader: wanted.name, ...failures })
+      }
+    }
+    const w = tally(gradedIn(by.with).map((o) => o.pass))
+    const o = tally(gradedIn(by.without).map((x) => x.pass))
+    if (w.rate !== null && o.rate !== null && w.rate < o.rate) {
+      worseWithPlugin.push({ case: row.name, with: w, without: o })
+    }
+  }
+  const withPass = pass('with')
+  const withoutPass = pass('without')
+  return {
+    cases: rows.length,
+    runs: {
+      with: withPass.total,
+      without: withoutPass.total,
+    },
+    measured: withPass.total > 0,
+    pass: {
+      with: withPass,
+      without: withoutPass,
+      difference: withPass.rate === null || withoutPass.rate === null
+        ? null
+        : withPass.rate - withoutPass.rate,
+    },
+    indicators: Object.fromEntries(Object.entries(indicators).map(([name, arms]) =>
+      [name, { with: tally(arms.with), without: tally(arms.without) }])),
+    failedGraders,
+    worseWithPlugin,
+    errored: { with: count('with', 'errored'), without: count('without', 'errored') },
+    errors: messages('errored'),
+    ungraded: { with: count('with', 'ungraded'), without: count('without', 'ungraded') },
+    notGraded: messages('ungraded'),
+  }
+}
+
+// The whole result: the scenarios as summarise() reads them, and each family of
+// task cases apart. `scenarios` is null when no scenario ran. The run is
+// measured when every part that ran is.
+function summariseRun (document, plan) {
+  if (document.schemaVersion !== 1) {
+    throw new Error(
+      `the result document is schemaVersion ${document.schemaVersion}; ` +
+        'this runner reads 1',
+    )
+  }
+  if (!Array.isArray(document.cases) || document.cases.length === 0) {
+    throw new Error('the result document holds no cases, so nothing was measured')
+  }
+  const byFamily = new Map()
+  for (const row of document.cases) {
+    const family = familyOf(plan, row.name)
+    byFamily.set(family, [...(byFamily.get(family) ?? []), row])
+  }
+  const asked = byFamily.get(QUESTION)
+  const scenarioSummary = asked === undefined
+    ? null
+    : summarise({ ...document, cases: asked })
+  const families = {}
+  for (const family of TASK_FAMILIES) {
+    if (byFamily.has(family)) {
+      families[family] = summariseFamily(byFamily.get(family), plan)
+    }
+  }
+  return {
+    scenarios: scenarioSummary,
+    families,
+    measured: (scenarioSummary === null || scenarioSummary.measured) &&
+      Object.values(families).every((family) => family.measured),
+    costUsd: document.costUsd,
+    durationSeconds: document.durationSeconds,
+    partial: document.partial,
+    partialReason: document.partialReason ?? null,
+  }
+}
+
+const points = (difference) => (difference === null
+  ? 'n/a'
+  : `${difference > 0 ? '+' : ''}${Math.round(difference * 100)} points`)
+
+function describeFamily (name, family) {
+  const lines = [
+    `${name}: cases ${family.cases}, runs ${family.runs.with} with the plugin ` +
+      `and ${family.runs.without} without`,
+    '',
+    `pass with the plugin          ${show(family.pass.with)}`,
+    `pass without it               ${show(family.pass.without)}`,
+    `difference                    ${points(family.pass.difference)}`,
+  ]
+  const names = Object.keys(family.indicators)
+  if (names.length > 0) {
+    lines.push('', 'indicators, how often each fired:')
+    for (const indicator of names) {
+      const { with: w, without: o } = family.indicators[indicator]
+      lines.push(`  ${indicator}  with ${show(w)}, without ${show(o)}`)
+    }
+  }
+  if (family.failedGraders.length > 0) {
+    lines.push('', 'graders that failed in at least one run:')
+    for (const item of family.failedGraders) {
+      lines.push(
+        `  ${item.case}  ${item.grader}  ` +
+          `with ${item.with.failed}/${item.with.total}, ` +
+          `without ${item.without.failed}/${item.without.total}`,
+      )
+    }
+  }
+  if (family.worseWithPlugin.length > 0) {
+    lines.push('', 'pass without the plugin and fail with it, in part or whole:')
+    for (const item of family.worseWithPlugin) {
+      lines.push(`  ${item.case}  ${show(item.with)} against ${show(item.without)}`)
+    }
+  }
+  lines.push(...gaps(
+    family.errored, family.errors,
+    'ended in an error and are left out of every rate',
+  ))
+  lines.push(...gaps(
+    family.ungraded, family.notGraded,
+    'have a grader with no verdict and are left out of every rate',
+  ))
+  return lines
+}
+
+function describeRun (summary) {
+  const lines = []
+  const names = Object.keys(summary.families)
+  if (summary.scenarios !== null) {
+    if (names.length > 0) lines.push('scenarios', '')
+    lines.push(...describeBody(summary.scenarios))
+  }
+  for (const name of names) {
+    if (lines.length > 0) lines.push('')
+    lines.push(...describeFamily(name, summary.families[name]))
   }
   lines.push(
     '',
@@ -558,7 +899,8 @@ async function main (argv) {
   const options = parseArgs(argv)
   const systemPrompt =
     options.systemFile === null ? null : readSystemFile(options.systemFile)
-  const cases = buildCases(chooseScenarios(scenarios(), options.only), {
+  const { scenarioList, taskList } = choose(scenarios(), taskCases(), options.only)
+  const cases = buildCases(scenarioList, taskList, {
     tag: options.tag,
     systemPrompt,
   })
@@ -589,11 +931,8 @@ async function grade (options, cases, root) {
   mkdirSync(outDir, { recursive: true })
   const resultFile = join(outDir, 'result.json')
 
-  const tagged = options.tag === null
-    ? cases.length
-    : cases.filter((item) => item.tags.includes(options.tag)).length
   say(
-    `${tagged} case(s) will run` +
+    `${cases.length} case(s) will run` +
       `${options.tag === null ? '' : ` (tag ${options.tag})`}` +
       `${options.variant === null ? '' : `, variant ${options.variant}`}`,
   )
@@ -602,7 +941,7 @@ async function grade (options, cases, root) {
   say()
 
   const outcome = await runChild(
-    childArgs(options, { root, resultFile, outDir }),
+    childArgs(options, { root, resultFile, outDir, grants: grantsFor(cases) }),
     root,
   )
   say()
@@ -632,7 +971,7 @@ async function grade (options, cases, root) {
   let document
   try {
     document = JSON.parse(readFileSync(resultFile, 'utf8'))
-    summary = summarise(document)
+    summary = summariseRun(document, planOf(cases))
   } catch (error) {
     complain(
       'error no summary: ' +
@@ -640,7 +979,7 @@ async function grade (options, cases, root) {
     )
     return status === 0 ? 1 : status
   }
-  for (const line of describe(summary)) say(line)
+  for (const line of describeRun(summary)) say(line)
   writeFileSync(
     join(outDir, 'summary.json'),
     `${JSON.stringify({
@@ -657,7 +996,13 @@ async function grade (options, cases, root) {
         startedAt: document.startedAt,
         resultFile,
       },
-      ...summary,
+      ...(summary.scenarios ?? {}),
+      families: summary.families,
+      measured: summary.measured,
+      costUsd: summary.costUsd,
+      durationSeconds: summary.durationSeconds,
+      partial: summary.partial,
+      partialReason: summary.partialReason,
     }, null, 2)}\n`,
   )
   say()
@@ -667,7 +1012,13 @@ async function grade (options, cases, root) {
     say('difference. Read the answers behind a number before acting on it: the')
     say('result file keeps each one, in the evidence of the substance grader.')
   } else {
-    complain('error nothing was measured: no run with the plugin gave a substance verdict')
+    const parts = [
+      ...(summary.scenarios !== null && !summary.scenarios.measured ? ['scenarios'] : []),
+      ...Object.entries(summary.families)
+        .filter(([, family]) => !family.measured)
+        .map(([name]) => name),
+    ]
+    complain(`error nothing was measured for ${parts.join(', ')}: no run with the plugin gave a verdict`)
   }
   if (summary.partial) {
     complain(`error the run is partial (${summary.partialReason}); the numbers cover only what finished`)
@@ -782,12 +1133,12 @@ function selftest () {
     caseOf(fake(), 'Be brief.').execution.append_system_prompt === 'Be brief.' &&
       !('append_system_prompt' in caseOf(fake(), null).execution),
   )
-  check('generating from an empty scenario list throws',
-    throws(() => buildCases([], NO_OPTIONS), /nothing would be measured/))
+  check('generating from an empty list of cases throws',
+    throws(() => buildCases([], [], NO_OPTIONS), /nothing would be measured/))
   check('a tag no case carries throws',
-    throws(() => buildCases([fake()], { ...NO_OPTIONS, tag: 'smoke' }), /no case carries/))
+    throws(() => buildCases([fake()], [], { ...NO_OPTIONS, tag: 'smoke' }), /no case carries/))
   check('naming a scenario that does not exist throws',
-    throws(() => chooseScenarios([fake()], new Set(['99'])), /no scenario numbered 99/))
+    throws(() => choose([fake()], [], new Set(['99'])), /no scenario numbered or task case named 99/))
 
   const sample = [
     '---',
@@ -1003,6 +1354,282 @@ function selftest () {
     JSON.stringify(broken.substance),
   )
   check('a run with a verdict for the plugin arm is measured', summary.measured === true)
+  // The task cases: one file each, read by pack.mjs, copied as they are.
+  const TASK_YAML = [
+    'name: t99-sample',
+    'tags: [task, smoke]',
+    'execution:',
+    '  prompt: Do a thing.',
+    'graders:',
+    '  - name: loaded-any-skill',
+    '    type: tool_used',
+    '    tool: Skill',
+    '  - name: made-the-file',
+    '    type: file_exists',
+    '    path: a.txt',
+    '  - name: reads-well',
+    '    type: llm',
+    '    criteria: Is it good.',
+    '',
+  ].join('\n')
+  const readTask = (text, file = 't99-sample.yaml') => parseTaskCase(file, text)
+  const taskSample = readTask(TASK_YAML)
+  check(
+    'a task case is read as its name, its one family, its tags and its document',
+    taskSample.name === 't99-sample' && taskSample.family === 'task' &&
+      taskSample.tags.join() === 'task,smoke' && taskSample.document.graders.length === 3,
+    JSON.stringify(taskSample),
+  )
+  check(
+    'a file whose name is not the case name throws',
+    throws(() => readTask(TASK_YAML, 't98-other.yaml'), /t99-sample.*t98-other/),
+  )
+  check(
+    'a case with two family tags throws',
+    throws(() => readTask(TASK_YAML.replace('[task, smoke]', '[task, restraint]')),
+      /2 family tag/),
+  )
+  check(
+    'a case with no family tag throws',
+    throws(() => readTask(TASK_YAML.replace('[task, smoke]', '[smoke]')),
+      /0 family tag/),
+  )
+  check(
+    'a case with no prompt throws',
+    throws(() => readTask(TASK_YAML.replace('  prompt: Do a thing.\n', '  max_turns: 3\n')),
+      /no execution.prompt/),
+  )
+  check(
+    'a case with no grader throws',
+    throws(() => readTask(TASK_YAML.replace(/graders:[\s\S]*$/, 'graders: []\n')),
+      /no grader/),
+  )
+  const emptyDir = mkdtempSync(join(tmpdir(), 'fds-eval-empty-'))
+  const emptyThrows = throws(() => taskCases(emptyDir), /no case file/)
+  rmSync(emptyDir, { recursive: true, force: true })
+  check('an empty directory of task cases throws', emptyThrows)
+
+  const realTasks = taskCases()
+  check(
+    'every real task case is read, each with one family, and all three families are used',
+    realTasks.length > 0 &&
+      new Set(realTasks.map((task) => task.family)).size === TASK_FAMILIES.length,
+  )
+  check(
+    'every real task case survives a round trip through YAML as it is written',
+    realTasks.every((task) => {
+      const item = taskCaseOf(task, null)
+      return JSON.stringify(parseYaml(stringify(item, { lineWidth: 0 }))) ===
+        JSON.stringify(item)
+    }),
+  )
+  check(
+    'a task case is the source document, and a system file adds to its own prompt',
+    JSON.stringify(taskCaseOf(taskSample, null)) === JSON.stringify(
+      { ...taskSample.document, context: { scaffold_script: 'fixture.sh' } }) &&
+      taskCaseOf(taskSample, 'Be brief.').execution.append_system_prompt === 'Be brief.' &&
+      taskCaseOf(
+        { document: { ...taskSample.document, execution: {
+          ...taskSample.document.execution, append_system_prompt: 'Own.' } } },
+        'Be brief.',
+      ).execution.append_system_prompt === 'Own.\n\nBe brief.',
+  )
+  check(
+    'a case whose graders are all indicators throws',
+    throws(() => buildCases([], [{ ...taskSample, document: { ...taskSample.document,
+      graders: [taskSample.document.graders[0]] } }], NO_OPTIONS), /no run could fail/),
+  )
+  const mixed = buildCases([fake({ id: '1' })], [taskSample], NO_OPTIONS)
+  check(
+    'each case is paired with the fixture its scaffold script copies',
+    mixed[0].fixture === FIXTURE && mixed[1].fixture === FIXTURE_TASKS &&
+      fixtureScript('fixture-tasks').includes('cp -R "$here/fixture-tasks/." .') &&
+      fixtureScript('fixture').includes('cp -R "$here/fixture/." .'),
+  )
+  const writing = { ...taskSample, document: { ...taskSample.document, execution: {
+    ...taskSample.document.execution, allowed_tools: ['Read', 'Skill', 'Write', 'Edit'] } } }
+  const granted = childArgs(parseArgs(['--tag', 'smoke']), {
+    root: '/r',
+    resultFile: '/o/result.json',
+    outDir: '/o',
+    grants: grantsFor(buildCases([fake({ id: '1' })], [writing], NO_OPTIONS)),
+  })
+  check(
+    'a run whose cases write files is granted Write and Edit, before the tag',
+    granted.slice(granted.indexOf('--allow-tools') + 1, granted.indexOf('--tag'))
+      .join() === 'Write,Edit' && granted.indexOf('--tag') === granted.length - 2,
+    granted.join(' '),
+  )
+  check(
+    'a run of cases that only read is granted nothing',
+    grantsFor(buildCases([fake({ id: '1' })], [taskSample], NO_OPTIONS)).length === 0 &&
+      !defaults.includes('--allow-tools'),
+  )
+  check(
+    'a case that asks for a shell is refused',
+    throws(() => grantsFor(buildCases([], [{ ...writing, document: { ...writing.document,
+      execution: { ...writing.document.execution, allowed_tools: ['Bash'] } } }],
+    NO_OPTIONS)), /asks for Bash/),
+  )
+  check(
+    'a tag keeps the cases that carry it, from both kinds',
+    buildCases([fake({ id: '1' })], [taskSample], { ...NO_OPTIONS, tag: 'smoke' }).length === 2 &&
+      buildCases([fake({ id: '1' })], [taskSample], { ...NO_OPTIONS, tag: 'question' }).length === 1 &&
+      buildCases([fake({ id: '1' })], [taskSample], { ...NO_OPTIONS, tag: 'task' }).length === 1,
+  )
+  const picked = choose([fake({ id: '1' })], [taskSample], new Set(['1', 't99-sample']))
+  check(
+    '--only takes scenario numbers and task case names in one list',
+    picked.scenarioList.length === 1 && picked.taskList.length === 1 &&
+      choose([fake({ id: '1' })], [taskSample], new Set(['t99-sample'])).scenarioList.length === 0 &&
+      throws(() => choose([fake({ id: '1' })], [taskSample], new Set(['t98-x'])), /t98-x/),
+  )
+  check(
+    'an empty selection builds nothing and throws',
+    throws(() => {
+      const none = choose([fake({ id: '1' })], [taskSample], new Set())
+      buildCases(none.scenarioList, none.taskList, NO_OPTIONS)
+    }, /nothing would be measured/),
+  )
+
+  // The shapes of a task case's result. A case has a scoring grader of each
+  // kind and one indicator; the indicator fires in some runs and decides none.
+  const planned = (family, ...graders) => ({ family, graders })
+  const FILE = { name: 'made-the-file', type: 'file_exists' }
+  const JUDGE = { name: 'reads-well', type: 'llm' }
+  const FIRED = { name: 'loaded-any-skill', type: 'tool_used' }
+  const plan = new Map([
+    ['t01-a', planned('task', FIRED, FILE, JUDGE)],
+    ['t02-b', planned('task', FIRED, FILE, JUDGE)],
+    ['r01-c', planned('restraint', FIRED, FILE)],
+  ])
+  const taskRun = (verdict, extra = {}) => ({
+    score: 0, passed: false, turns: 1, costUsd: 0.01, judgeCostUsd: 0,
+    error: null, skippedPaidGraders: false,
+    graders: Object.entries(verdict).map(([name, passed]) => ({
+      name, passed, weight: 1, explanation: '', withOnly: false, scored: false,
+      ...(name === JUDGE.name ? { judgeVotes: [passed, passed, passed], evidence: 'x' } : {}),
+    })),
+    ...extra,
+  })
+  const taskDocument = {
+    schemaVersion: 1, costUsd: 0.5, durationSeconds: 12, partial: false,
+    cases: [
+      row('t01-a',
+        [taskRun({ [FIRED.name]: true, [FILE.name]: true, [JUDGE.name]: true }),
+          taskRun({ [FIRED.name]: true, [FILE.name]: true, [JUDGE.name]: false })],
+        [taskRun({ [FIRED.name]: false, [FILE.name]: true, [JUDGE.name]: false }),
+          taskRun({ [FIRED.name]: false, [FILE.name]: false, [JUDGE.name]: false })]),
+      row('t02-b',
+        [taskRun({ [FIRED.name]: false, [FILE.name]: true, [JUDGE.name]: true })],
+        [taskRun({ [FIRED.name]: false, [FILE.name]: true, [JUDGE.name]: true })]),
+      row('r01-c',
+        [taskRun({ [FIRED.name]: true, [FILE.name]: false })],
+        [taskRun({ [FIRED.name]: false, [FILE.name]: true })]),
+    ],
+  }
+  const result = summariseRun(taskDocument, plan)
+  const task = result.families.task
+  check(
+    'a task case passes in a run only when every grader but the indicators passes',
+    task.pass.with.passed === 2 && task.pass.with.total === 3 &&
+      task.pass.without.passed === 1 && task.pass.without.total === 3,
+    JSON.stringify(task.pass),
+  )
+  check(
+    'a case that passes in one arm and fails in the other is told apart',
+    task.worseWithPlugin.length === 0 &&
+      Math.abs(task.pass.difference - (2 / 3 - 1 / 3)) < 1e-9 &&
+      result.families.restraint.worseWithPlugin.length === 1 &&
+      result.families.restraint.worseWithPlugin[0].case === 'r01-c',
+    JSON.stringify(result.families.restraint.worseWithPlugin),
+  )
+  check(
+    'an indicator is counted per arm and changes no pass',
+    task.indicators[FIRED.name].with.passed === 2 &&
+      task.indicators[FIRED.name].with.total === 3 &&
+      task.indicators[FIRED.name].without.passed === 0 &&
+      task.pass.with.passed === 2,
+    JSON.stringify(task.indicators),
+  )
+  check(
+    'a grader that failed is named per case with its count in each arm',
+    task.failedGraders.length === 2 &&
+      JSON.stringify(task.failedGraders[0]) === JSON.stringify({
+        case: 't01-a', grader: FILE.name,
+        with: { failed: 0, total: 2 }, without: { failed: 1, total: 2 },
+      }) &&
+      task.failedGraders[1].grader === JUDGE.name &&
+      task.failedGraders[1].with.failed === 1 && task.failedGraders[1].without.failed === 2,
+    JSON.stringify(task.failedGraders),
+  )
+  check(
+    'the families are summed apart',
+    result.families.restraint.cases === 1 && task.cases === 2 &&
+      result.scenarios === null && result.measured === true,
+  )
+  const taskGaps = summariseRun({
+    ...taskDocument,
+    cases: [
+      row('t01-a',
+        [taskRun({ [FIRED.name]: true, [FILE.name]: true, [JUDGE.name]: true }),
+          taskRun({ [FIRED.name]: true, [FILE.name]: false, [JUDGE.name]: false },
+            { error: 'timed out' }),
+          taskRun({ [FIRED.name]: true, [FILE.name]: true },
+            { graders: [
+              { name: FIRED.name, passed: true },
+              { name: FILE.name, passed: true },
+              noVerdict('grader threw: judge call failed: limit')].map((g) =>
+              (g.name === SUBSTANCE ? { ...g, name: JUDGE.name } : g)) })],
+        [taskRun({ [FIRED.name]: false, [FILE.name]: true, [JUDGE.name]: true })]),
+    ],
+  }, plan).families.task
+  check(
+    'an errored run, and one whose judge threw, are counted for neither arm',
+    taskGaps.pass.with.total === 1 && taskGaps.pass.with.passed === 1 &&
+      taskGaps.errored.with === 1 && taskGaps.ungraded.with === 1 &&
+      taskGaps.pass.without.total === 1 &&
+      taskGaps.failedGraders.length === 0 &&
+      taskGaps.errors[0].message === 'timed out' &&
+      taskGaps.notGraded[0].message.startsWith('reads-well: grader threw'),
+    JSON.stringify(taskGaps),
+  )
+  check(
+    'those runs are named in the summary',
+    describeRun(summariseRun({ ...taskDocument, cases: [
+      row('t01-a', [taskRun({}, { error: 'timed out' }),
+        taskRun({ [FIRED.name]: true, [FILE.name]: true, [JUDGE.name]: true })], null)] }, plan))
+      .some((line) => line.includes('1 x timed out')),
+  )
+  const unmeasured = summariseRun({
+    ...taskDocument,
+    cases: [row('t01-a', [taskRun({}, { error: 'limit' })], [taskRun({
+      [FIRED.name]: false, [FILE.name]: true, [JUDGE.name]: true })])],
+  }, plan)
+  check(
+    'a family in which the plugin arm gave no verdict is not measured',
+    unmeasured.measured === false && unmeasured.families.task.pass.with.rate === null &&
+      unmeasured.families.task.pass.without.total === 1,
+  )
+  const both = summariseRun({
+    ...taskDocument,
+    cases: [...document.cases, ...taskDocument.cases],
+  }, plan)
+  check(
+    'scenarios and families in one result are summed apart',
+    both.scenarios.cases === 3 && both.families.task.cases === 2 &&
+      both.scenarios.substance.with.total === 6 && both.measured === true,
+  )
+  check(
+    'a case in the result that was not generated throws',
+    throws(() => summariseRun({ ...taskDocument, cases: [row('x-d', [], [])] }, plan),
+      /x-d/),
+  )
+  check(
+    'the summary of a family names its indicators and its failed graders',
+    describeRun(result).some((line) => line.includes('loaded-any-skill  with 2/3')) &&
+      describeRun(result).some((line) => line.includes('t01-a  reads-well  with 1/2, without 2/2')),
+  )
   check('a result document with no cases throws',
     throws(() => summarise({ ...document, cases: [] }), /nothing was measured/))
   check('a result document from another schema version throws',

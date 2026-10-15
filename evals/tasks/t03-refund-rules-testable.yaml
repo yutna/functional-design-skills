@@ -1,0 +1,76 @@
+schema_version: "1.1"
+name: t03-refund-rules-testable
+description: >-
+  Rules tangled with a database, a clock and a mailer. The decision
+  should come out as a pure function tested with plain values.
+tags: [task, smoke]
+context:
+  scaffold_script: fixture.sh
+execution:
+  prompt: |
+    Our refund rules can only be tested with a database and a mail
+    server running, so nobody tests them. Change
+    `src/billing/refunds.ts` so the rules can be tested with plain
+    values, and add `src/billing/refunds.test.ts` covering them with
+    `node:test`.
+  allowed_tools: [Read, Glob, Grep, Skill, Write, Edit]
+  max_turns: 40
+  timeout_seconds: 600
+graders:
+  - name: loaded-any-skill
+    type: tool_used
+    tool: Skill
+  - name: loaded-index
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?functional-design"'
+  - name: test-file-exists
+    type: file_exists
+    path: src/billing/refunds.test.ts
+  - name: entry-point-kept
+    type: regex
+    target: { source: file, path: src/billing/refunds.ts }
+    pattern: 'export\s+(?:async\s+function|const)\s+processRefund\b'
+  - name: tests-use-no-mocking-api
+    type: regex
+    target: { source: file, path: src/billing/refunds.test.ts }
+    pattern: '^(?![\s\S]*(?:\bmock\s*\.\s*(?:fn|method|module)\b|\bt\.mock\b|\bjest\.|\bsinon\.|\bvi\.(?:fn|mock)\b))[\s\S]+$'
+  - name: decision-does-no-io
+    type: llm
+    focus: { source: file, path: src/billing/refunds.ts }
+    criteria: |
+      You are grading one TypeScript file after a refactoring. It holds
+      two refund rules: no refund once the payment is over 60 days old,
+      and never more than the booking total.
+
+      Judge one thing only. PASS if both rules are in a function that
+      performs no I/O and does not read the clock itself: the current
+      time, or the age of the payment, reaches it as an argument. FAIL
+      if the function holding either rule calls the database, the
+      mailer, `Date.now()` or `new Date()`. Ignore everything else.
+  - name: shell-holds-no-rule
+    type: llm
+    focus: { source: file, path: src/billing/refunds.ts }
+    criteria: |
+      You are grading one TypeScript file after a refactoring. It holds
+      two refund rules: no refund once the payment is over 60 days old,
+      and never more than the booking total.
+
+      Judge one thing only. Find the function that calls the database
+      and the mailer. PASS if that function contains neither rule: no
+      comparison against 60 days and no capping at the booking total;
+      it loads, calls a decision function, and carries out what came
+      back. FAIL if either rule is still written inside it. Ignore
+      everything else.
+  - name: tests-use-plain-values
+    type: llm
+    focus: { source: file, path: src/billing/refunds.test.ts }
+    criteria: |
+      You are grading one test file for refund rules (no refund after
+      60 days; never more than the booking total).
+
+      PASS only if the tests of those two rules call a function with
+      plain values and assert on what it returns, with no database, no
+      mailer, no real clock, and no mock, stub or fake of any of them.
+
+      Otherwise FAIL. Extra tests of other things do not matter.

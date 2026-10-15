@@ -156,6 +156,43 @@ It costs money, as the runner above does: every run and every judge call
 is a model call on your account. `--max-cost-usd` sets a ceiling and has
 a default. `--runs`, `--only` and `--ablation none` make a pass cheaper.
 
+#### Task cases
+
+A scenario is a question, and a question tells the agent that a design
+problem is in front of it. Most work does not. The nine task cases ask
+the agent to change code in a small project and grade the files it
+leaves behind. They come in three families:
+
+- **task**: work where the pack should change what is built;
+- **restraint**: work where the pack should change nothing, such as a
+  throwaway script, a one-line fix or a ticket nobody has decided;
+- **precedence**: work where the project's own written convention
+  disagrees with the pack, and the convention wins.
+
+Each case is one file in [tasks](tasks), written as `claude plugin eval`
+reads a case, and its file name is its `name`. The project they run in is
+[fixture-tasks](fixture-tasks), whose `CONVENTIONS.md` is the written
+convention the precedence case is graded against. The runner copies each
+file as it is, and adds only the text of `--system-file`.
+
+```sh
+node scripts/eval-plugin.mjs --tag restraint    # one family
+node scripts/eval-plugin.mjs --only 1,t04-publish-on-confirm
+```
+
+`--tag` takes a family, `question` for the scenarios, or `smoke`.
+`--only` takes scenario numbers and case names in one list.
+
+A case passes in a run when every one of its graders passes, leaving out
+the indicators. An indicator is a `tool_used` grader whose name begins
+`loaded-`; it records what the agent did on the way and decides nothing.
+The summary gives each family its own pass rate with the pack and without
+it, how often each indicator fired in each arm, and, for each case, the
+graders that failed in at least one run. That last list is how a failure
+is traced to the one point it tests. A run that ended in an error, and a
+run in which a judge gave no verdict, are reported apart and counted for
+neither arm.
+
 ### Running them by hand
 
 The script automates what this section used to ask for, and the manual

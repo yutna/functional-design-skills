@@ -1,0 +1,60 @@
+schema_version: "1.1"
+name: t02-create-booking-endpoint
+description: >-
+  A new endpoint: untrusted input crosses a boundary into domain types,
+  under a stated project convention for how handlers fail.
+tags: [task]
+context:
+  scaffold_script: fixture.sh
+execution:
+  prompt: |
+    Add `POST /bookings`. The JSON body has `patientId`, `clinicianId`,
+    `start` (an ISO date-time) and `minutes`. It creates a booking in the
+    `Requested` state, saves it with `saveBooking`, and returns it with
+    status 201.
+
+    Put the handler in `src/http/createBooking.ts`. The project's
+    conventions are in `CONVENTIONS.md`.
+  allowed_tools: [Read, Glob, Grep, Skill, Write, Edit]
+  max_turns: 40
+  timeout_seconds: 600
+graders:
+  - name: loaded-any-skill
+    type: tool_used
+    tool: Skill
+  - name: loaded-index
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?functional-design"'
+  - name: handler-exists
+    type: file_exists
+    path: src/http/createBooking.ts
+  - name: input-ids-go-through-parsers
+    type: regex
+    target: { source: file, path: src/http/createBooking.ts }
+    pattern: '(?=[\s\S]*parsePatientId)(?=[\s\S]*parseClinicianId)[\s\S]+'
+  - name: no-cast-of-input-ids
+    type: regex
+    target: { source: file, path: src/http/createBooking.ts }
+    pattern: '^(?![\s\S]*\bas\s+(?:PatientId|ClinicianId)\b)[\s\S]+$'
+  - name: bad-input-throws-http-error
+    type: regex
+    target: { source: file, path: src/http/createBooking.ts }
+    pattern: 'throw new HttpError\(\s*4\d\d'
+  - name: no-handmade-error-response
+    type: regex
+    target: { source: file, path: src/http/createBooking.ts }
+    pattern: '^(?![\s\S]*(?:Promise<\s*Result<|status:\s*4\d\d))[\s\S]+$'
+  - name: start-and-minutes-are-checked
+    type: llm
+    focus: { source: file, path: src/http/createBooking.ts }
+    criteria: |
+      You are grading one HTTP handler in TypeScript. Its JSON body has
+      `patientId`, `clinicianId`, `start` (an ISO date-time) and
+      `minutes`.
+
+      Judge one thing only. PASS if, before a booking is built, `start`
+      is turned into a date and rejected when it is not a valid date,
+      and `minutes` is rejected unless it is a positive whole number.
+      FAIL if either value is used without that check. Ignore how the
+      ids are handled, how rejection is signalled, and everything else.
