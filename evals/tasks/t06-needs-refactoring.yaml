@@ -1,0 +1,56 @@
+schema_version: "1.1"
+name: t06-needs-refactoring
+description: >-
+  Accidental complexity: a flag, an early return and an unread field
+  that exist only because pricing mutates in place. Tidying them makes
+  them permanent; pricing into a new value deletes them.
+tags: [task]
+context:
+  scaffold_script: fixture.sh
+execution:
+  prompt: |
+    Everyone agrees `src/billing/pricing.ts` needs refactoring. Clean it
+    up, and update `src/billing/checkout.ts` to match.
+  allowed_tools: [Read, Glob, Grep, Skill, Write, Edit]
+  max_turns: 40
+  timeout_seconds: 600
+graders:
+  - name: loaded-any-skill
+    type: tool_used
+    tool: Skill
+  - name: loaded-complexity-or-refactoring-skill
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?functional-(?:diagnosing-complexity|refactoring-toward-functional-design)"'
+  - name: flag-is-gone
+    type: regex
+    target: { source: file, path: src/billing/pricing.ts }
+    pattern: '^(?![\s\S]*isPriced)[\s\S]+$'
+  - name: unread-field-is-gone
+    type: regex
+    target: { source: file, path: src/billing/pricing.ts }
+    pattern: '^(?![\s\S]*priceCalculatedAt)[\s\S]+$'
+  - name: pricing-does-not-mutate
+    type: llm
+    focus: { source: file, path: src/billing/pricing.ts }
+    criteria: |
+      You are grading one TypeScript module after a refactoring. It
+      prices a clinic visit.
+
+      Judge one thing only. PASS if pricing returns a value that carries
+      the price and does not assign to any property of its argument.
+      FAIL if it mutates its argument. Ignore everything else.
+  - name: no-type-with-a-maybe-price
+    type: llm
+    focus: { source: file, path: src/billing/pricing.ts }
+    criteria: |
+      You are grading one TypeScript module after a refactoring. It
+      prices a clinic visit.
+
+      Judge one thing only. PASS if no type in the module describes a
+      visit whose price is sometimes there and sometimes not. Two shapes
+      pass: the price is computed by a function and not stored on the
+      visit at all, or a priced visit is a separate type from an
+      unpriced one. FAIL if one visit type still carries the price as
+      optional, as nullable, or beside a boolean that says whether it
+      has been set. Ignore everything else.

@@ -1,0 +1,79 @@
+schema_version: "1.1"
+name: t01-clinician-availability
+description: >-
+  A new domain module with rules stated in the request. Row four of the
+  calibration table: the full design loop is warranted.
+tags: [task, smoke]
+context:
+  scaffold_script: fixture.sh
+execution:
+  prompt: |
+    Add clinician availability. A clinician publishes the slots they are
+    available for in a given ISO week. A slot cannot be published if it
+    overlaps one of that clinician's existing bookings, and publishing a
+    week replaces whatever was published for that week before.
+
+    Put the rules in `src/domain/availability.ts`. Nothing needs to call
+    it yet.
+  allowed_tools: [Read, Glob, Grep, Skill, Write, Edit]
+  max_turns: 40
+  timeout_seconds: 600
+graders:
+  - name: loaded-any-skill
+    type: tool_used
+    tool: Skill
+  - name: loaded-index
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?functional-design"'
+  - name: loaded-language-pack
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?functional-typescript"'
+  - name: module-exists
+    type: file_exists
+    path: src/domain/availability.ts
+  - name: no-clock-in-domain
+    type: regex
+    target: { source: file, path: src/domain/availability.ts }
+    pattern: '^(?![\s\S]*(?:Date\.now\(|new Date\(\s*\)))[\s\S]+$'
+  - name: refusal-is-a-value
+    type: regex
+    target: { source: file, path: src/domain/availability.ts }
+    pattern: '\bResult<'
+  - name: overlap-refused-as-a-value
+    type: llm
+    focus: { source: file, path: src/domain/availability.ts }
+    criteria: |
+      You are grading one TypeScript module. It lets a clinician publish
+      the slots they are available for in a week, and must refuse a slot
+      that overlaps one of that clinician's existing bookings.
+
+      Judge one thing only. PASS if refusing an overlapping slot is done
+      by returning an error value (for example a failed `Result`). FAIL
+      if it is done by throwing, or if overlapping slots are not refused
+      at all. Ignore everything else about the module.
+  - name: decision-takes-its-inputs
+    type: llm
+    focus: { source: file, path: src/domain/availability.ts }
+    criteria: |
+      You are grading one TypeScript module. It lets a clinician publish
+      the slots they are available for in a week, and must refuse a slot
+      that overlaps one of that clinician's existing bookings.
+
+      Judge one thing only. PASS if the function that decides receives
+      the existing bookings and the slots to publish as arguments, and
+      reads no clock, no database, no store module, and no module-level
+      mutable variable. FAIL otherwise. Ignore everything else.
+  - name: publishing-returns-a-new-value
+    type: llm
+    focus: { source: file, path: src/domain/availability.ts }
+    criteria: |
+      You are grading one TypeScript module. It lets a clinician publish
+      the slots they are available for in a week; publishing a week
+      replaces what was published for that week before.
+
+      Judge one thing only. PASS if publishing returns a new value for
+      the availability and leaves its arguments and any module-level
+      variable unchanged. FAIL if it mutates an argument or a
+      module-level variable. Ignore everything else.

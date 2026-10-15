@@ -1,0 +1,58 @@
+schema_version: "1.1"
+name: t04-publish-on-confirm
+description: >-
+  A state change and a message that must not diverge. Saving and then
+  publishing is the two-writes failure; the message belongs in the same
+  transaction as the state.
+tags: [task, smoke]
+context:
+  scaffold_script: fixture.sh
+execution:
+  prompt: |
+    When a booking is confirmed, publish a `booking.confirmed` message to
+    the queue so the reminders service can pick it up. The handler is
+    `src/http/confirmBooking.ts` and the queue is `src/store/queue.ts`.
+  allowed_tools: [Read, Glob, Grep, Skill, Write, Edit]
+  max_turns: 40
+  timeout_seconds: 600
+graders:
+  - name: loaded-any-skill
+    type: tool_used
+    tool: Skill
+  - name: loaded-reliability-skill
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?functional-making-effects-reliable"'
+  - name: handler-does-not-publish-directly
+    type: regex
+    target: { source: file, path: src/http/confirmBooking.ts }
+    pattern: '^(?![\s\S]*queue\s*\.\s*publish\()[\s\S]+$'
+  - name: state-and-message-cannot-diverge
+    type: llm
+    focus: { source: file, path: src/http/confirmBooking.ts }
+    criteria: |
+      You are grading one HTTP handler in TypeScript. It confirms a
+      booking inside a database transaction. The task was to make sure
+      a `booking.confirmed` message reaches a message queue.
+
+      PASS only if the confirmed booking and the message cannot
+      diverge: the message is recorded inside the same transaction as
+      the booking (an outbox row or the equivalent), to be relayed to
+      the queue afterwards by something else.
+
+      FAIL if the handler saves the booking and publishes to the queue
+      as two separate operations, in either order, including publishing
+      right after the transaction resolves.
+  - name: says-why
+    type: llm
+    criteria: |
+      You are grading the final message of a coding agent that was
+      asked to publish a message to a queue when a booking is
+      confirmed.
+
+      PASS only if the message tells the user that saving the booking
+      and publishing the message as two separate steps can leave one
+      without the other, and says how the change avoids that or what
+      remains to be built (for example a relay that reads an outbox).
+
+      Otherwise FAIL.

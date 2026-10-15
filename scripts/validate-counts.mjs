@@ -24,8 +24,8 @@
 
 import { linesOf, stripFences } from './lib/markdown.mjs'
 import {
-  INDEX_SKILL as INDEX, languagePackIds, readRepoFile, routingCases, scenarios,
-  skillIds,
+  INDEX_SKILL as INDEX, TASK_FAMILIES, languagePackIds, readRepoFile,
+  routingCases, scenarios, skillIds, taskCases,
 } from './lib/pack.mjs'
 
 const ids = skillIds()
@@ -116,6 +116,10 @@ const FACTS = {
   coreSkills: coreSkills.length,
   scenarios: scenarios().length,
   routingCases: routingCases().length,
+  // The task cases and their families, counted from evals/tasks. Reading
+  // no case throws in pack.mjs, so a zero cannot be compared here.
+  taskCases: taskCases().length,
+  taskFamilies: TASK_FAMILIES.length,
   // Three counts of the skills seen from somewhere else. A description is
   // distinct from every skill but itself; a version bump touches every
   // skill plus package.json and both manifests, and bump-version.mjs
@@ -168,6 +172,8 @@ const CLAIMS = [
   // was taken on: if the case count moves, the claim has to be re-measured,
   // not re-typed.
   ['evals/README.md', 'routingCases', /zero of the (\d+)\n  cases place/],
+  ['evals/README.md', 'taskCases', /The ([a-z-]+) task cases ask/],
+  ['evals/README.md', 'taskFamilies', /They come in ([a-z-]+) families/],
   ['evals/scenarios.md', 'scenarios', /^([A-Za-z-]+) problems in the form/m],
   // The record of an agent run, tied to the suite it was taken on for the
   // same reason as the one above: add a scenario and the run has to happen

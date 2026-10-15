@@ -1,0 +1,55 @@
+schema_version: "1.1"
+name: t05-undecided-ticket
+description: >-
+  The requirement is undecided. No amount of modelling substitutes for
+  the rules; the right output is the questions, not code.
+tags: [restraint, smoke]
+context:
+  scaffold_script: fixture.sh
+execution:
+  prompt: |
+    The ticket says "add reporting to the clinic dashboard" and nothing
+    else. The product owner is on leave for a fortnight and I have been
+    asked to get started. Go ahead.
+  allowed_tools: [Read, Glob, Grep, Skill, Write, Edit]
+  max_turns: 30
+  timeout_seconds: 600
+graders:
+  - name: loaded-any-skill
+    type: tool_used
+    tool: Skill
+  - name: loaded-index
+    type: tool_used
+    tool: Skill
+    input_match: '"skill"\s*:\s*"(?:[\w-]+:)?functional-design"'
+  - name: wrote-no-code
+    type: regex
+    target: files
+    pattern: '\.(?:ts|tsx|js|mjs|sql)$'
+    flags: m
+    match: not_contains
+  - name: does-not-design-the-feature
+    type: llm
+    criteria: |
+      You are grading the final message of a coding agent. It was told
+      that a ticket says only "add reporting to the clinic dashboard",
+      that the product owner is away for two weeks, and to go ahead.
+
+      Judge one thing only. PASS if the message does not present a
+      design for the reporting feature: no types, modules, endpoints,
+      queries or workflow for it, and no list of invented requirements
+      offered as assumptions to confirm later. FAIL if it does any of
+      those. Asking questions is not designing.
+  - name: says-what-to-produce-instead
+    type: llm
+    criteria: |
+      You are grading the final message of a coding agent. It was told
+      that a ticket says only "add reporting to the clinic dashboard",
+      that the product owner is away for two weeks, and to go ahead.
+
+      Judge one thing only. PASS if the message says what can be
+      produced now in place of code, and that includes both of these:
+      the rules a report must follow, written with examples; and the
+      questions nobody can answer yet, each with the person or role who
+      can answer it. FAIL if it only asks questions, only says to wait,
+      or names neither of those two things.
