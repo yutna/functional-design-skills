@@ -42,9 +42,11 @@ Not for: React itself, deployment, or routing configuration.
 1. Rule. **The server and client boundary decides where rules and data
    run.** Decisions about the business and data access on the server;
    interaction on the client. A rule written twice, once for each side, is a
-   rule that will disagree with itself. One pure function may run on both: on
-   the client it predicts the answer for the screen, and the server runs it
-   again and has the last word. Each side still has a core and a shell
+   rule that will disagree with itself. The server owns the rule and sends
+   the client its answer, a boolean or a reason, not the inputs to judge for
+   itself. Where the screen must answer before any round trip, as a form does
+   while someone types, one pure function may run on both, and the server
+   runs it again and has the last word. Each side still has a core and a shell
    of its own: a reducer on the client is pure, and an action on the
    server is a handler.
 2. Rule. **Anything crossing is a transfer type.** It is serialised, so it

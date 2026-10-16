@@ -160,8 +160,8 @@ reach `functional-crossing-io-boundaries`.
 > changing my mind about which argument goes first.
 
 Must contain: composing fallible functions with bind rather than
-nesting; totality as the precondition for composition; dependencies and
-configuration first, data last. Should reach `functional-composing-functions`.
+nesting; dependencies and configuration first, data last. Should reach
+`functional-composing-functions`.
 
 ## 17. Correct but unreadable
 
@@ -273,18 +273,17 @@ the list of tags. Should reach `functional-javascript`.
 > My component has isLoading, error and data as three useState, plus a
 > useEffect that sets data from a fetch. The screen flickers.
 
-Must contain: one state union instead of three booleans; not deriving
-state inside an effect; moving the fetch to the edge. Should reach
-`functional-typescript-react`.
+Must contain: one state union instead of three booleans; moving the
+fetch to the edge. Should reach `functional-typescript-react`.
 
 ## 29. Ecto schemas as the domain
 
 > In Elixir, our Ecto schemas are the domain model everywhere, and each
 > context reaches into other contexts' schemas.
 
-Must contain: schemas as boundary artefacts mapped into structs with
-enforced keys; contexts as bounded contexts that do not alias each
-other's schemas; translation at the edge. Should reach
+Must contain: schemas as boundary artefacts mapped into plain domain
+structs; contexts as bounded contexts that do not alias each other's
+schemas; translation at the edge. Should reach
 `functional-elixir-phoenix`.
 
 ## 30. Customers define their own form fields
@@ -336,12 +335,12 @@ failure even if it is otherwise well argued. Should reach
 > we start?
 
 Must contain: ask whether the complexity is necessary before choosing a
-refactor. State the requirement in the domain's words -- a booking gets a
-price before it can be shipped -- and note that none of the three things
-above appears in it. They exist because pricing mutates in place, so
-pricing a validated booking into a new priced value deletes the boolean and
-the early return rather than tidying them. The unread timestamp is
-deleted or given a reader.
+refactor. State the requirement in the domain's own words, as one
+sentence, and note that none of the three things above appears in it.
+They exist because pricing mutates in place, so pricing a validated
+booking into a new priced value deletes the boolean and the early return
+rather than tidying them. The unread timestamp is deleted or given a
+reader.
 
 Must contain the explicit point that extracting the guard into a
 well-named function would preserve the complexity permanently. Should
@@ -380,8 +379,9 @@ claim and take the numbers to whoever owns the convention, as a separate
 conversation. Not as a review finding, and not as an unrequested change.
 
 Fails if the answer reports the memoisation as a finding, proposes
-removing an existing `useCallback` or `memo()`, or hands the precedence
-question back to the author as work. Should reach
+removing an existing `useCallback` or `memo()` even where it is provably
+redundant, or hands the precedence question back to the author as work.
+Should reach
 `functional-reviewing-functional-design`.
 
 ## 35. A one-file fix in a codebase with recorded debt
@@ -426,9 +426,10 @@ examples, and the list of questions nobody can answer yet with the owner
 of each. The absent product owner is the answer to one of those
 questions, not a reason to guess past them.
 
-Must contain that this is not design work and that the pack does not
-cover it. Naming `functional-capturing-the-domain` for the vocabulary and the
-open questions is correct; presenting it as the whole answer is not.
+Must contain that producing these is not design work, and has to come
+before any. Naming `functional-capturing-the-domain` for the vocabulary
+and the open questions is correct; presenting it as the whole answer is
+not.
 
 Fails if the answer proposes a type, a module boundary, or a workflow;
 if it invents the reporting rules and calls them assumptions to confirm
@@ -467,13 +468,12 @@ The check is thirty seconds and it has already passed.
 > flight.
 
 Must contain: the observation that the spawned work has neither an
-owner that waits for it nor a handle that cancels it, and that the
-three symptoms share that one cause; an identity on the command so the
-retry is recognised rather than duplicated; the half-written file
-treated as an idempotency question at the adapter rather than a
-cleanup script. Should reach `functional-making-effects-reliable`,
-possibly via `functional-managing-state-immutably` for the ownership
-mechanics.
+owner that waits for it nor a handle that cancels it; an identity on
+the command so the retry is recognised rather than duplicated; the
+half-written file treated as an idempotency question at the adapter
+rather than a cleanup script. Should reach
+`functional-making-effects-reliable`, possibly via
+`functional-managing-state-immutably` for the ownership mechanics.
 
 ## 39. A GenServer that became the bottleneck
 
