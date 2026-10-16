@@ -125,3 +125,22 @@ fi
 if [ "$installed" -gt 0 ] && [ "$dry_run" -eq 0 ]; then
   printf 'Start a new session for the skills to be discovered.\n'
 fi
+
+# The block that makes the agent use the pack for work, read from the one
+# file that holds it: the lines between the markdown fence and its close.
+# tr -d '\r' for the same reason as pack_of above.
+SETUP_FILE="${SKILLS_SRC}/functional-design/references/project-setup.md"
+block=""
+if [ -f "$SETUP_FILE" ]; then
+  block="$(tr -d '\r' < "$SETUP_FILE" \
+    | awk '/^```markdown$/ {on=1; next} /^```$/ {on=0} on')"
+fi
+printf '\n'
+if [ -n "$block" ]; then
+  printf 'To have the agent use the pack for work, not only for questions,\n'
+  printf 'paste this into the project'"'"'s CLAUDE.md:\n\n'
+  printf '%s\n\n' "$block"
+  printf 'Change the last line to the project'"'"'s language pack.\n'
+else
+  printf 'The CLAUDE.md block is in %s (not found or no fence).\n' "$SETUP_FILE"
+fi

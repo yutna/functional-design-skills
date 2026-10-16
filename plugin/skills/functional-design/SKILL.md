@@ -252,6 +252,9 @@ only with the evidence listed beside it.
 - [working-alone.md](references/working-alone.md) is what to do where a
   step asks for an expert, a reviewer, or an owner and there is none to
   ask.
+- [project-setup.md](references/project-setup.md) is a block for a
+  project's `CLAUDE.md` that states what outranks what and when the
+  pack applies to work, not only to questions.
 - [essential-and-accidental.md](../functional-diagnosing-complexity/references/essential-and-accidental.md)
   is the test that finds candidates for removal before any refactor: did
   we add this complexity, or is it in the problem?
