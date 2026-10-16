@@ -79,14 +79,15 @@
 //   --system-file PATH text appended to the system prompt of every case
 //   --dry-run          generate the cases, print where, spawn nothing
 //   --keep             keep the generated directory and the tool's workspaces
+//                      (each run's trace is kept under traces/ either way)
 //   --selftest         no value; run in memory and exit
 
 import {
-  chmodSync, cpSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync,
-  writeFileSync,
+  chmodSync, copyFileSync, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync,
+  readdirSync, readFileSync, realpathSync, rmSync, writeFileSync,
 } from 'node:fs'
 import { constants, tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { basename, dirname, join, resolve } from 'node:path'
 import { spawn } from 'node:child_process'
 import { parse as parseYaml, stringify } from 'yaml'
 import { readMarkdown, slugOf } from './lib/markdown.mjs'
@@ -418,12 +419,150 @@ function childArgs (options, { root, resultFile, outDir, grants = [] }) {
   ]
   if (options.runs !== null) args.push('--runs', String(options.runs))
   if (options.ablation !== null) args.push('--ablation', options.ablation)
-  if (options.keep) args.push('--keep-temp')
+  // Always: the tool deletes a run's trace with its scaffold unless told to
+  // keep it, and the trace is the only record of which skills the run loaded.
+  // The runner copies each trace out and removes the scaffold itself.
+  args.push('--keep-temp')
   if (grants.length > 0) args.push('--allow-tools', ...grants)
   // Last, because the tool takes several values for it and would read
   // anything after it as another tag.
   if (options.tag !== null) args.push('--tag', options.tag)
   return args
+}
+
+// ----------------------------------------------------------- the traces
+
+// The tool writes each run's trace into a scaffold directory of its own and
+// deletes it at the end unless it is kept. A grader says how many times Skill
+// was called and never which skill, so the trace is the only place that
+// remembers what an agent loaded instead of the expected one.
+
+const PACK_PREFIX = 'functional-design-skills:'
+const SCAFFOLD = /^e-[A-Za-z0-9]+$/
+
+// The skills a trace loaded, in order: the `skill` input of each Skill tool
+// use, without the pack's prefix. A line that is not JSON is skipped.
+function skillsInTrace (text) {
+  const skills = []
+  for (const line of text.split(/\r?\n/)) {
+    if (line.trim() === '') continue
+    let event
+    try {
+      event = JSON.parse(line)
+    } catch {
+      continue
+    }
+    const content = event?.type === 'assistant' ? event.message?.content : null
+    if (!Array.isArray(content)) continue
+    for (const part of content) {
+      if (part?.type !== 'tool_use' || part.name !== 'Skill') continue
+      const skill = part.input?.skill
+      if (typeof skill !== 'string') continue
+      skills.push(skill.startsWith(PACK_PREFIX)
+        ? skill.slice(PACK_PREFIX.length)
+        : skill)
+    }
+  }
+  return skills
+}
+
+// Whether a scaffold directory, as a real path, is one the tool made: named
+// like its scaffolds and sitting directly in one of the temporary
+// directories. Both sides are real paths, so a link cannot stand in for one.
+function isScaffold (realDir, tempRoots) {
+  return SCAFFOLD.test(basename(realDir)) && tempRoots.includes(dirname(realDir))
+}
+
+function realOrNull (path) {
+  try {
+    return realpathSync(path)
+  } catch {
+    return null
+  }
+}
+
+function temporaryDirectories () {
+  return [realOrNull(tmpdir()), realOrNull('/private/tmp')]
+    .filter((dir) => dir !== null)
+}
+
+// The tool leaves a kept scaffold read-only, with `sealed` at mode 000, and
+// rmSync fails on both. Links are not followed.
+function makeWritable (dir) {
+  chmodSync(dir, 0o700)
+  for (const name of readdirSync(dir)) {
+    const path = join(dir, name)
+    if (lstatSync(path).isDirectory()) makeWritable(path)
+  }
+}
+
+// What the file name of a case may hold; the name is the tool's, not ours.
+const safeName = (name) => name.replace(/[^\w.-]/g, '_')
+
+// After the tool exits: copy every run's trace under outDir/traces, read the
+// skills it loaded, and unless the scaffolds are kept, remove them. Never
+// throws; a run whose trace cannot be had gets null. Returns the skills per
+// case and arm, one entry per run in the order the runs appear.
+function keepTraces (document, outDir, { keep, tempRoots = temporaryDirectories() }) {
+  const skillsLoaded = {}
+  let kept = 0
+  let total = 0
+  for (const row of document.cases ?? []) {
+    skillsLoaded[row.name] = {}
+    for (const [arm, runs] of Object.entries(row.arms ?? {})) {
+      skillsLoaded[row.name][arm] = (runs ?? []).map((run, index) => {
+        total += 1
+        const source = run?.tracePath
+        if (typeof source !== 'string') return null
+        const skills = copyTrace(
+          source,
+          join(outDir, 'traces', safeName(row.name), `${arm}-${index + 1}.jsonl`),
+        )
+        if (skills !== null) kept += 1
+        // A run that left no trace may still have left its scaffold.
+        if (!keep) removeScaffold(source, tempRoots)
+        return skills
+      })
+    }
+  }
+  return { skillsLoaded, kept, total }
+}
+
+// The skills the trace at source loaded, after copying it to target, or null
+// when there is no trace to copy.
+function copyTrace (source, target) {
+  if (!existsSync(source)) return null
+  try {
+    mkdirSync(dirname(target), { recursive: true })
+    copyFileSync(source, target)
+    return skillsInTrace(readFileSync(target, 'utf8'))
+  } catch (error) {
+    complain(`warning trace ${source} was not kept: ${error.message}`)
+    return null
+  }
+}
+
+function removeScaffold (tracePath, tempRoots) {
+  const out = dirname(tracePath)
+  if (!existsSync(dirname(out))) return
+  const scaffold = basename(out) === 'out' ? realOrNull(dirname(out)) : null
+  if (scaffold === null || !isScaffold(scaffold, tempRoots)) {
+    complain(`warning ${dirname(out)} is not a scaffold of the tool; left alone`)
+    return
+  }
+  try {
+    makeWritable(scaffold)
+    rmSync(scaffold, { recursive: true, force: true })
+  } catch (error) {
+    complain(`warning ${scaffold} was not removed: ${error.message}`)
+  }
+}
+
+function describeTraces ({ kept, total }, outDir) {
+  const line = `traces ${kept} of ${total} kept in ${join(outDir, 'traces')}`
+  return total > 0 && kept === 0
+    ? `${line}; no trace was found, so skillsLoaded holds nothing`
+    : line
 }
 
 // ------------------------------------------------------------ the directory
@@ -969,8 +1108,10 @@ async function grade (options, cases, root) {
   // Read even after a failure: a partial run still holds what finished.
   let summary
   let document
+  let traces
   try {
     document = JSON.parse(readFileSync(resultFile, 'utf8'))
+    traces = keepTraces(document, outDir, { keep: options.keep })
     summary = summariseRun(document, planOf(cases))
   } catch (error) {
     complain(
@@ -1003,10 +1144,12 @@ async function grade (options, cases, root) {
       durationSeconds: summary.durationSeconds,
       partial: summary.partial,
       partialReason: summary.partialReason,
+      skillsLoaded: traces.skillsLoaded,
     }, null, 2)}\n`,
   )
   say()
   say(`summary ${join(outDir, 'summary.json')}`)
+  say(describeTraces(traces, outDir))
   if (summary.measured) {
     say('A difference smaller than the spread between repeated runs is not a')
     say('difference. Read the answers behind a number before acting on it: the')
@@ -1200,7 +1343,12 @@ function selftest () {
       after('--threshold') === '0' && defaults.includes('--scaffold') &&
       defaults.includes('--no-publish') && defaults.includes('--trust-plugin') &&
       !defaults.includes('--runs') && !defaults.includes('--tag') &&
-      !defaults.includes('--ablation') && !defaults.includes('--keep-temp'),
+      !defaults.includes('--ablation'),
+    defaults.join(' '),
+  )
+  check(
+    'the traces are always kept, whether or not --keep is given',
+    defaults.includes('--keep-temp'),
     defaults.join(' '),
   )
   const given = childArgs(
@@ -1220,6 +1368,98 @@ function selftest () {
       given.indexOf('--tag') === given.length - 2,
     given.join(' '),
   )
+  const trace = [
+    '{"type":"system","subtype":"init"}',
+    '{"type":"assistant","message":{"content":[{"type":"tool_use","id":"t1",' +
+      '"name":"Skill","input":{"skill":"functional-design-skills:functional-a"}}]}}',
+    'not json at all',
+    '{"type":"assistant","message":{"content":[{"type":"tool_use","id":"t2",' +
+      '"name":"Read","input":{"skill":"functional-nope"}}]}}',
+    '',
+    '{"type":"assistant","message":{"content":[{"type":"text","text":"x"},' +
+      '{"type":"tool_use","id":"t3","name":"Skill","input":{"skill":"functional-b"}}]}}',
+  ]
+  check(
+    'a trace is read for the skills it loaded, in order, prefix stripped',
+    JSON.stringify(skillsInTrace(trace.join('\r\n'))) ===
+      '["functional-a","functional-b"]' &&
+      skillsInTrace(trace.join('\n')).length === 2 &&
+      skillsInTrace('').length === 0,
+    JSON.stringify(skillsInTrace(trace.join('\r\n'))),
+  )
+  const temp = ['/private/tmp', '/private/var/folders/x/T']
+  check(
+    'a scaffold in the temporary directory may be removed, nothing else',
+    isScaffold('/private/tmp/e-VXo0bh', temp) &&
+      isScaffold('/private/var/folders/x/T/e-a1', temp) &&
+      !isScaffold(join(RESULTS, 'e-VXo0bh'), temp) &&
+      !isScaffold('/private/tmp/e-', temp) &&
+      !isScaffold('/private/tmp/e-ab_c', temp) &&
+      !isScaffold('/private/tmp/notes', temp) &&
+      !isScaffold('/private/tmp/deeper/e-VXo0bh', temp) &&
+      !isScaffold('/Users/someone/e-VXo0bh', temp),
+  )
+  {
+    // The whole step on real directories: one scaffold in the temporary
+    // directory, sealed as the tool leaves it, and one named alike elsewhere.
+    const base = realpathSync(mkdtempSync(join(tmpdir(), 'fds-traces-')))
+    const scaffold = (parent, name) => {
+      const dir = join(parent, name)
+      mkdirSync(join(dir, 'out'), { recursive: true })
+      mkdirSync(join(dir, 'sealed'))
+      writeFileSync(join(dir, 'sealed', 'x'), 'x')
+      writeFileSync(join(dir, 'out', 'trace.jsonl'), `${trace.join('\n')}\n`)
+      return dir
+    }
+    const seal = (dir) => {
+      chmodSync(join(dir, 'sealed'), 0)
+      chmodSync(dir, 0o500)
+    }
+    const inside = scaffold(base, 'e-Selftest1')
+    const outside = scaffold(join(base, 'elsewhere'), 'e-Selftest2')
+    const traceless = scaffold(base, 'e-Selftest4')
+    rmSync(join(traceless, 'out', 'trace.jsonl'))
+    seal(inside)
+    const run = (dir) => ({ tracePath: join(dir, 'out', 'trace.jsonl') })
+    const document = {
+      cases: [{
+        name: 'c1',
+        arms: {
+          with: [
+            run(inside), run(outside), { tracePath: join(base, 'no') }, run(traceless),
+          ],
+        },
+      }],
+    }
+    const result = keepTraces(document, join(base, 'results'), {
+      keep: false, tempRoots: [base],
+    })
+    const copy = join(base, 'results', 'traces', 'c1', 'with-1.jsonl')
+    check(
+      'a trace is copied out, read, and its scaffold removed',
+      existsSync(copy) && !existsSync(inside) &&
+        JSON.stringify(result.skillsLoaded.c1.with[0]) ===
+          '["functional-a","functional-b"]',
+      JSON.stringify(result),
+    )
+    check(
+      'a scaffold outside the temporary directory is left alone, a missing trace is null',
+      existsSync(outside) && result.skillsLoaded.c1.with[2] === null &&
+        result.kept === 2 && result.total === 4,
+      JSON.stringify(result),
+    )
+    check(
+      'a scaffold whose run left no trace is removed all the same',
+      !existsSync(traceless) && result.skillsLoaded.c1.with[3] === null,
+      JSON.stringify(result),
+    )
+    const again = scaffold(base, 'e-Selftest3')
+    keepTraces({ cases: [{ name: 'c2', arms: { with: [run(again)] } }] },
+      join(base, 'results'), { keep: true, tempRoots: [base] })
+    check('--keep leaves the scaffold in place', existsSync(again))
+    makeWritable(base)
+    rmSync(base, { recursive: true, force: true })
+  }
   check('a misspelt flag throws', throws(() => parseArgs(['--run', '1']), /unknown argument --run/))
   check('a flag without its value throws', throws(() => parseArgs(['--runs']), /needs a value/))
   check('a ceiling of zero throws', throws(() => parseArgs(['--max-cost-usd', '0']), /above 0/))
