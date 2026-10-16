@@ -60,7 +60,8 @@ Not for: throwaway spikes whose output is an answer, not code.
    no improvement; it owes only that the code is no worse.
 5. Judgement. **Take the extra step.** When you have found the right design,
    apply it to the neighbouring code that has the same problem, if that is a
-   small step and not a project.
+   small step and not a project. A change that stays inside one function stops
+   there, and the neighbours with the same problem go in a change of their own.
 6. Rule. **Match the stated convention first, the surrounding code second.**
    Consistency beats your personal preference. But where a project writes its
    conventions down -- an instructions file, a rule file, a lint rule -- those

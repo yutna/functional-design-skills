@@ -85,7 +85,9 @@ order that composes in this language.
    shared across requests and does not fit in the database, when something must
    be able to fail without taking the rest down with it, when work must be
    serialised per entity, or when work is periodic. A GenServer around a value
-   with one caller is a mutable variable with a mailbox.
+   with one caller is a mutable variable with a mailbox. Where one process
+   would hold several jobs, ask what should still be working after it fails;
+   [otp.md](references/otp.md) draws the boundary from that answer.
 7. Rule. **Crash on a bug, return a tuple on a business outcome.** A
    slot already taken is `{:error, :slot_unavailable}`. A nil that
    should have been impossible is a crash, and the supervisor's job.

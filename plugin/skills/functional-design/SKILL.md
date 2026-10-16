@@ -102,7 +102,9 @@ and an example it refuses.**
 If that comes out in a sentence, write the sentence down and start. The
 check costs thirty seconds, and what it asks for is a spoken rule, not a
 document. Demanding a written specification from someone who can simply
-say the rule is applying a heavier row than the task calls for.
+say the rule is applying a heavier row than the task calls for. Edge
+cases that come up later are questions to ask as you go; they do not
+gate the start.
 
 If it does not come out, the task is in no row on this table, and what
 is missing is not design:
@@ -115,9 +117,10 @@ in the room, and no amount of modelling substitutes for it. Types
 written over an undecided problem still compile; they encode the guess
 and make it expensive to revisit.
 
-Working alone, write the rule you were able to state, or the list of
-questions, in your reply. Mark an owner unknown unless a file names one,
-and stop before modelling.
+Working alone, write both in your reply: the rules you were able to
+state, each with its two examples, and the questions, each with the role
+that can answer it, or the person where a file names one. Then stop
+before modelling.
 [working-alone.md](references/working-alone.md) says what stands in for
 the people a step assumes.
 
