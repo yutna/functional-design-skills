@@ -156,6 +156,11 @@ It costs money, as the runner above does: every run and every judge call
 is a model call on your account. `--max-cost-usd` sets a ceiling and has
 a default. `--runs`, `--only` and `--ablation none` make a pass cheaper.
 
+Each run's trace is copied to `traces/` in the results folder, and
+`summary.json` lists under `skillsLoaded` the skills each run loaded, so
+a skill loaded instead of the expected one can be named. `--keep` keeps
+the generated directory and the tool's workspaces as well.
+
 #### Task cases
 
 A scenario is a question, and a question tells the agent that a design
