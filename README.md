@@ -93,6 +93,29 @@ There is nothing to build and no dependency to install.
 
 Start a new session afterwards, whichever route you took.
 
+### The skill listing has a budget
+
+Claude Code puts every skill's name and description in context on every
+turn, and caps that listing at 1% of the model's context window. Past
+the cap it drops descriptions, starting with the least-invoked skills,
+and every name stays. A skill listed by name alone is rarely chosen.
+
+This pack's listing is about the size of the whole default budget on its
+own, before anything else you have installed. If you run other skills
+too, check the cost and raise the budget if descriptions are being
+dropped:
+
+- `/doctor` estimates the listing's cost and its biggest contributors.
+  The Skills row of `/context` shows its size after the budget.
+- The `skillListingBudgetFraction` setting raises the budget, for
+  example to `0.02`. `SLASH_COMMAND_TOOL_CHAR_BUDGET` does the same
+  with a fixed character count.
+- `skillOverrides` can set a skill you rarely need to `"name-only"`,
+  which frees its description's share.
+
+The [skills documentation](https://code.claude.com/docs/en/skills) has
+the details.
+
 ### Upgrading from 2.x
 
 Every skill was renamed in 3.0.0: the thirty-three core skills gained
@@ -121,32 +144,16 @@ the name over.
 
 ## Tell the agent the pack is there
 
-Installing puts the rules within reach. It does not say what outranks
-what, and an agent with no stated precedence will read a deliberate
-convention as a defect. Paste this into the project's `CLAUDE.md`, with
-the last line naming the language pack that matches the project:
+Installing puts the rules within reach. It does not make the agent use
+them for work. A short block for the project's `CLAUDE.md` does, and
+the installers print it at the end of a run. It lives in
+[project-setup.md](plugin/skills/functional-design/references/project-setup.md),
+with the line to change for the project's language pack.
 
-```markdown
-## Design rules
-
-This codebase follows functional design. The `functional-design` skill
-is the index; the rest of the pack carries one rule each.
-
-- This project's own conventions win. The pack decides what they leave
-  open, and a pack red flag is a place to look, not a finding.
-- Before designing a new module, workflow, endpoint, or bounded
-  context, read `functional-design` and follow its design loop.
-- For anything smaller, use its calibration table to decide how much
-  design the task warrants. For one function in a module that already
-  exists, that is an honest signature and a precise name, nothing more.
-- Before finishing a change that added or reshaped a type, a signature,
-  or a module boundary, run the checklist in
-  `functional-reviewing-functional-design`.
-- Use `functional-typescript` for concrete syntax.
-```
-
-The first bullet matters more than it looks. It is what stops the pack
-arguing with a decision the team already made.
+The 3.2.2 baseline measured it. Asked to do work, an agent with the pack
+installed loaded a skill in 1 of 15 runs without the block and in 11 of
+15 with it. See
+[what the baseline found](evals/README.md#4-what-the-322-baseline-found).
 
 ## Check it took
 

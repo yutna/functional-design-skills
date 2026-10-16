@@ -101,14 +101,20 @@ jobs:
       # this is the only place they meet Linux. --dry-run writes nothing; the
       # link pair writes into .claude/skills, which is gitignored, and removes
       # it again. This covers link-local.ps1's non-Windows branch; the
-      # windows job below covers the other one.
+      # windows job below covers the other one. Both installers must print
+      # the CLAUDE.md block; pipefail keeps tee from hiding a failed install.
       - name: Run the install and link scripts
         run: |
-          ./scripts/install.sh --dry-run
+          set -o pipefail
+          ./scripts/install.sh --dry-run | tee install.out
+          grep -qxF '## Design rules' install.out
+          rm install.out
           ./scripts/link-local.sh
           ./scripts/link-local.sh --remove
           if command -v pwsh >/dev/null 2>&1; then
-            pwsh -NoProfile -File ./scripts/install.ps1 -DryRun
+            pwsh -NoProfile -File ./scripts/install.ps1 -DryRun | tee install.out
+            grep -qxF '## Design rules' install.out
+            rm install.out
             pwsh -NoProfile -File ./scripts/link-local.ps1
             pwsh -NoProfile -File ./scripts/link-local.ps1 -Remove
           else
@@ -157,7 +163,12 @@ jobs:
       - name: Run the PowerShell scripts on the platform they are for
         shell: pwsh
         run: |
-          ./scripts/install.ps1 -DryRun
+          # Write-Host goes to the information stream, which a pipe skips.
+          $out = ./scripts/install.ps1 -DryRun 6>&1 | Out-String
+          Write-Host $out
+          if ($out -notmatch '(?m)^## Design rules\s*$') {
+            throw 'the install script did not print the CLAUDE.md block'
+          }
           ./scripts/link-local.ps1
           $probe = '.claude/skills/functional-design/SKILL.md'
           if (-not (Test-Path -LiteralPath $probe)) {

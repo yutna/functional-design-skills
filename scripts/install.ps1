@@ -104,3 +104,31 @@ if ($conflicts -gt 0) {
 if ($installed -gt 0 -and -not $DryRun) {
   Write-Host 'Start a new session for the skills to be discovered.'
 }
+
+# The block that makes the agent use the pack for work, read from the one
+# file that holds it: the lines between the markdown fence and its close.
+$setupFile = Join-Path $skillsSrc 'functional-design' 'references' 'project-setup.md'
+$block = @()
+if (Test-Path -LiteralPath $setupFile) {
+  $on = $false
+  foreach ($raw in (Get-Content -LiteralPath $setupFile)) {
+    $line = $raw -replace "`r$", ''
+    if (-not $on) {
+      if ($line -eq '```markdown') { $on = $true }
+      continue
+    }
+    if ($line -eq '```') { break }
+    $block += $line
+  }
+}
+Write-Host ''
+if ($block.Count -gt 0) {
+  Write-Host 'To have the agent use the pack for work, not only for questions,'
+  Write-Host "paste this into the project's CLAUDE.md:"
+  Write-Host ''
+  foreach ($line in $block) { Write-Host $line }
+  Write-Host ''
+  Write-Host "Change the last line to the project's language pack."
+} else {
+  Write-Host "The CLAUDE.md block is in $setupFile (not found or no fence)."
+}
