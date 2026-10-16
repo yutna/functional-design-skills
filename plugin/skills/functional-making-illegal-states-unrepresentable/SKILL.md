@@ -9,6 +9,10 @@ metadata:
 
 # Making Illegal States Unrepresentable
 
+**In this pack:** [how much design a task warrants](../functional-design/references/calibration.md),
+[the notation](../functional-design/references/notation.md), and
+[syntax per language](../functional-design/SKILL.md#language-packs).
+
 ## Overview
 
 Every state a type can hold is a state somebody must handle. If the type

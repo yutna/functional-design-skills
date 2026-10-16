@@ -9,6 +9,10 @@ metadata:
 
 # Choosing Types or Plain Data
 
+**In this pack:** [how much design a task warrants](../functional-design/references/calibration.md),
+[the notation](../functional-design/references/notation.md), and
+[syntax per language](../functional-design/SKILL.md#language-packs).
+
 ## Overview
 
 There are two coherent schools of functional design, and this pack is

@@ -9,6 +9,10 @@ metadata:
 
 # Deciding What Matters
 
+**In this pack:** [how much design a task warrants](../functional-design/references/calibration.md),
+[the notation](../functional-design/references/notation.md), and
+[syntax per language](../functional-design/SKILL.md#language-packs).
+
 ## Overview
 
 Design is the act of deciding which information matters and making it

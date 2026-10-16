@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url'
 import { parse as parseYaml } from 'yaml'
 import { anchorsIn, readMarkdown, slugOf, stripFences } from './lib/markdown.mjs'
 import {
-  languagePackIds, readSkill, skillIds as everyId,
+  INDEX_SKILL, languagePackIds, readSkill, skillIds as everyId,
 } from './lib/pack.mjs'
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)))
@@ -689,6 +689,42 @@ function validateParentPack (ids) {
 const VERSION_CAVEAT = /installed (?:major )?version/
 
 let packsChecked = 0
+let coreLinked = 0
+
+// An agent often enters the pack through one core skill and never opens the
+// index, so the calibration table, the notation and the list of language
+// packs are out of its sight unless the skill itself points back. Every core
+// skill -- everything but the index and the language packs -- must link to
+// the index and to the calibration page. Read through pack.mjs, so a CRLF
+// checkout cannot hide the link.
+const INDEX_LINK = /\]\(\.\.\/functional-design\/SKILL\.md(?:#[^)]*)?\)/
+const CALIBRATION_LINK =
+  /\]\(\.\.\/functional-design\/references\/calibration\.md(?:#[^)]*)?\)/
+
+function validateCoreLinksToIndex (ids) {
+  let packs
+  try {
+    packs = new Set(languagePackIds())
+  } catch (error) {
+    errors.push(error.message)
+    return
+  }
+  for (const id of ids) {
+    if (id === INDEX_SKILL || packs.has(id)) continue
+    const { raw } = readSkill(id)
+    coreLinked++
+    if (!INDEX_LINK.test(raw)) {
+      fail(id, 'is a core skill and does not link to ../functional-design/SKILL.md')
+    }
+    if (!CALIBRATION_LINK.test(raw)) {
+      fail(
+        id,
+        'is a core skill and does not link to ' +
+          '../functional-design/references/calibration.md',
+      )
+    }
+  }
+}
 
 // The packs that teach a library: language packs whose name extends another
 // language pack's. This reuses the name-nesting rule validateParentPack
@@ -877,6 +913,7 @@ validateEvalNames(skillIds)
 validateParentPack(skillIds)
 validateStackVersion(skillIds)
 validatePackMajors(skillIds)
+validateCoreLinksToIndex(skillIds)
 if (errors.length === 0) {
   validateDistinctDescriptions(skillIds)
   validateListingSize(skillIds)
@@ -916,6 +953,13 @@ if (majorsChecked === 0) {
   )
   process.exit(1)
 }
+if (coreLinked === 0) {
+  process.stderr.write(
+    'error no core skill was found, so nothing checked that a core skill ' +
+      'links back to the index\n',
+  )
+  process.exit(1)
+}
 if (listingChars === 0) {
   process.stderr.write(
     'error no skill contributed a name and a description to the listing, so ' +
@@ -931,6 +975,9 @@ process.stdout.write(
 )
 process.stdout.write(
   `      ${majorsChecked} of them name exactly the majors package.json pins\n`,
+)
+process.stdout.write(
+  `      ${coreLinked} core skill(s) link to the index and its calibration\n`,
 )
 process.stdout.write(
   `      listing is ${listingChars} of ${LISTING_CEILING} characters\n`,
