@@ -237,6 +237,55 @@ floor of this measurement, which is the number worth remembering about it.
 Nothing in the pack was changed because of any of it. A description tuned
 until one sampled run goes green is a description fitted to noise.
 
+## 4. What the 3.2.2 baseline found
+
+Every scenario and every task case was graded on 3.2.2, three runs per
+case in each arm, with Sonnet 5.5 as both agent and judge. A third arm
+ran the pack with the block from the main README's "Tell the agent the
+pack is there" passed as `--system-file`, which is how a case stands in
+for a project's `CLAUDE.md`:
+
+```text
+                   pack and block   pack alone   no pack
+scenarios          60/126           52/126       19/126
+  loaded a skill   114/126          85/126
+task               12/15            11/15        9/15
+  loaded a skill   11/15            1/15
+restraint          6/9              5/9          5/9
+precedence         3/3              3/3          3/3
+```
+
+Three things follow, and one thing does not.
+
+**The pack helps where it is read.** Ten scenarios loaded no skill in
+any run of the pack-alone arm, and on those ten the two arms passed the
+same 6 of 30 runs. The whole difference comes from the cases where the
+agent opened a skill.
+
+**Work does not open it.** Asked a design question, the agent loads a
+skill two times in three. Asked to change code, it loaded one in a
+single task run out of fifteen, so for most real work the pack sat
+unread. The block changes that, 11 runs of 15, without costing
+restraint: the throwaway script and the one-function fix were still
+left alone.
+
+**Loading is not enough.** `t04-publish-on-confirm` and
+`t05-undecided-ticket` failed every run in every arm, and scenarios 9,
+12, 16, 18, 28, 29, 32 and 34 to 41 failed every run with the block,
+and half of those that name a skill had loaded it in every run. Those
+answers have to be read before any skill is changed for them, because a
+rubric the judge reads too literally fails an answer in the same way a
+skill that misses the point does.
+
+**What it does not show** is that the block raises the score. With
+three runs per case, it lifted nine scenarios and lowered three, which
+is a direction and not a result.
+
+The runs were made in pieces with `--only`, because the account's usage
+limit ended the longer runs part way. A case was kept
+from a piece only when every one of its runs in that arm finished with
+no error and a judged verdict; the rest were run again.
+
 ## Adding cases
 
 Add a routing case whenever you catch yourself describing a problem in
