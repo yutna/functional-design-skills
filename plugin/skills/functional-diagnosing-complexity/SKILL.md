@@ -9,6 +9,10 @@ metadata:
 
 # Diagnosing Complexity
 
+**In this pack:** [how much design a task warrants](../functional-design/references/calibration.md),
+[the notation](../functional-design/references/notation.md), and
+[syntax per language](../functional-design/SKILL.md#language-packs).
+
 ## Overview
 
 Complexity is anything about the structure of a system that makes it hard

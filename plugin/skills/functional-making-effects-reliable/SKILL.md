@@ -9,6 +9,10 @@ metadata:
 
 # Making Effects Reliable
 
+**In this pack:** [how much design a task warrants](../functional-design/references/calibration.md),
+[the notation](../functional-design/references/notation.md), and
+[syntax per language](../functional-design/SKILL.md#language-packs).
+
 ## Overview
 
 A pure core is safe to run twice. An effect is not: a charge that runs

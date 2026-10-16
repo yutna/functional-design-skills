@@ -9,6 +9,10 @@ metadata:
 
 # Separating Pure Core From Shell
 
+**In this pack:** [how much design a task warrants](../functional-design/references/calibration.md),
+[the notation](../functional-design/references/notation.md), and
+[syntax per language](../functional-design/SKILL.md#language-packs).
+
 ## Overview
 
 A functional application has two parts. The **core** is pure: it computes

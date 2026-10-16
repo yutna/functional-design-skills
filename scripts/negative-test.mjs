@@ -339,6 +339,17 @@ const CASES = [
   ['a skill the version bump cannot carry a number to', SKILL,
     ['\n  version: ', '\n  release: '],
     'no "  version:" line in the metadata block', 'bump-version.mjs'],
+  // The line every core skill carries under its heading. Without it an agent
+  // that entered through this skill never sees the calibration table.
+  ['a core skill that does not link back to the index', SKILL,
+    ['[how much design a task warrants](../functional-design/references/' +
+      'calibration.md)', 'how much design a task warrants'],
+    ['functional-folding-over-data',
+      'does not link to ../functional-design/references/calibration.md']],
+  ['a core skill whose shared line lost its link to the index', SKILL,
+    ['](../functional-design/SKILL.md#language-packs)', '](#language-packs)'],
+    ['functional-folding-over-data',
+      'does not link to ../functional-design/SKILL.md']],
   ['a routing case expecting a skill that does not exist',
     join('evals', 'routing-cases.md'),
     ['-> functional-folding-over-data', '-> functional-folding-over-datum'],

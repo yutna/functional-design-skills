@@ -9,6 +9,10 @@ metadata:
 
 # Modeling With Algebraic Types
 
+**In this pack:** [how much design a task warrants](../functional-design/references/calibration.md),
+[the notation](../functional-design/references/notation.md), and
+[syntax per language](../functional-design/SKILL.md#language-packs).
+
 ## Overview
 
 Two combinators build every domain model. A **product type** holds

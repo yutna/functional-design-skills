@@ -9,6 +9,10 @@ metadata:
 
 # Reviewing Functional Design
 
+**In this pack:** [how much design a task warrants](../functional-design/references/calibration.md),
+[the notation](../functional-design/references/notation.md), and
+[syntax per language](../functional-design/SKILL.md#language-packs).
+
 ## Overview
 
 This is the audit pass for everything else in this pack. It turns the

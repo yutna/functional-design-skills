@@ -9,6 +9,10 @@ metadata:
 
 # Designing Deep Modules
 
+**In this pack:** [how much design a task warrants](../functional-design/references/calibration.md),
+[the notation](../functional-design/references/notation.md), and
+[syntax per language](../functional-design/SKILL.md#language-packs).
+
 ## Overview
 
 A module is two things: an interface, which is everything a caller must
