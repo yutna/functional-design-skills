@@ -184,11 +184,16 @@ function caseOf (scenario, systemPrompt) {
       tool: 'Skill',
       input_match: skillPattern(scenario.expected),
     })
+    // The tool makes a Skill grader an indicator on its own, but not a Read
+    // grader, so this one says it. Scored, it fails every no-pack run, which
+    // has no SKILL.md to read, and it lowered the tool's own scores and delta
+    // in both arms; the runner's counts never read those.
     graders.push({
       name: REACHED_FILE,
       type: 'tool_used',
       tool: 'Read',
       input_match: skillFilePattern(scenario.expected),
+      arm: 'with-only',
     })
   }
   graders.push({ name: LOADED, type: 'tool_used', tool: 'Skill' })
@@ -1258,6 +1263,10 @@ function selftest () {
     'a scenario with expected skills also gets the Read grader beside it',
     fileGrader?.type === 'tool_used' && fileGrader.tool === 'Read' &&
       two.graders.filter((grader) => grader.name === REACHED_FILE).length === 1,
+  )
+  check(
+    'the Read grader is an indicator, as the tool makes a Skill grader one',
+    fileGrader?.arm === 'with-only',
   )
   const filePattern = new RegExp(
     caseOf(fake({ expected: ['functional-a'] }), null).graders
