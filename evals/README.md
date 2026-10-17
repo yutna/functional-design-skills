@@ -156,10 +156,19 @@ It costs money, as the runner above does: every run and every judge call
 is a model call on your account. `--max-cost-usd` sets a ceiling and has
 a default. `--runs`, `--only` and `--ablation none` make a pass cheaper.
 
+Each question case carries one sentence in its system prompt: the code
+the user describes is not in this workspace, so answer from the
+description. The prompts describe code the fixture does not contain, and
+an agent that searched for it ended on "I can't find the code", which is
+all the judge reads. A run reaches the expected skill by calling the
+`Skill` tool or by opening its `SKILL.md` with `Read`, as a link in the
+index invites; either counts, once.
+
 Each run's trace is copied to `traces/` in the results folder, and
-`summary.json` lists under `skillsLoaded` the skills each run loaded, so
-a skill loaded instead of the expected one can be named. `--keep` keeps
-the generated directory and the tool's workspaces as well.
+`summary.json` lists under `skillsLoaded` the skills each run loaded and
+under `skillFilesRead` the skill files it opened with `Read`, so a skill
+used instead of the expected one can be named. `--keep` keeps the
+generated directory and the tool's workspaces as well.
 
 #### Task cases
 
@@ -285,6 +294,13 @@ skill that misses the point does.
 **What it does not show** is that the block raises the score. With
 three runs per case, it lifted nine scenarios and lowered three, which
 is a direction and not a result.
+
+The question numbers above were taken before the question cases told
+the agent that the code is not in the workspace. In 45 of 126 pack-arm
+runs and 59 of 126 block-arm runs the final answer said the code could
+not be found. With the block those answers passed 22 of 59, against 38
+of 67 for the rest, so the numbers measure the fixture as well as the
+pack. They are rerun under the new cases.
 
 The runs were made in pieces with `--only`, because the account's usage
 limit ended the longer runs part way. A case was kept

@@ -137,6 +137,10 @@ const EXIT_MEANING = {
 
 const SUBSTANCE = 'substance'
 const REACHED = 'reached-expected-skill'
+// The same measure by the other road: the index links skills by path, and an
+// agent that follows a link opens the SKILL.md with Read instead of calling
+// the Skill tool. A run reached the expected skill when either one passed.
+const REACHED_FILE = 'reached-expected-skill-file'
 const LOADED = 'loaded-any-skill'
 const QUESTION = 'question'
 
@@ -144,6 +148,18 @@ const QUESTION = 'question'
 
 const skillPattern = (ids) =>
   String.raw`"skill"\s*:\s*"(?:[\w-]+:)?(?:${ids.join('|')})"`
+
+const skillFilePattern = (ids) =>
+  String.raw`"file_path"\s*:\s*"[^"]*/(?:${ids.join('|')})/SKILL\.md"`
+
+// The prompts describe code the fixture does not contain: a cart service, a
+// board of two hundred aggregates. An agent that searches for it finds nothing
+// and ends on "I can't find the code", which is all the judge reads. The 3.2.2
+// baseline did that in 45 of 126 pack-arm runs and 59 of 126 block-arm runs,
+// so those numbers measured the fixture as well as the pack. Every question
+// case says so up front.
+const NOT_IN_WORKSPACE =
+  'The code the user describes is not in this workspace; answer from the description.'
 
 const rubricFor = (criteria) => [
   'You are grading one response to a software design question. The criteria',
@@ -168,6 +184,12 @@ function caseOf (scenario, systemPrompt) {
       tool: 'Skill',
       input_match: skillPattern(scenario.expected),
     })
+    graders.push({
+      name: REACHED_FILE,
+      type: 'tool_used',
+      tool: 'Read',
+      input_match: skillFilePattern(scenario.expected),
+    })
   }
   graders.push({ name: LOADED, type: 'tool_used', tool: 'Skill' })
   graders.push({
@@ -185,7 +207,9 @@ function caseOf (scenario, systemPrompt) {
       allowed_tools: ['Read', 'Glob', 'Grep', 'Skill'],
       max_turns: 15,
       timeout_seconds: 300,
-      ...(systemPrompt === null ? {} : { append_system_prompt: systemPrompt }),
+      append_system_prompt: systemPrompt === null
+        ? NOT_IN_WORKSPACE
+        : [NOT_IN_WORKSPACE, systemPrompt].join('\n\n'),
     },
     graders,
   }
@@ -442,8 +466,13 @@ const SCAFFOLD = /^e-[A-Za-z0-9]+$/
 
 // The skills a trace loaded, in order: the `skill` input of each Skill tool
 // use, without the pack's prefix. A line that is not JSON is skipped.
-function skillsInTrace (text) {
+const skillsInTrace = (text) => skillUseInTrace(text).skills
+
+// What a trace did with skills: those it loaded with the Skill tool, and the
+// directories whose SKILL.md it opened with Read, each in order.
+function skillUseInTrace (text) {
   const skills = []
+  const files = []
   for (const line of text.split(/\r?\n/)) {
     if (line.trim() === '') continue
     let event
@@ -455,7 +484,13 @@ function skillsInTrace (text) {
     const content = event?.type === 'assistant' ? event.message?.content : null
     if (!Array.isArray(content)) continue
     for (const part of content) {
-      if (part?.type !== 'tool_use' || part.name !== 'Skill') continue
+      if (part?.type !== 'tool_use') continue
+      if (part.name === 'Read') {
+        const opened = /([^/\\]+)[/\\]SKILL\.md$/.exec(part.input?.file_path ?? '')
+        if (opened !== null) files.push(opened[1])
+        continue
+      }
+      if (part.name !== 'Skill') continue
       const skill = part.input?.skill
       if (typeof skill !== 'string') continue
       skills.push(skill.startsWith(PACK_PREFIX)
@@ -463,7 +498,7 @@ function skillsInTrace (text) {
         : skill)
     }
   }
-  return skills
+  return { skills, files }
 }
 
 // Whether a scaffold directory, as a real path, is one the tool made: named
@@ -501,41 +536,46 @@ const safeName = (name) => name.replace(/[^\w.-]/g, '_')
 
 // After the tool exits: copy every run's trace under outDir/traces, read the
 // skills it loaded, and unless the scaffolds are kept, remove them. Never
-// throws; a run whose trace cannot be had gets null. Returns the skills per
-// case and arm, one entry per run in the order the runs appear.
+// throws; a run whose trace cannot be had gets null. Returns the skills loaded
+// and the skill files read per case and arm, one entry per run in the order
+// the runs appear.
 function keepTraces (document, outDir, { keep, tempRoots = temporaryDirectories() }) {
   const skillsLoaded = {}
+  const skillFilesRead = {}
   let kept = 0
   let total = 0
   for (const row of document.cases ?? []) {
     skillsLoaded[row.name] = {}
+    skillFilesRead[row.name] = {}
     for (const [arm, runs] of Object.entries(row.arms ?? {})) {
-      skillsLoaded[row.name][arm] = (runs ?? []).map((run, index) => {
+      const used = (runs ?? []).map((run, index) => {
         total += 1
         const source = run?.tracePath
         if (typeof source !== 'string') return null
-        const skills = copyTrace(
+        const use = copyTrace(
           source,
           join(outDir, 'traces', safeName(row.name), `${arm}-${index + 1}.jsonl`),
         )
-        if (skills !== null) kept += 1
+        if (use !== null) kept += 1
         // A run that left no trace may still have left its scaffold.
         if (!keep) removeScaffold(source, tempRoots)
-        return skills
+        return use
       })
+      skillsLoaded[row.name][arm] = used.map((use) => use?.skills ?? null)
+      skillFilesRead[row.name][arm] = used.map((use) => use?.files ?? null)
     }
   }
-  return { skillsLoaded, kept, total }
+  return { skillsLoaded, skillFilesRead, kept, total }
 }
 
-// The skills the trace at source loaded, after copying it to target, or null
+// The skills the trace at source used, after copying it to target, or null
 // when there is no trace to copy.
 function copyTrace (source, target) {
   if (!existsSync(source)) return null
   try {
     mkdirSync(dirname(target), { recursive: true })
     copyFileSync(source, target)
-    return skillsInTrace(readFileSync(target, 'utf8'))
+    return skillUseInTrace(readFileSync(target, 'utf8'))
   } catch (error) {
     complain(`warning trace ${source} was not kept: ${error.message}`)
     return null
@@ -609,9 +649,15 @@ const substanceOf = (run) =>
 function verdicts (runs, name) {
   return runs.flatMap((run) => {
     if (run.error) return []
-    const grader = run.graders.find((candidate) => candidate.name === name)
+    const found = (graderName) =>
+      run.graders.find((candidate) => candidate.name === graderName)
+    const grader = found(name)
     if (grader === undefined) return []
     if (name === SUBSTANCE && !judged(grader)) return []
+    // One verdict for the measure, whichever road reached the skill.
+    if (name === REACHED) {
+      return [grader.passed === true || found(REACHED_FILE)?.passed === true]
+    }
     return [grader.passed === true]
   })
 }
@@ -1145,6 +1191,7 @@ async function grade (options, cases, root) {
       partial: summary.partial,
       partialReason: summary.partialReason,
       skillsLoaded: traces.skillsLoaded,
+      skillFilesRead: traces.skillFilesRead,
     }, null, 2)}\n`,
   )
   say()
@@ -1206,6 +1253,25 @@ function selftest () {
   const indicators = two.graders.filter((grader) => grader.name === REACHED)
   check('a scenario with two expected skills gets one indicator', indicators.length === 1)
   const pattern = new RegExp(indicators[0].input_match)
+  const fileGrader = two.graders.find((grader) => grader.name === REACHED_FILE)
+  check(
+    'a scenario with expected skills also gets the Read grader beside it',
+    fileGrader?.type === 'tool_used' && fileGrader.tool === 'Read' &&
+      two.graders.filter((grader) => grader.name === REACHED_FILE).length === 1,
+  )
+  const filePattern = new RegExp(
+    caseOf(fake({ expected: ['functional-a'] }), null).graders
+      .find((grader) => grader.name === REACHED_FILE).input_match)
+  const readOf = (path) => JSON.stringify({ file_path: path })
+  check(
+    'the file pattern matches an expected SKILL.md and nothing near it',
+    filePattern.test(readOf('/x/functional-a/SKILL.md')) &&
+      filePattern.test(readOf('/x/skills/functional-a/SKILL.md')) &&
+      !filePattern.test(readOf('/x/functional-ab/SKILL.md')) &&
+      !filePattern.test(readOf('/x/xfunctional-a/SKILL.md')) &&
+      !filePattern.test(readOf('/x/functional-a/references/y.md')) &&
+      !filePattern.test(JSON.stringify({ skill: 'functional-a' })),
+  )
   check(
     'that indicator is an alternation of both ids',
     indicators[0].input_match.includes('(?:functional-a|functional-b)'),
@@ -1223,7 +1289,8 @@ function selftest () {
     graderNames(caseOf(fake(), null)).join() === `${LOADED},${SUBSTANCE}`,
   )
   check('every case also carries the any-skill indicator and the judge',
-    graderNames(two).join() === `${REACHED},${LOADED},${SUBSTANCE}`)
+    graderNames(two).join() ===
+      `${REACHED},${REACHED_FILE},${LOADED},${SUBSTANCE}`)
 
   const real = scenarios()
   check(
@@ -1272,9 +1339,11 @@ function selftest () {
       real.every((s) => caseName(s).startsWith(`q${s.id.padStart(2, '0')}-`)),
   )
   check(
-    'a system file becomes append_system_prompt on the case',
-    caseOf(fake(), 'Be brief.').execution.append_system_prompt === 'Be brief.' &&
-      !('append_system_prompt' in caseOf(fake(), null).execution),
+    'a question case carries the not-in-workspace sentence, then a system file',
+    NOT_IN_WORKSPACE.startsWith('The code the user describes is not in this') &&
+      caseOf(fake(), null).execution.append_system_prompt === NOT_IN_WORKSPACE &&
+      caseOf(fake(), 'Be brief.').execution.append_system_prompt ===
+        `${NOT_IN_WORKSPACE}\n\nBe brief.`,
   )
   check('generating from an empty list of cases throws',
     throws(() => buildCases([], [], NO_OPTIONS), /nothing would be measured/))
@@ -1387,6 +1456,20 @@ function selftest () {
       skillsInTrace('').length === 0,
     JSON.stringify(skillsInTrace(trace.join('\r\n'))),
   )
+  const reads = [
+    '{"type":"assistant","message":{"content":[{"type":"tool_use","id":"r1",' +
+      '"name":"Read","input":{"file_path":"/p/skills/functional-c/SKILL.md"}},' +
+      '{"type":"tool_use","id":"r2","name":"Read","input":{"file_path":' +
+      '"/p/skills/functional-c/references/y.md"}},{"type":"tool_use",' +
+      '"id":"r3","name":"Read","input":{"file_path":"C:\\\\p\\\\functional-d\\\\SKILL.md"}}]}}',
+  ]
+  check(
+    'a trace is read for the skill files opened with Read, in order',
+    JSON.stringify(skillUseInTrace([...trace, ...reads].join('\n')).files) ===
+      '["functional-c","functional-d"]' &&
+      skillUseInTrace(trace.join('\n')).files.length === 0,
+    JSON.stringify(skillUseInTrace([...trace, ...reads].join('\n'))),
+  )
   const temp = ['/private/tmp', '/private/var/folders/x/T']
   check(
     'a scaffold in the temporary directory may be removed, nothing else',
@@ -1439,7 +1522,9 @@ function selftest () {
       'a trace is copied out, read, and its scaffold removed',
       existsSync(copy) && !existsSync(inside) &&
         JSON.stringify(result.skillsLoaded.c1.with[0]) ===
-          '["functional-a","functional-b"]',
+          '["functional-a","functional-b"]' &&
+        JSON.stringify(result.skillFilesRead.c1.with[0]) === '[]' &&
+        result.skillFilesRead.c1.with[2] === null,
       JSON.stringify(result),
     )
     check(
@@ -1512,6 +1597,17 @@ function selftest () {
     summary.substance.with.passed === 3 && summary.substance.with.total === 6 &&
       summary.substance.without.passed === 4 && summary.substance.without.total === 6,
     JSON.stringify(summary.substance),
+  )
+  const byFile = summarise({ ...document, cases: [row('q04-d',
+    [run({ [REACHED]: false, [REACHED_FILE]: true, [LOADED]: false, [SUBSTANCE]: true }),
+      run({ [REACHED]: true, [REACHED_FILE]: true, [LOADED]: true, [SUBSTANCE]: true }),
+      run({ [REACHED]: false, [REACHED_FILE]: false, [LOADED]: false, [SUBSTANCE]: true })])] })
+  check(
+    'a run reaches the skill by either grader, and is counted once',
+    byFile.reachedExpectedSkill.passed === 2 &&
+      byFile.reachedExpectedSkill.total === 3 &&
+      byFile.expectedSkillNeverReached.length === 0,
+    JSON.stringify(byFile.reachedExpectedSkill),
   )
   check(
     'the difference is the with rate less the without rate',
@@ -1673,6 +1769,12 @@ function selftest () {
           ...taskSample.document.execution, append_system_prompt: 'Own.' } } },
         'Be brief.',
       ).execution.append_system_prompt === 'Own.\n\nBe brief.',
+  )
+  check(
+    'a task case does not carry the not-in-workspace sentence',
+    !JSON.stringify(taskCaseOf(taskSample, null)).includes(NOT_IN_WORKSPACE) &&
+      !JSON.stringify(taskCaseOf(taskSample, 'Be brief.'))
+        .includes(NOT_IN_WORKSPACE),
   )
   check(
     'a case whose graders are all indicators throws',
