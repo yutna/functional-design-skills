@@ -73,7 +73,8 @@
 //   --ablation MODE    none | with-without (default: the tool's)
 //   --model ID         the agent under test
 //   --judge-model ID   the judge
-//   --max-cost-usd N   ceiling for the whole run, always passed (default 30)
+//   --max-cost-usd N   ceiling for the whole run, always passed (default 30);
+//                      a second invocation gets what the first left of it
 //   --jobs N           agent runs in flight at once (default 4)
 //   --variant NAME     no-leaf-descriptions | index-only
 //   --system-file PATH text appended to the system prompt of every case
@@ -432,6 +433,74 @@ function grantsFor (entries) {
     }
   }
   return GRANTED.filter((tool) => asked.has(tool))
+}
+
+// The grant is run-wide: `--allow-tools` reaches every case in the invocation.
+// A question case asks for Read, Glob, Grep and Skill only, and in a run that
+// also held a task case it was given Write, Edit and NotebookEdit as well. Its
+// behaviour changed with them: q04 loaded its skill in 3 of 3 runs without the
+// grant and in 0 of 6 with it. So a case is measured with the tools it asks
+// for and no others, and a selection that needs different grants is made as
+// one invocation per grant set. The cases that need no grant come first, then
+// the narrower grants, so the order does not depend on how they were selected.
+function groupByGrant (entries) {
+  const groups = new Map()
+  for (const entry of entries) {
+    const grants = grantsFor([entry])
+    const key = grants.join(',')
+    if (!groups.has(key)) groups.set(key, { grants, entries: [] })
+    groups.get(key).entries.push(entry)
+  }
+  return [...groups.values()].sort((a, b) => a.grants.length - b.grants.length)
+}
+
+// What is left of the ceiling for the next invocation. The ceiling is for the
+// whole run, so each invocation gets the remainder and not a fresh one.
+const remainderOf = (ceiling, spent) =>
+  Math.max(0, Math.round((ceiling - spent) * 1e6) / 1e6)
+
+// Why the invocation after this one must not start, or null when it may. A
+// partial run stopped on a ceiling or a failed credential, and a second
+// invocation would meet the same wall; and with nothing left it has no budget.
+function stopAfter (document, status, left) {
+  if (status !== 0) return `the invocation before it exited ${status}`
+  if (document.partial) {
+    return `the invocation before it was partial (${document.partialReason ?? 'no reason given'})`
+  }
+  if (left <= 0) return 'the cost ceiling is spent'
+  return null
+}
+
+// One result document from those of the invocations. `order` is the names of
+// the cases as buildCases produced them; a case in a document that is not in
+// it goes last, where summariseRun names it and throws. `notStarted` is why a
+// later invocation did not run, which makes the whole partial. Everything the
+// summary reads from the document is carried: cases, costUsd, durationSeconds,
+// partial and partialReason, and the schema version, which must agree.
+function mergeDocuments (documents, order, notStarted = null) {
+  const versions = [...new Set(documents.map((document) => document.schemaVersion))]
+  if (versions.length !== 1) {
+    throw new Error(
+      `the result documents disagree on schemaVersion (${versions.join(', ')})`,
+    )
+  }
+  const rows = documents.flatMap((document) => document.cases ?? [])
+  const rank = (row) => {
+    const at = order.indexOf(row.name)
+    return at === -1 ? order.length : at
+  }
+  const partial = documents.find((document) => document.partial)
+  return {
+    ...documents[0],
+    cases: [...rows].sort((a, b) => rank(a) - rank(b)),
+    costUsd: documents.reduce((sum, document) => sum + document.costUsd, 0),
+    durationSeconds:
+      documents.reduce((sum, document) => sum + document.durationSeconds, 0),
+    partial: partial !== undefined || notStarted !== null,
+    partialReason: partial !== undefined
+      ? partial.partialReason ?? null
+      : notStarted,
+  }
 }
 
 function childArgs (options, { root, resultFile, outDir, grants = [] }) {
@@ -1095,28 +1164,45 @@ async function main (argv) {
     systemPrompt,
   })
 
-  // Resolved, so the tool is handed the path it will see itself on.
-  const root = realpathSync(mkdtempSync(join(tmpdir(), 'fds-eval-plugin-')))
+  // One directory per grant set, each resolved, so the tool is handed the
+  // path it will see itself on.
+  const groups = groupByGrant(cases).map((group) =>
+    ({ ...group, root: realpathSync(mkdtempSync(join(tmpdir(), 'fds-eval-plugin-'))) }))
+  const removeAll = () => {
+    for (const { root } of groups) rmSync(root, { recursive: true, force: true })
+  }
   try {
-    writeRoot(root, cases, options.variant)
+    for (const { root, entries } of groups) writeRoot(root, entries, options.variant)
   } catch (error) {
-    rmSync(root, { recursive: true, force: true })
+    removeAll()
     throw error
   }
   if (options.dryRun) {
-    say(`dry run: ${cases.length} case(s) written to ${root}`)
-    say('nothing was run; the directory stays so the cases can be read')
+    if (groups.length === 1) {
+      say(`dry run: ${cases.length} case(s) written to ${groups[0].root}`)
+    } else {
+      say(`dry run: ${cases.length} case(s) written to ${groups.length} directories,`)
+      say('one invocation each, in this order:')
+      for (const { root, entries, grants } of groups) {
+        say(`  ${root}: ${entries.length} case(s), ` +
+          `${grants.length === 0 ? 'no grant' : `grants ${grants.join(', ')}`}`)
+      }
+    }
+    say('nothing was run; the directories stay so the cases can be read')
     return 0
   }
   try {
-    return await grade(options, cases, root)
+    return await grade(options, cases, groups)
   } finally {
-    if (options.keep) say(`kept ${root}`)
-    else rmSync(root, { recursive: true, force: true })
+    if (options.keep) {
+      for (const { root } of groups) say(`kept ${root}`)
+    } else {
+      removeAll()
+    }
   }
 }
 
-async function grade (options, cases, root) {
+async function grade (options, cases, groups) {
   const outDir = join(RESULTS, new Date().toISOString().replace(/[:.]/g, '-'))
   mkdirSync(outDir, { recursive: true })
   const resultFile = join(outDir, 'result.json')
@@ -1124,51 +1210,101 @@ async function grade (options, cases, root) {
   say(
     `${cases.length} case(s) will run` +
       `${options.tag === null ? '' : ` (tag ${options.tag})`}` +
-      `${options.variant === null ? '' : `, variant ${options.variant}`}`,
+      `${options.variant === null ? '' : `, variant ${options.variant}`}` +
+      `${groups.length === 1 ? '' : `, in ${groups.length} invocations (one per grant set)`}`,
   )
   say(`agent ${options.model}, judge ${options.judgeModel}, ceiling $${options.maxCostUsd}`)
   say(`results ${outDir}`)
   say()
 
-  const outcome = await runChild(
-    childArgs(options, { root, resultFile, outDir, grants: grantsFor(cases) }),
-    root,
-  )
-  say()
-  if (outcome.error !== undefined) {
-    rmSync(outDir, { recursive: true, force: true })
-    complain(
-      outcome.error.code === 'ENOENT'
-        ? 'error claude is not on PATH, so nothing was run'
-        : `error claude could not be started: ${outcome.error.message}`,
+  // One invocation per group. A single group writes straight to result.json in
+  // outDir; several each write their own and are merged into result.json.
+  const documents = []
+  let status = 0
+  let notStarted = null
+  let spent = 0
+  for (const [at, group] of groups.entries()) {
+    const many = groups.length > 1
+    const partDir = many ? join(outDir, `part-${at + 1}`) : outDir
+    const partFile = many ? join(partDir, 'result.json') : resultFile
+    mkdirSync(partDir, { recursive: true })
+    if (many) {
+      say(
+        `invocation ${at + 1} of ${groups.length}: ${group.entries.length} case(s), ` +
+          `${group.grants.length === 0 ? 'no grant' : `grants ${group.grants.join(', ')}`}`,
+      )
+    }
+    const outcome = await runChild(
+      childArgs(
+        { ...options, maxCostUsd: remainderOf(options.maxCostUsd, spent) },
+        { root: group.root, resultFile: partFile, outDir: partDir, grants: group.grants },
+      ),
+      group.root,
     )
-    return 1
-  }
-  // A child stopped by a signal has no exit code; the shell's convention is
-  // 128 and the signal number, which is what the tool itself exits with.
-  const status = outcome.code ?? 128 + (constants.signals[outcome.signal] ?? 0)
-  if (status !== 0) {
-    complain(
-      'error claude plugin eval ' +
-        (outcome.signal === null
-          ? `exited ${status}${EXIT_MEANING[status] ? `: ${EXIT_MEANING[status]}` : ''}`
-          : `was stopped by ${outcome.signal}`),
-    )
+    say()
+    if (outcome.error !== undefined) {
+      if (documents.length === 0) rmSync(outDir, { recursive: true, force: true })
+      complain(
+        outcome.error.code === 'ENOENT'
+          ? 'error claude is not on PATH, so nothing was run'
+          : `error claude could not be started: ${outcome.error.message}`,
+      )
+      if (documents.length === 0) return 1
+      notStarted = `invocation ${at + 1} could not be started`
+      break
+    }
+    // A child stopped by a signal has no exit code; the shell's convention is
+    // 128 and the signal number, which is what the tool itself exits with.
+    const code = outcome.code ?? 128 + (constants.signals[outcome.signal] ?? 0)
+    if (code !== 0) {
+      complain(
+        'error claude plugin eval ' +
+          (outcome.signal === null
+            ? `exited ${code}${EXIT_MEANING[code] ? `: ${EXIT_MEANING[code]}` : ''}`
+            : `was stopped by ${outcome.signal}`),
+      )
+    }
+    if (status === 0) status = code
+
+    // Read even after a failure: a partial run still holds what finished.
+    let part
+    try {
+      part = JSON.parse(readFileSync(partFile, 'utf8'))
+    } catch (error) {
+      complain(
+        'error no summary: ' +
+          (error.code === 'ENOENT' ? `${partFile} was not written` : error.message),
+      )
+      if (documents.length === 0) return status === 0 ? 1 : status
+      notStarted = `invocation ${at + 1} left no result`
+      break
+    }
+    documents.push(part)
+    spent += part.costUsd ?? 0
+    const why = at + 1 < groups.length
+      ? stopAfter(part, code, remainderOf(options.maxCostUsd, spent))
+      : null
+    if (why !== null) {
+      notStarted = `invocation ${at + 2} was not started: ${why}`
+      complain(`error ${notStarted}`)
+      break
+    }
   }
 
-  // Read even after a failure: a partial run still holds what finished.
   let summary
   let document
   let traces
   try {
-    document = JSON.parse(readFileSync(resultFile, 'utf8'))
+    document = documents.length === 1 && notStarted === null
+      ? documents[0]
+      : mergeDocuments(documents, cases.map(({ item }) => item.name), notStarted)
+    if (document !== documents[0]) {
+      writeFileSync(resultFile, `${JSON.stringify(document, null, 2)}\n`)
+    }
     traces = keepTraces(document, outDir, { keep: options.keep })
     summary = summariseRun(document, planOf(cases))
   } catch (error) {
-    complain(
-      'error no summary: ' +
-        (error.code === 'ENOENT' ? `${resultFile} was not written` : error.message),
-    )
+    complain(`error no summary: ${error.message}`)
     return status === 0 ? 1 : status
   }
   for (const line of describeRun(summary)) say(line)
@@ -1821,6 +1957,92 @@ function selftest () {
     throws(() => grantsFor(buildCases([], [{ ...writing, document: { ...writing.document,
       execution: { ...writing.document.execution, allowed_tools: ['Bash'] } } }],
     NO_OPTIONS)), /asks for Bash/),
+  )
+  // One grant per invocation: the question cases must not receive what a task
+  // case asks for.
+  const askMix = buildCases([fake({ id: '1' })], [writing], NO_OPTIONS)
+  const split = groupByGrant(askMix)
+  const argsOf = (group, options = parseArgs([])) => childArgs(options, {
+    root: group.root ?? '/r', resultFile: '/o/result.json', outDir: '/o',
+    grants: group.grants,
+  })
+  check(
+    'a selection of both kinds is two invocations, the question cases first',
+    split.length === 2 && split[0].entries.length === 1 &&
+      split[0].entries[0].item.name === askMix[0].item.name &&
+      split[1].entries[0].item.name === askMix[1].item.name &&
+      !argsOf(split[0]).includes('--allow-tools') &&
+      argsOf(split[1]).slice(argsOf(split[1]).indexOf('--allow-tools') + 1)
+        .join() === 'Write,Edit',
+    JSON.stringify(split.map((group) => group.grants)),
+  )
+  check(
+    'the order does not depend on how the cases were selected',
+    groupByGrant([askMix[1], askMix[0]])[0].grants.length === 0,
+  )
+  check(
+    'a selection of one kind is one invocation',
+    groupByGrant(buildCases([fake({ id: '1' }), fake({ id: '2' })], [], NO_OPTIONS))
+      .length === 1 &&
+      groupByGrant(buildCases([], [writing], NO_OPTIONS)).length === 1 &&
+      groupByGrant(buildCases([], [writing], NO_OPTIONS))[0].grants.join() ===
+        'Write,Edit',
+  )
+  check(
+    'a case that asks for a shell is refused before any invocation is made',
+    throws(() => groupByGrant(buildCases([], [{ ...writing, document: {
+      ...writing.document, execution: { ...writing.document.execution,
+        allowed_tools: ['Bash'] } } }], NO_OPTIONS)), /asks for Bash/),
+  )
+  const ceilingOf = (spent) => argsOf(split[1], {
+    ...parseArgs(['--max-cost-usd', '10']),
+    maxCostUsd: remainderOf(10, spent),
+  })
+  const ceilingArg = (args) => args[args.indexOf('--max-cost-usd') + 1]
+  check(
+    'the second invocation gets the ceiling less what the first spent',
+    ceilingArg(ceilingOf(3.25)) === '6.75' && ceilingArg(ceilingOf(0.1 + 0.2)) === '9.7' &&
+      remainderOf(10, 12) === 0,
+    ceilingArg(ceilingOf(3.25)),
+  )
+  check(
+    'a partial first invocation stops the second, and so does a spent ceiling',
+    String(stopAfter({ partial: true, partialReason: 'cost_ceiling' }, 0, 5))
+      .includes('cost_ceiling') &&
+      stopAfter({ partial: true, partialReason: 'x' }, 2, 5) !== null &&
+      String(stopAfter({ partial: false }, 1, 5)).includes('exited 1') &&
+      String(stopAfter({ partial: false }, 0, 0)).includes('ceiling') &&
+      stopAfter({ partial: false }, 0, 4.5) === null,
+  )
+  const partOne = {
+    ...document, costUsd: 1.5, durationSeconds: 10, partial: false,
+    cases: [row('q02-b', [], []), row('q01-a', [], [])],
+  }
+  const partTwo = {
+    ...document, costUsd: 2.25, durationSeconds: 7, partial: true,
+    partialReason: 'cost_ceiling', cases: [row('t01-c', [], [])],
+  }
+  const merged = mergeDocuments([partTwo, partOne], ['q01-a', 'q02-b', 't01-c'])
+  check(
+    'merged results sum cost and duration and keep the order the cases were made in',
+    merged.costUsd === 3.75 && merged.durationSeconds === 17 &&
+      merged.cases.map((item) => item.name).join() === 'q01-a,q02-b,t01-c' &&
+      merged.schemaVersion === 1,
+    JSON.stringify(merged.cases.map((item) => item.name)),
+  )
+  check(
+    'a merged result is partial when either was, with the partial one\'s reason',
+    merged.partial === true && merged.partialReason === 'cost_ceiling' &&
+      mergeDocuments([partOne, partTwo], []).partial === true &&
+      mergeDocuments([partOne, { ...partOne, cases: [] }], []).partial === false &&
+      mergeDocuments([partOne], [], 'invocation 2 was not started').partialReason ===
+        'invocation 2 was not started',
+  )
+  check(
+    'a merged result of different schema versions throws, as one document does',
+    throws(() => mergeDocuments([partOne, { ...partTwo, schemaVersion: 2 }], []),
+      /disagree on schemaVersion/) &&
+      throws(() => summarise({ ...merged, schemaVersion: 2 }), /schemaVersion 2/),
   )
   check(
     'a tag keeps the cases that carry it, from both kinds',
