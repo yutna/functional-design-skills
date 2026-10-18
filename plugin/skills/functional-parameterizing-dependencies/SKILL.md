@@ -1,6 +1,6 @@
 ---
 name: functional-parameterizing-dependencies
-description: Use when domain code needs a database or clock, when tests need heavy mocking, or when an effect system or library makes simple code ceremonial where a plain function would do.
+description: Use when domain code needs a database or clock, when tests need heavy mocking, or when an effect system or library makes simple code ceremonial.
 license: MIT
 metadata:
   pack: functional-design-skills

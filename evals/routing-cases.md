@@ -13,6 +13,9 @@ a change broke a module i never opened -> functional-diagnosing-complexity
 nobody can estimate work in this area without reading everything -> functional-diagnosing-complexity
 is this complexity in the problem or did we add it ourselves -> functional-diagnosing-complexity
 is this complexity self-inflicted or is it in the problem -> functional-diagnosing-complexity
+everyone wants to refactor this flag and a field nobody reads, start where -> functional-diagnosing-complexity
+before we refactor this cache, does it need to exist at all -> functional-diagnosing-complexity
+this field looks self-inflicted, should we refactor it before anything else -> functional-diagnosing-complexity
 there is a flag that only exists because we mutate the record in place -> functional-managing-state-immutably
 we are behind, should we take the shortcut this once -> functional-programming-strategically
 the codebase gets a little worse with every change we make -> functional-programming-strategically
@@ -63,6 +66,9 @@ two requests updated the same cart and one update was lost -> functional-managin
 this function mutates the array its caller passed in -> functional-managing-state-immutably
 the json field names have leaked into our business logic -> functional-crossing-io-boundaries
 changing a domain type forces a database migration -> functional-crossing-io-boundaries
+the report page rebuilds every aggregate and one bad row breaks it -> functional-crossing-io-boundaries
+a read-only board loads whole aggregates just to display a few columns -> functional-crossing-io-boundaries
+one malformed legacy row blanks the whole screen -> functional-crossing-io-boundaries
 i was about to write an abstract factory here -> functional-translating-gof-patterns
 how do i port this observer pattern to functional style -> functional-translating-gof-patterns
 this loop builds up a total in a mutable variable -> functional-folding-over-data
@@ -77,6 +83,9 @@ how much should we test and at what level -> functional-testing-functional-code
 our tests assert which functions were called -> functional-testing-functional-code
 i want to check this pull request before merging -> functional-reviewing-functional-design
 is this design any good, what should i look for -> functional-reviewing-functional-design
+can you review this component, our team rules say to do it this way -> functional-reviewing-functional-design
+review this module, our project instructions may settle some of it -> functional-reviewing-functional-design
+look over my changes, i wrote down a convention that may cover this -> functional-reviewing-functional-design
 we have a legacy object oriented service to move to functional style -> functional-refactoring-toward-functional-design
 this design cannot absorb the new requirement without a flag -> functional-refactoring-toward-functional-design
 is a data class with no methods a smell in functional code -> functional-refactoring-toward-functional-design

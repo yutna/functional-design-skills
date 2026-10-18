@@ -1,6 +1,6 @@
 ---
 name: functional-reviewing-functional-design
-description: Use when reviewing a design, a diff, or a module, before merging a change, or when judging whether functional code meets a design standard.
+description: Use when asked to review a design, diff, component or module, before merging, judging a design standard, or when a flagged pattern may be a stated project convention.
 license: MIT
 metadata:
   pack: functional-design-skills

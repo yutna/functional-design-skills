@@ -41,7 +41,8 @@ Not for: designing something new, which starts at
 
 1. Rule. **Ask what breaks if the thing is deleted, before choosing a move
    for it.** A flag, a cache, a required call order or an unread field may be
-   complexity you added, and refactoring it is how it becomes permanent. The
+   complexity you added, and refactoring it is how it becomes permanent. Start
+   from [the diagnosis](../functional-diagnosing-complexity/SKILL.md). The
    test, and the outcomes it has, are in
    [essential-and-accidental.md](../functional-diagnosing-complexity/references/essential-and-accidental.md).
 2. Default. **Refactor where you are already working.** Unrelated cleanup is
