@@ -1,6 +1,6 @@
 ---
 name: functional-testing-functional-code
-description: Use when writing tests for functional code, when tests need heavy mocking or a database to check a rule, when deciding what to test, or turning a claimed law into a property.
+description: Use when writing tests for functional code, when tests need heavy mocking or a database, when deciding what to test, or turning a claimed law into a property.
 license: MIT
 metadata:
   pack: functional-design-skills

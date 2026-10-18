@@ -1,6 +1,6 @@
 ---
 name: functional-diagnosing-complexity
-description: Use when a small change touches many files, when an edit breaks a module nobody expected, when code is slow to read, or when complexity looks self-inflicted.
+description: Use when a small change touches many files, an edit breaks an unexpected module, code is slow to read, or before refactoring a flag, cache or field that may be self-inflicted.
 license: MIT
 metadata:
   pack: functional-design-skills

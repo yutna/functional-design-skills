@@ -1,6 +1,6 @@
 ---
 name: functional-crossing-io-boundaries
-description: Use when mapping between domain types and JSON, database rows, or API payloads, or when a storage or wire shape has leaked into the domain model.
+description: Use when mapping domain types to JSON, database rows or payloads, when storage shape leaks into the model, or when a read-only screen rebuilds aggregates and a bad row blanks it.
 license: MIT
 metadata:
   pack: functional-design-skills
