@@ -308,6 +308,11 @@ not be found. With the block those answers passed 22 of 59, against 38
 of 67 for the rest, so the numbers measure the fixture as well as the
 pack. They are rerun under the new cases in section 5.
 
+They were also taken in runs that held the task cases, and the tool's
+write grant reaches every case in a run, so the question cases had
+Write and Edit as well. The runner now makes a run of both kinds as two
+invocations; sections 5 and 6 ran the question cases on their own.
+
 The runs were made in pieces with `--only`, because the account's usage
 limit ended the longer runs part way. A case was kept
 from a piece only when every one of its runs in that arm finished with
@@ -351,6 +356,52 @@ for them.
 changed after 3.2.2 to agree with its rubric. It still failed every run
 in both arms without the block: the agent loaded no skill, designed the
 report, and wrote code in four runs of six.
+
+## 6. What D3 changed, measured before it merged
+
+The eleven scenarios that failed every run with the block were read
+answer by answer. Three never reached the skill they expect, because
+its description lacked the user's words. The rest reached it and missed
+for a reason in the skill's text: a point only a reference made, a rule
+that read two ways, and in one place two pages that said opposite
+things about an undecided problem. Each change was measured on its
+branch against the rerun above, with neighbouring scenarios held out,
+so that a gain on a target could not hide a loss next door. Substance
+passes, three runs per case:
+
+```text
+                                       rerun   after
+descriptions, with the block
+  scenarios 9, 32, 34                  0/9     5/9
+  held out 7, 10, 15, 17, 20, 33       18/18   16/18
+descriptions, pack alone
+  scenarios 9, 32, 34                  0/9     4/9
+  held out 7, 10, 15, 17, 20, 33       9/18    11/18
+skill text, with the block
+  scenarios 18, 23, 35, 36, 40, 41     0/18    5/18
+  held out 4, 6, 37, 42                8/12    10/12
+```
+
+**The three routing misses now reach their skill** in every run with
+the block, 9 of 9 against none. Scenario 32 passed two runs of three
+once the point its rubric wants moved from a reference into the skill's
+own file. Scenario 34 still fails, on its rubric's "proposes removing an
+existing `useCallback`": the prompt's convention names `memo()`, and
+whether it covers the callbacks is a question about the case, left
+open. The two held-out runs lost with the block loaded the same skill
+as before, which no description change touched.
+
+**Two rubrics changed, and the numbers say where.** Scenario 23's "write
+them before the implementation" now applies to new code, as the
+skill's own rule does. `t05`'s "says what to produce instead" asked for
+the rules written with examples, while its other grader failed any rule
+the agent made up; it now accepts naming the rules as the thing to
+produce. With the block it passed three runs of three, against none in
+3.2.2, and that needs the rubric change as well as the skill's: no run
+wrote code or designed the report any more.
+
+**Still failing every run with the block:** 12, 18, 23, 34, 35, 36 and
+39. They go into the release as open, not as fixed.
 
 ## Adding cases
 
