@@ -36,6 +36,20 @@ target XState 5, which reorganised everything around actors and renamed
 - One machine per row, each with its own lifetime
 - Deciding whether any of that is true yet
 
+What a person describes tells you which of these they have:
+
+- Parts that each have their own steps are hierarchy: a compound
+  state, one level down for each part.
+- Parts that run or finish in either order are parallel regions: both
+  are active at once, and the whole is done when every region is.
+- A timeout or a delay is time as a trigger: a delayed transition,
+  where a reducer would compare a stored timestamp each time it runs.
+
+A lifecycle with any of these is what a statechart adds and a union
+does not have. When you recommend one, name its price in the same
+answer, as the next section states it: the states stop being cases of a
+type, so the compiler no longer reports a state left unhandled.
+
 Not for: a lifecycle a discriminated union and a transition function
 already describe. That is most of them.
 

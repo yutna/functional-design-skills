@@ -26,9 +26,8 @@ nothing to maintain and everything to restore once lost.
    states its conventions, those are what "uniformly" means: code
    contradicting a written rule is debt, not a second convention, and a
    codebase carrying grandfathered lint findings holds both at once. The
-   baseline that grandfathers them is a stated position as well: a change
-   leaves it as it is, neither regenerated nor cleared, and clearing it is
-   a change of its own.
+   baseline that grandfathers them is a stated position, as rule 6 of
+   [the skill](../SKILL.md) says, and clearing it is a change of its own.
 2. **When a convention is wrong, change it everywhere or nowhere.** Two
    conventions in one codebase are worse than either alone. Everywhere
    means in one dedicated change.

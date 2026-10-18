@@ -62,11 +62,15 @@ Not for: throwaway spikes whose output is an answer, not code.
    apply it to the neighbouring code that has the same problem, if that is a
    small step and not a project. A change that stays inside one function stops
    there, and the neighbours with the same problem go in a change of their own.
+   What you saw and left goes in the change's description: the design it calls
+   for, and why it is not in this diff.
 6. Rule. **Match the stated convention first, the surrounding code second.**
    Consistency beats your personal preference. But where a project writes its
    conventions down -- an instructions file, a rule file, a lint rule -- those
    are the convention, and surrounding code that contradicts one is debt rather
-   than a standard to match. See [consistency.md](references/consistency.md).
+   than a standard to match. A baseline that grandfathers the findings is a
+   stated position too: the change leaves it as it is, neither regenerated nor
+   cleared. See [consistency.md](references/consistency.md).
 7. Default. **Measure before optimising.** Choose the functional default
    (sharing, folds, tail calls) without measuring. Performance work that
    makes the code harder to read is a design activity only on the critical

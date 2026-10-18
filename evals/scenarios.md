@@ -227,9 +227,9 @@ reach `functional-translating-gof-patterns`.
 > self-documenting. Who is right?
 
 Must contain: both are half right; a comment must carry what the code
-cannot; interface comments stating what a caller must guarantee; the
-suggestion to write them before the implementation. Should reach
-`functional-writing-useful-comments`.
+cannot; interface comments stating what a caller must guarantee; for
+new code, the suggestion to write them before the implementation.
+Should reach `functional-writing-useful-comments`.
 
 ## 24. Interchangeable ids in TypeScript
 

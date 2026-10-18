@@ -49,8 +49,8 @@ the next reader will preserve it.
 **The unrelated refactor.** Improving code you are not otherwise touching
 makes the change hard to review and hides the real edit. Stay in the
 module you came for, and its immediate neighbours. What you saw and left
-goes in the change's description: the design it calls for, and why it is
-not in this diff.
+goes in the change's description, as rule 5 of [the skill](../SKILL.md)
+says.
 
 **The rewrite reflex.** A rewrite reproduces the original design unless
 you can state what was wrong with it. If you cannot pass the

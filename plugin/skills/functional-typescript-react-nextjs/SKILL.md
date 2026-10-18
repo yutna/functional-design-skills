@@ -44,11 +44,13 @@ Not for: React itself, deployment, or routing configuration.
    interaction on the client. A rule written twice, once for each side, is a
    rule that will disagree with itself. The server owns the rule and sends
    the client its answer, a boolean or a reason, not the inputs to judge for
-   itself. Where the screen must answer before any round trip, as a form does
-   while someone types, one pure function may run on both, and the server
-   runs it again and has the last word. Each side still has a core and a shell
-   of its own: a reducer on the client is pure, and an action on the
-   server is a handler.
+   itself. Where the screen checks a field the user is still editing, as a form
+   does while someone types, one pure function may run on both, and the server
+   runs it again and has the last word. A rule over a window, a policy or the
+   clock, such as how late a booking may be cancelled without a fee, stays
+   on the server and crosses as a boolean or a deadline. Each side still has
+   a core and a shell of its own: a reducer on the client is pure, and an
+   action on the server is a handler.
 2. Rule. **Anything crossing is a transfer type.** It is serialised, so it
    is a plain record with no methods, no class instances, and no
    invariants the other side is trusting. Parse it back into a domain

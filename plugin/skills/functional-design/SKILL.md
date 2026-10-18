@@ -99,12 +99,14 @@ move:
 **State one rule the software must follow, with an example it accepts
 and an example it refuses.**
 
-If that comes out in a sentence, write the sentence down and start. The
-check costs thirty seconds, and what it asks for is a spoken rule, not a
-document. Demanding a written specification from someone who can simply
-say the rule is applying a heavier row than the task calls for. Edge
-cases that come up later are questions to ask as you go; they do not
-gate the start.
+If that comes out in a sentence, write the sentence down and start. A
+request that already states its rules has passed the check: write each
+back in a sentence, with an example it accepts and one it refuses, and
+start. The check costs thirty seconds, and what it asks for is a spoken
+rule, not a document. Demanding a written
+specification from someone who can simply say the rule is applying a
+heavier row than the task calls for. Edge cases that come up later are
+questions to ask as you go; they do not gate the start.
 
 If it does not come out, the task is in no row on this table, and what
 is missing is not design:
@@ -117,12 +119,16 @@ in the room, and no amount of modelling substitutes for it. Types
 written over an undecided problem still compile; they encode the guess
 and make it expensive to revisit.
 
-Working alone, write both in your reply: the rules you were able to
-state, each with its two examples, and the questions, each with the role
-that can answer it, or the person where a file names one. Then stop
-before modelling.
+Working alone, say in your reply that the task is in no row of the
+table and that this work comes before any design, then what has to be
+produced: the rules, each with an example it accepts and one it refuses,
+and the questions, each with the role that can answer it, or the person
+where a file names one. Write out only the rules someone has stated, in
+the request or in a file: a guess written as an example, even one
+labelled a hypothesis or an assumption, reads as a requirement the next
+person inherits. Then stop before modelling.
 [working-alone.md](references/working-alone.md) says what stands in for
-the people a step assumes.
+the people a step assumes, and which of its steps this check overrides.
 
 [functional-capturing-the-domain](../functional-capturing-the-domain/SKILL.md)
 covers part of this. Its discovery procedure produces the events, the
