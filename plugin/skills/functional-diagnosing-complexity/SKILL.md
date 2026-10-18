@@ -180,7 +180,10 @@ concessions, each defensible on its own. That has two consequences:
   the one above: state the requirement in the business's words, and see
   how much of the code it fails to account for.
 - **Refactoring before diagnosing.** A refactor that does not name the
-  dependency it removes usually just moves it.
+  dependency it removes usually just moves it. Where a flag or a guard
+  exists only because state mutates in place, extracting it into a
+  well-named function gives it a test suite and keeps it for good;
+  returning a new value in place of the mutation deletes it.
 
 ## Related skills
 
