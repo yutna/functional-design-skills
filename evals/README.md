@@ -403,6 +403,47 @@ wrote code or designed the report any more.
 **Still failing every run with the block:** 12, 18, 23, 34, 35, 36 and
 39. They go into the release as open, not as fixed.
 
+## 7. The task cases on the release content
+
+The task cases were run again on the content that ships as 3.3.0, three
+runs per case in each arm, apart from the question cases, so that the
+write grant reached only the cases that ask for it. A run passes when
+every grader other than the indicators passed:
+
+```text
+                     pack and block   pack alone   no pack
+task                 11/15            11/15        9/15
+  loaded a skill     12/15            1/15
+restraint            9/9              6/9          4/9
+precedence           3/3              3/3          3/3
+the 3.2.2 baseline
+  task               12/15            11/15        9/15
+  restraint          6/9              5/9          5/9
+  precedence         3/3              3/3          3/3
+```
+
+**Restraint is where the release moved.** `t05-undecided-ticket` passed
+three runs of three with the block, against none in 3.2.2 and none here
+without it: the agent loaded the index, wrote no code, and said the
+rules had to be decided first. The throwaway script and the one-function
+fix passed every run with the block and loaded no skill, so the block
+did not pull the pack into work that does not need it.
+
+**The task family held.** `t03-refund-rules-testable` lost one run of
+three with the block, where the agent moved the rule into a pure
+function and took away the entry point its callers use.
+`t04-publish-on-confirm` failed every run in every arm, as it did in
+3.2.2, and loaded no skill in any of them, so it is a routing question
+and still open.
+
+**Without the block the pack is still seldom read at work:** it opened
+a skill in one task run of fifteen, as in 3.2.2. The no-pack arm, which
+nothing in the release touches, moved by one run, which is the size of
+the spread between repeats.
+
+With the block, the pack is below no pack in no family, and above it in
+task and restraint.
+
 ## Adding cases
 
 Add a routing case whenever you catch yourself describing a problem in
