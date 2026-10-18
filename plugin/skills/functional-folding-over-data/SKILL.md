@@ -48,7 +48,10 @@ selecting elements, which is a filter.
 3. Default. **Prefer the specific operation when one exists.** `sum`, `maximum`,
    `groupBy` and `count` say more than a fold with a lambda. One exists only for
    the type it was written for: a total of `Satang` is a fold with that type's
-   own `add` and `zero`, because `sum` adds plain numbers.
+   own `add` and `zero`, because `sum` adds plain numbers. Totals per key,
+   such as fees per clinician per week, are a `groupBy` and then a fold over
+   each bucket. A single fold into a map is for a language or runtime with no
+   `groupBy`.
 4. Default. **Fold from the left, and reverse once when a list is built.** A
    left fold with a forced accumulator is iterative and constant in stack; see
    the accumulator rule in

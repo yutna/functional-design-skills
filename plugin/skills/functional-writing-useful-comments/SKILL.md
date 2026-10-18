@@ -69,7 +69,8 @@ answer.
 The first excuse is the important one: a signature states structure, and
 a name states meaning, but neither can state why a threshold is thirty
 days, what a caller must guarantee, or which alternative was rejected and
-why. Those facts exist only in the author's head.
+why. Those facts exist only in the author's head. For new code, rule 1 below
+says when to write them.
 
 The second is worth examining honestly. Comments written first save time
 in the same session, because they expose a bad interface before it is

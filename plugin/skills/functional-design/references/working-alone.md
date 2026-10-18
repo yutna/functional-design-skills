@@ -32,8 +32,11 @@ not make you one: you cannot forget what you have just read.
 ## 4. Say it was not done
 
 Where none of the three is available, take the most cautious reading and
-carry on. Then, in what you hand back, list each assumption you made in
-place of an answer, and each step you could not carry out. An unverified
+carry on. Where the problem fails the readiness check in
+[the index](../SKILL.md), there is no cautious reading of a rule nobody
+has stated: hand back the questions, with no assumption in their place.
+Then, in what you hand back, list each assumption you made in place of
+an answer, and each step you could not carry out. An unverified
 step that is reported can be finished by someone else. One that is
 passed off as done cannot.
 
