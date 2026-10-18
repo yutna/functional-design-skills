@@ -113,7 +113,9 @@ being dropped:
   example to `0.02`. `SLASH_COMMAND_TOOL_CHAR_BUDGET` does the same
   with a fixed character count.
 - `skillOverrides` can set a skill you rarely need to `"name-only"`,
-  which frees its description's share.
+  which frees its description's share. It reaches skills installed with
+  the script or by hand, not a plugin's: Claude Code leaves plugin
+  skills to `/plugin`.
 
 The [skills documentation](https://code.claude.com/docs/en/skills) has
 the details.
