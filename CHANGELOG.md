@@ -6,6 +6,110 @@ skills or guidance, a patch one corrects what is already there.
 
 [semantic versioning]: https://semver.org
 
+## 3.3.0
+
+The pack reaches the agent when it is working, not only when it is
+asked a design question, and the evals measure it the way it is meant
+to be set up. One paste in a project's `CLAUDE.md` switches it on,
+every core skill leads back to the index, and the skills that the
+measurements showed missing their point were corrected and measured
+again before they merged.
+
+### One paste switches the pack on
+
+- Asked to change code, an agent opened a skill in 1 of 15 task runs
+  of the 3.2.2 baseline, and in 11 of 15 when the project's `CLAUDE.md`
+  carried the block from the README, with restraint intact. The block
+  lived only in the README, which does not ship.
+- It moves, byte for byte, to `functional-design`'s new
+  `references/project-setup.md`, which says why the precedence bullet
+  comes first and how to choose the last line. The index links it.
+- `install.sh` and `install.ps1` print the block, read from that one
+  file, with identical wording; CI fails when either dry run does not.
+- The README explains the skill listing's budget: one per cent of the
+  context window, `/doctor` and `/context`,
+  `skillListingBudgetFraction` and the other settings that change it.
+
+### Every core skill leads back to the index
+
+- Thirty-four of the forty-two skills other than the index carried no
+  link to it, so an agent that opened one for a small change never saw
+  the calibration table, the notation, or the language packs. Each core
+  skill now carries one line that links all three, and
+  `validate-skills.mjs` fails one that does not.
+
+### Skills that taught the opposite of what they are graded on
+
+- Next.js rule 1: the server owns a rule and sends the client its
+  answer. A pure function shared by both sides is for a field the user
+  is still editing; a rule over a window, a policy or the clock stays
+  on the server and crosses as a boolean or a deadline.
+- `functional-design`, "Is the problem decided?": a request that
+  already states its rules has passed, and the rules are written back
+  with an example each way. When the check fails, the reply says the
+  task is in no row of the table and that this work comes before
+  design, names what has to be produced, and writes out only rules
+  someone stated. `working-alone.md` said to take the most cautious
+  reading and carry on; an undecided problem is now its exception.
+- `functional-programming-strategically` says in its own file that a
+  change inside one function stops there, that a grandfathered lint
+  baseline is a stated position the change leaves alone, and that what
+  was seen and left goes in the change's description.
+- `functional-typescript-xstate` maps what a person describes to what
+  a statechart adds: parts with their own steps are hierarchy, parts
+  that finish in either order are parallel regions, a timeout is time
+  as a trigger. Recommending one names its price in the same answer.
+- `functional-folding-over-data`: totals per key are a `groupBy` and a
+  fold over each bucket. `functional-diagnosing-complexity`: extracting
+  a guard that exists only because state mutates in place keeps it for
+  good. `functional-elixir` rule 6 asks what should still work after a
+  process fails. `functional-writing-useful-comments` points at its
+  rule 1 for new code.
+
+### Three descriptions that lacked their users' words
+
+- `functional-crossing-io-boundaries` names a read-only screen that
+  rebuilds aggregates, `functional-diagnosing-complexity` the moment
+  before refactoring a flag, cache or field, and
+  `functional-reviewing-functional-design` a review where a flagged
+  pattern may be the project's stated convention. Two other
+  descriptions were shortened to pay for them; the listing is 8,093 of
+  its 8,100 characters. Nine routing cases are in people's words.
+
+### What the evals measure
+
+- `scripts/eval-plugin.mjs` keeps each run's trace and lists the skills
+  it loaded and the `SKILL.md` files it read; before, the tool deleted
+  every trace, so a miss could not be explained.
+- The prompts of the question cases describe code that the fixture
+  does not contain, and in the 3.2.2 baseline 45 of 126 runs with the
+  pack ended "I can't find the code". Every question case now says the
+  code is not in the workspace, and a run that reads the expected
+  `SKILL.md` reaches it as surely as one that loads it.
+- The write grant that task cases need reached every case in a run, so
+  question cases run beside them had Write and Edit too. A run of both
+  kinds is now two invocations.
+- Rubrics changed where they asked for more than the prompt implies or
+  contradicted another grader of the same case, and each change is
+  named in `evals/README.md`.
+
+### Measured
+
+- Every scenario, three runs per case, Sonnet 5.5 as agent and judge,
+  before the skill corrections above: with the block 80 of 126, the
+  pack alone 58, no pack 25. The block lifted thirteen scenarios
+  against the pack alone and lowered two.
+- The corrections were measured on their branches against that run,
+  with neighbouring scenarios held out: the targets went from 0 to 5 of
+  9 and from 0 to 5 of 18, the held-out cases from 18 to 16 and from 8
+  to 10, and `t05-undecided-ticket` from none to three of three.
+- The task cases on this release's content, with the block: task 11
+  of 15, restraint 9 of 9, precedence 3 of 3, against 12, 6 and 3 in
+  3.2.2. The pack is below no pack in no family. `t04-publish-on-confirm`
+  still fails every run in every arm and loads no skill.
+- Seven scenarios still fail every run with the block: 12, 18, 23, 34,
+  35, 36 and 39. Three runs per case is a direction, not a proof.
+
 ## 3.2.2
 
 The nine language packs follow the vocabulary and the model that 3.2.0

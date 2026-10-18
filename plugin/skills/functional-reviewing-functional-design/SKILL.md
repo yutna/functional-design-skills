@@ -4,7 +4,7 @@ description: Use when asked to review a design, diff, component or module, befor
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.2.2
+  version: 3.3.0
 ---
 
 # Reviewing Functional Design
