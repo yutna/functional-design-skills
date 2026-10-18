@@ -123,10 +123,10 @@ Working alone, say in your reply that the task is in no row of the
 table and that this work comes before any design, then what has to be
 produced: the rules, each with an example it accepts and one it refuses,
 and the questions, each with the role that can answer it, or the person
-where a file names one. Write out only the rules someone has stated, in the request or in a
-file: a guess written as an example, even one labelled a hypothesis or an
-assumption, reads as a requirement the next person inherits. Then stop
-before modelling.
+where a file names one. Write out only the rules someone has stated, in
+the request or in a file: a guess written as an example, even one
+labelled a hypothesis or an assumption, reads as a requirement the next
+person inherits. Then stop before modelling.
 [working-alone.md](references/working-alone.md) says what stands in for
 the people a step assumes, and which of its steps this check overrides.
 
