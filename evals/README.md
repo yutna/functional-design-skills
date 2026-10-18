@@ -300,12 +300,51 @@ the agent that the code is not in the workspace. In 45 of 126 pack-arm
 runs and 59 of 126 block-arm runs the final answer said the code could
 not be found. With the block those answers passed 22 of 59, against 38
 of 67 for the rest, so the numbers measure the fixture as well as the
-pack. They are rerun under the new cases.
+pack. They are rerun under the new cases in section 5.
 
 The runs were made in pieces with `--only`, because the account's usage
 limit ended the longer runs part way. A case was kept
 from a piece only when every one of its runs in that arm finished with
 no error and a judged verdict; the rest were run again.
+
+## 5. The question rerun under the new cases
+
+Every scenario was run again on the content that followed 3.2.2, with
+the sentence that says the code is not in the workspace, three runs per
+case in each arm and Sonnet 5.5 as both agent and judge. "Reached"
+counts the runs that opened the skill the scenario expects, out of
+those that name one:
+
+```text
+                     pack and block   pack alone   no pack
+scenarios            80/126           58/126       25/126
+  loaded a skill     107/126          65/126
+  reached            98/123           62/123
+the 3.2.2 baseline   60/126           52/126       19/126
+```
+
+**The block raises the score.** Against the pack alone it lifted
+thirteen scenarios and lowered two, by 24 runs against 2. In 3.2.2 it
+was nine against three, which was a direction; this is a result, though
+each case still rests on three runs.
+
+**Every arm scored higher, the no-pack one too.** With the fixture out
+of the way an agent answers in one to three turns instead of searching.
+In those shorter runs the pack alone opened a skill in 65, against 85
+in 3.2.2, so without the block the pack is read less often than the
+baseline suggested.
+
+**Where it still fails.** Eleven scenarios failed every run with the
+block: 9, 12, 18, 23, 32, 34, 35, 36, 39, 40 and 41. Three of them, 9,
+32 and 34, never reached the expected skill, so they are routing
+questions. The other eight reached it in at least one run, so their
+answers have to be read against the rubric before a skill is changed
+for them.
+
+`t05-undecided-ticket` was run again too, since the skill it tests was
+changed after 3.2.2 to agree with its rubric. It still failed every run
+in both arms without the block: the agent loaded no skill, designed the
+report, and wrote code in four runs of six.
 
 ## Adding cases
 
