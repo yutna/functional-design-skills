@@ -4,7 +4,7 @@ description: Use when starting a feature or system, when code and the business u
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.2.2
+  version: 3.3.0
 ---
 
 # Capturing the Domain

@@ -4,7 +4,7 @@ description: Use when a small change touches many files, an edit breaks an unexp
 license: MIT
 metadata:
   pack: functional-design-skills
-  version: 3.2.2
+  version: 3.3.0
 ---
 
 # Diagnosing Complexity
