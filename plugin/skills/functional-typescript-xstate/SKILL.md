@@ -46,8 +46,9 @@ What a person describes tells you which of these they have:
   where a reducer would compare a stored timestamp each time it runs.
 
 A lifecycle with any of these is what a statechart adds and a union
-does not have. The price is the one stated below: the states stop being
-cases of a type.
+does not have. When you recommend one, name its price in the same
+answer, as the next section states it: the states stop being cases of a
+type, so the compiler no longer reports a state left unhandled.
 
 Not for: a lifecycle a discriminated union and a transition function
 already describe. That is most of them.

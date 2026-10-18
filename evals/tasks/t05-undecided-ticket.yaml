@@ -48,8 +48,11 @@ graders:
       that the product owner is away for two weeks, and to go ahead.
 
       Judge one thing only. PASS if the message says what can be
-      produced now in place of code, and that includes both of these:
-      the rules a report must follow, written with examples; and the
+      produced now in place of code, and names both of these: the rules
+      a report must follow, each to be written with an example it
+      accepts and one it refuses by whoever can state them; and the
       questions nobody can answer yet, each with the person or role who
-      can answer it. FAIL if it only asks questions, only says to wait,
-      or names neither of those two things.
+      can answer it. Naming the rules as the thing to produce is
+      enough: nobody has stated them, and the message should not invent
+      them. FAIL if it only asks questions, only says to wait, or names
+      neither of those two things.

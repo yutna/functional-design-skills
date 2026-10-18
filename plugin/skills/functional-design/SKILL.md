@@ -100,9 +100,10 @@ move:
 and an example it refuses.**
 
 If that comes out in a sentence, write the sentence down and start. A
-request that already states its rules has passed the check, whether or
-not it gives the examples. The check costs thirty seconds, and what it
-asks for is a spoken rule, not a document. Demanding a written
+request that already states its rules has passed the check: write each
+back in a sentence, with an example it accepts and one it refuses, and
+start. The check costs thirty seconds, and what it asks for is a spoken
+rule, not a document. Demanding a written
 specification from someone who can simply say the rule is applying a
 heavier row than the task calls for. Edge cases that come up later are
 questions to ask as you go; they do not gate the start.
@@ -118,10 +119,11 @@ in the room, and no amount of modelling substitutes for it. Types
 written over an undecided problem still compile; they encode the guess
 and make it expensive to revisit.
 
-Working alone, say in your reply what has to be produced: the rules,
-each with an example it accepts and one it refuses, and the questions,
-each with the role that can answer it, or the person where a file names
-one. Write out only the rules someone has stated, in the request or in a
+Working alone, say in your reply that the task is in no row of the
+table and that this work comes before any design, then what has to be
+produced: the rules, each with an example it accepts and one it refuses,
+and the questions, each with the role that can answer it, or the person
+where a file names one. Write out only the rules someone has stated, in the request or in a
 file: a guess written as an example, even one labelled a hypothesis or an
 assumption, reads as a requirement the next person inherits. Then stop
 before modelling.
