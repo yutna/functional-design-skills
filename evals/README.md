@@ -197,6 +197,12 @@ node scripts/eval-plugin.mjs --only 1,t04-publish-on-confirm
 `--tag` takes a family, `question` for the scenarios, or `smoke`.
 `--only` takes scenario numbers and case names in one list.
 
+A run that holds both kinds is made as two invocations of the tool, the
+question cases first, because the write grant would otherwise reach the
+question cases. A question case is measured with the tools it asks for
+only. The cost ceiling covers both, and the second does not start if the
+first ended partial.
+
 A case passes in a run when every one of its graders passes, leaving out
 the indicators. An indicator is a `tool_used` grader whose name begins
 `loaded-`; it records what the agent did on the way and decides nothing.
