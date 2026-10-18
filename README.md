@@ -101,9 +101,11 @@ the cap it drops descriptions, starting with the least-invoked skills,
 and every name stays. A skill listed by name alone is rarely chosen.
 
 This pack's listing is about the size of the whole default budget on its
-own, before anything else you have installed. If you run other skills
-too, check the cost and raise the budget if descriptions are being
-dropped:
+own, before anything else you have installed. Measured with the core
+skills' descriptions dropped, it passed 68 of 126 scenario runs against
+90 with them, as [the evals](evals/README.md) record. If you run other
+skills too, check the cost and raise the budget if descriptions are
+being dropped:
 
 - `/doctor` estimates the listing's cost and its biggest contributors.
   The Skills row of `/context` shows its size after the budget.

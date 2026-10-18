@@ -444,6 +444,67 @@ the spread between repeats.
 With the block, the pack is below no pack in no family, and above it in
 task and restraint.
 
+## 8. What the pack does when its listing is cut
+
+Claude Code lists every skill's name and description on every turn, and
+drops descriptions once the listing passes its budget. Two variants of
+the release content measured what that costs, with the block, three runs
+per case:
+
+- **V1, no descriptions:** the core skills listed by name alone, as an
+  overflowing listing leaves the skills it drops, here all of them. The
+  index and the language packs keep theirs.
+- **V2, the index only:** the core skills carry
+  `disable-model-invocation: true`, so the model cannot load them and
+  reaches them only by reading the files the index links.
+
+Each is set against the latest block measurement of each scenario,
+which for most of them is the rerun of section 5 and for the rest the
+branches of section 6:
+
+```text
+                                   current   V1        V2
+scenarios                          90/126    68/126    70/126
+  expecting a core skill           66/90     44/90     43/90
+  expecting a pack or the index    23/33     23/33     26/33
+  expecting no skill               1/3       1/3       1/3
+runs that opened a core skill      82/126    15/126    13/126
+```
+
+**The core skills are reached through their descriptions.** Without
+them the agent opened a core skill in about one run in nine, against
+two in three, by loading it or reading its file. Most runs went no
+further than the index, or loaded no skill at all. The scenarios that
+expect a core skill lost a third of their passes in both variants, less
+than the opening fell, since the index and what the agent already knows
+carry part of an answer. Those that expect a language pack or the
+index, whose descriptions were left alone, did not lose: the same in V1
+and three runs more in V2, on eleven scenarios.
+
+**Hiding a skill does not turn it into a file to read.** In six V2 runs
+the agent asked for a core skill by name, was refused because of the
+frontmatter, and did not open the file instead.
+
+**For setup, the budget is load-bearing.** Dropping every core
+description cost the pack about a quarter of its passes. A real
+overflow drops the least-used descriptions first, so it costs somewhere
+between nothing and that. The pack's listing is near the default budget
+on its own, so with other skills installed it overflows unless the
+budget is raised, which is what the main README's section on the
+listing budget is for.
+
+**For structure, there is no case here for a change.** An index-only
+pack would free nearly all of the budget, and as measured it loses as
+much as an overflow. The variant kept the index as it is, naming each
+skill and linking its file, so it measures the structure as it would
+arrive without rewriting the index, not one written for it. An index
+built to send the agent to files would have to be measured before it
+shipped.
+
+The current column mixes the content before and after section 6, and
+the variants fall twenty-two and twenty runs below it, against the two
+runs by which section 6 moved each group of held-out cases.
+
 ## Adding cases
 
 Add a routing case whenever you catch yourself describing a problem in
