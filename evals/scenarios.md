@@ -381,6 +381,10 @@ conversation. Not as a review finding, and not as an unrequested change.
 Fails if the answer reports the memoisation as a finding, proposes
 removing an existing `useCallback` or `memo()` even where it is provably
 redundant, or hands the precedence question back to the author as work.
+The convention as stated names `memo()` only, so an answer may treat the
+callbacks as a place to look, consistent with it where they reach
+memoised children; asking to see the container or the rule file is not
+handing the question back.
 Should reach
 `functional-reviewing-functional-design`.
 
@@ -394,9 +398,10 @@ Should reach
 > `helpers.ts` holding what look like business rules. What should my
 > merge request contain?
 
-Must contain: the calibration row chosen before anything else, and the
-signature named as the cause rather than the formatter. The fix stays in
-the ticketed function and whatever the compiler surfaces in its callers.
+Must contain: the size of the change settled before anything else, as a
+fix to one function in a module that exists, and the signature named as
+the cause rather than the formatter. The fix stays in the ticketed
+function and whatever the compiler surfaces in its callers.
 
 Must contain the exclusions, each with its reason: the siblings are an
 unrelated refactor that would hide the real edit, the large helper is
