@@ -505,6 +505,39 @@ The current column mixes the content before and after section 6, and
 the variants fall twenty-two and twenty runs below it, against the two
 runs by which section 6 moved each group of held-out cases.
 
+## 9. The smoke set on Opus 5.5
+
+Every measurement above used Sonnet 5.5 as the agent. The cases tagged
+`smoke` ran once each in each of the three arms with Opus 5.5 as the
+agent and Sonnet 5.5 still the judge, on 3.3.0's content:
+
+```text
+                     pack and block   pack alone   no pack
+questions            8/12             7/12         3/12
+  loaded a skill     10/12            10/12
+task                 3/3              3/3          2/3
+restraint            2/3              2/3          2/3
+precedence           1/1              1/1          1/1
+```
+
+**The direction holds.** The pack lifted the questions on Opus as it does
+on Sonnet, and lowered no family. Sonnet with the block passed 24 of 36
+runs of the same question cases, two in three, as Opus did.
+
+**Opus reads the pack without being told.** It loaded a skill in ten of
+twelve question runs with or without the block, and in two of three task
+runs of the pack-alone arm, where Sonnet opened one in a single task run
+of fifteen. The block may matter less on this model; one run per case
+can suggest that, not show it.
+
+**Where it differs.** `t04-publish-on-confirm`, which Sonnet failed in
+every run of every arm, passed with the pack on Opus, which loaded the
+reliability skill. `t05-undecided-ticket` failed with the block, on what
+to produce instead, and passed with the pack alone; the no-pack arm
+failed it too. Scenario 42, which Sonnet passed in every run with the
+block, failed in all three arms. These are cases to watch on the next
+model, not results.
+
 ## Adding cases
 
 Add a routing case whenever you catch yourself describing a problem in
