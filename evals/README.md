@@ -538,6 +538,75 @@ failed it too. Scenario 42, which Sonnet passed in every run with the
 block, failed in all three arms. These are cases to watch on the next
 model, not results.
 
+## 10. The scenarios that still failed every run
+
+Scenarios 12, 18, 23, 34, 35, 36 and 39 failed every run with the block
+in the measurements behind 3.3.0. They were run again on its released
+content, three runs each, and each answer was read against its rubric.
+Each scenario ended as a change to its skill, a change to its rubric, or
+a known limit. Scenarios 23, 36 and 39 each got one sentence in their
+skill, and 34 and 35 a correction to the rubric. All five were measured
+on a branch, three runs per case with the block, beside the scenarios
+each sentence could move, held out. The before column is the latest
+block measurement of each; 29, 38 and 41 were run again on the released
+content the same morning.
+
+```text
+                          before   branch
+changed for
+  23 comments             1/3      1/3
+  34 red flag             0/3      0/3
+  35 one-file fix         0/3      0/3
+  36 undecided ticket     0/3      0/3
+  39 GenServer            0/3      0/3
+held out
+  4                       3/3      3/3
+  17                      2/3      3/3
+  29                      2/3      1/3
+  37                      1/3      3/3
+  38                      1/3      0/3
+  41                      2/3      2/3
+  t05-undecided-ticket    3/3      3/3
+```
+
+**Nothing it was aimed at moved, so no sentence merged.** Every target
+stayed where it was. The held-out cases rose in 17 and 37 and fell by
+one run in 29 and 38, which three runs cannot separate from the spread
+between repeats. A sentence that measures as no change is a rule written
+from reasoning alone, and the skills keep their 3.3.0 text.
+
+**The sentences reached the answers.** On 39, two runs said the three
+jobs share a mailbox and a crash, one adding that none of them needs to,
+and the judge still failed all three. It keeps its votes and not its
+reasons, so the element it found missing is not recorded. On 36, every
+run refused to model, invented no rules and gave the open questions with
+who can answer each. Two still named the shape the code might take, a
+feature, a module or a read-only screen, which the new sentence itself
+had put in their words; one run won one vote of three. On 23, the run
+that passed said to write the interface comment first, as one run had
+before.
+
+**Two rubrics were wrong, and are corrected.** Scenario 34's prompt
+names `memo()` alone as the convention, so its rubric now lets an answer
+treat the two callbacks as a place to look, and says that asking to see
+the code is not handing the question back. All three answers still
+proposed dropping the callbacks wherever nothing memoised receives them,
+which the rubric fails, and rightly: the convention's reason is in a
+file the answer has not read. Scenario 35's rubric asked for the
+calibration row by name, which the prompt gives no reason to narrate. It
+now asks for the size of the change, settled first, as a fix to one
+function in a module that exists. No run on the branch reached
+`functional-programming-strategically`, so 35 stays a routing miss.
+
+**Known limits.** Scenario 12 passed two runs of three on the released
+content. Its one failure left out that the questions come before the
+fields, which is the skill's first rule, so a sentence would only repeat
+it. In 18 no run opened a skill: the agent sketched the fold itself and
+missed the `groupBy`, which the folding skill already states. Moving
+that would take a description carrying the user's words, paid for by
+another's, which one scenario does not justify. Scenarios 23, 34, 35, 36
+and 39 join them, for the reasons above.
+
 ## Adding cases
 
 Add a routing case whenever you catch yourself describing a problem in
