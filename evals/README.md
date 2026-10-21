@@ -607,6 +607,44 @@ that would take a description carrying the user's words, paid for by
 another's, which one scenario does not justify. Scenarios 23, 34, 35, 36
 and 39 join them, for the reasons above.
 
+## 11. The release in one sweep
+
+The question numbers in sections 5, 6 and 8 came from runs on different
+content, each made when a change was measured. Every scenario was then
+run again on 3.3.0's content, with the rubrics as section 10 left them,
+in the three arms and in one sweep: three runs per case, Sonnet 5.5 as
+both agent and judge.
+
+```text
+                     pack and block   pack alone   no pack
+scenarios            88/126           65/126       30/126
+  loaded a skill     112/126          84/126
+  reached            106/123          80/123
+section 5            80/126           58/126       25/126
+```
+
+**The direction holds on the release.** With the block, the pack beat
+the pack alone in sixteen scenarios and lost in four, by 30 runs to 7.
+The pack alone beat no pack in eighteen and lost in three, by 38 runs
+to 3.
+The no-pack arm, which no change to the skills can reach, rose from 25
+to 30, which is about the spread between two sweeps.
+
+**A case can move from none to all between sweeps.** Scenario 1 passed
+no run with the block and scenario 25 one, against three each before,
+and neither skill had changed in between. Run again the next morning,
+both passed all three. Three runs per case give a direction for a group of
+cases, not a verdict on one.
+
+**The pack alone is read more often.** It opened a skill in 84 runs,
+against 65 in section 5. 3.3.0 rewrote three descriptions in the words
+their scenarios used, and scenario 9, one of them, went from no run to
+three without the block.
+
+**Where it still fails.** With the block, scenarios 18, 23, 34, 35, 36
+and 39 failed every run, and 12 passed one run of three: the cases
+section 10 records as known limits.
+
 ## Adding cases
 
 Add a routing case whenever you catch yourself describing a problem in
