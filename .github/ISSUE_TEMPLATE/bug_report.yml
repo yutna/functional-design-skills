@@ -1,6 +1,7 @@
 name: Problem with a skill
 description: A skill gave wrong guidance, or did not trigger when it should have
 labels: ["bug"]
+assignees: [yutna]
 body:
   - type: markdown
     attributes:

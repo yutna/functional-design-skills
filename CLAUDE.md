@@ -63,14 +63,18 @@ installs with `npm ci`, which fails when `package.json` and
 `package-lock.json` disagree. Change a dependency by running
 `npm install`, never by editing `package.json` alone.
 
-Opening the pull request is part of finishing the change, and two labels
-are required on it: `pr-hygiene` fails the run without them, and
-[CONTRIBUTING.md](CONTRIBUTING.md) says which. Merges here are merge
-commits whose subject is the pull request's title, which the repository
-now produces on its own, so `gh pr merge --merge` needs no `--subject`.
-A release is one further pull request carrying the version bump and the
-changelog entry, and once it lands it gets an annotated tag at its merge
-commit and a GitHub release whose title repeats the tag's subject.
+Opening the pull request is part of finishing the change. Its title must
+be in Conventional Commits form, it needs an assignee and a version
+milestone, and `ci-ok` and `pr-check / check` must pass; pr-check sets the
+kind label from the title. Merges are squash merges whose subject is the
+pull request title, so `gh pr merge --squash` needs no `--subject`.
+
+A release is made by closing its `vX.Y.Z` milestone once it is complete:
+the release workflow tags `main` and creates the GitHub Release. Merge
+the version bump (`npm version`, then `scripts/bump-version.mjs`) before
+closing it; the preflight refuses a version that does not match
+`package.json`. Release notes from v3.4.0 onward are on GitHub Releases,
+and `CHANGELOG.md` records the versions before that.
 
 ## Hard constraints
 
@@ -90,7 +94,8 @@ rejected.
 - **`CHANGELOG.md` is a record, not a description.** Its entries say
   what was true when a version shipped, so a rename does not rewrite
   them. A skill that was called `hiding-information` in 2.0.0 is still
-  called that in the 2.0.0 entry.
+  called that in the 2.0.0 entry. Entries stop at 3.3.0; later release
+  notes are on GitHub Releases.
 - **A version bump is `npm version`, then `scripts/bump-version.mjs`,
   never a find-and-replace.** The number appears in forty-six files:
   `package.json`, both manifests, and every skill's frontmatter. That

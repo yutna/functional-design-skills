@@ -152,7 +152,23 @@ any noun it does not name.
 
 ## Pull requests
 
-Two labels are required and a check enforces them: one type
-(`feature`, `release`, `bug`, `hotfix`, `chore`, `documentation`) and
-one priority. `breaking-change`, `security`, and `skill` are worth
-reaching for when they apply.
+Every change reaches `main` through a pull request. Its title must be in
+[Conventional Commits](https://www.conventionalcommits.org/) form, for
+example `feat: add a skill for effects`. Open it as a draft, link the
+issue with `Closes #N`, and keep it in a version milestone. `pr-check`
+assigns the author, sets the kind label from the title, and fails unless
+the title, assignee and milestone are right. `ci-ok` is the other
+required check. Squash merge only; the branch is deleted.
+
+One subject per pull request. A wording fix and a new skill are two
+changes. Say which skill you changed and why in the description. Run
+`npm test` before opening it.
+
+## Releases
+
+A release is made when its version milestone is complete: closing the
+milestone creates the GitHub Release with generated notes. Merge the
+version bump before closing it; the release preflight refuses a
+milestone whose version does not match `package.json`. Release notes from
+v3.4.0 onward are on GitHub Releases, and `CHANGELOG.md` records the
+versions before that.

@@ -1,0 +1,10 @@
+name: issue-check
+on:
+  issues:
+    types: [opened]
+permissions: {}
+jobs:
+  issue-check:
+    uses: yutna/oss-kit/.github/workflows/issue-check.yml@main
+    permissions:
+      issues: write

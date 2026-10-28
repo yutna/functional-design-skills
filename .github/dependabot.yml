@@ -28,9 +28,11 @@ updates:
       interval: monthly
     labels:
       - dependencies
-      - chore
+    assignees:
+      - yutna
     commit-message:
       prefix: "chore"
+      include: scope
 
   - package-ecosystem: npm
     directory: /
@@ -57,6 +59,8 @@ updates:
           - "4.x"
     labels:
       - dependencies
-      - chore
+    assignees:
+      - yutna
     commit-message:
       prefix: "chore"
+      include: scope
