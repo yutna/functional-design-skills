@@ -1,6 +1,7 @@
 name: Propose a skill or a change to one
 description: Suggest new content, a new skill, or a correction from experience
 labels: ["proposal"]
+assignees: [yutna]
 body:
   - type: markdown
     attributes:

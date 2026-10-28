@@ -243,7 +243,8 @@ Only `plugin/` ships. Everything else maintains the pack.
   in this repository.
 - [evals/README.md](evals/README.md) is what the routing check does and
   does not prove, and the scenarios to run against a real agent.
-- [CHANGELOG.md](CHANGELOG.md) is what changed in each release.
+- [CHANGELOG.md](CHANGELOG.md) records versions before 3.4.0; later
+  release notes are on GitHub Releases.
 
 ## What this does not establish
 
