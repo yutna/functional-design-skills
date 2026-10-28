@@ -1,5 +1,9 @@
 # Changelog
 
+Release notes for v3.4.0 and later are on
+[GitHub Releases](https://github.com/yutna/functional-design-skills/releases).
+The entries below record earlier versions.
+
 Notable changes to this pack. Versions follow [semantic versioning]:
 a major bump changes something people depend on, a minor one adds
 skills or guidance, a patch one corrects what is already there.
